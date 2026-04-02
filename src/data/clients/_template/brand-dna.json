@@ -1,0 +1,25 @@
+﻿{
+  "brandName": "Client Name",
+  "voice": "clear, direct, strategic",
+  "tone": "confident, practical, sharp",
+  "audience": "founders, operators, entrepreneurs",
+  "category": "AI consulting and media systems",
+  "positioning": "Builds scalable authority and operational systems using AI and media",
+  "differentiators": [
+    "systems thinking",
+    "polymath operator perspective",
+    "AI + media integration"
+  ],
+  "corePromise": "turn expertise into scalable authority",
+  "philosophy": "bullshit input, bullshit output",
+  "writingRules": [
+    "write clearly",
+    "lead with strategic utility",
+    "avoid fluff"
+  ],
+  "bannedPhrases": [],
+  "preferredCTAs": [
+    "book a strategy call",
+    "request a system audit"
+  ]
+}

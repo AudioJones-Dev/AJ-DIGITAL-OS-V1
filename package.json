@@ -1,0 +1,40 @@
+{
+  "name": "aj-digital-os",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "aj-digital-os": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "cli": "node dist/cli.js",
+    "cli:help": "npm run cli -- help",
+    "cli:dashboard": "npm run cli -- dashboard",
+    "cli:console": "npm run cli -- operator-console",
+    "cli:pending": "npm run cli -- list-pending-approvals",
+    "cli:approved": "npm run cli -- list-approved-runs",
+    "cli:failed": "npm run cli -- list-failed-runs",
+    "cli:executed": "npm run cli -- list-executed-runs",
+    "cli:track": "npm run cli -- track-run",
+    "cli:summary": "npm run cli -- run-summary",
+    "cli:events": "npm run cli -- run-events",
+    "cli:approve": "npm run cli -- approve-run",
+    "cli:execute": "npm run cli -- execute-run",
+    "cli:resume": "npm run cli -- resume-run",
+    "link:local": "npm run build && npm link"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.8.3"
+  }
+}
