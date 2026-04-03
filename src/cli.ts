@@ -14,6 +14,7 @@ import {
   ResumeRunCommand,
   RunEventsCommand,
   RunSummaryCommand,
+  SeedDemoCommand,
   TrackRunCommand,
   type TrackRunViewMode,
 } from "./commands/index.js";
@@ -46,7 +47,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
 
     const key = token.slice(2);
-    if (key === "json" || key === "reverse") {
+    if (key === "json" || key === "reverse" || key === "watch") {
       flags[key] = true;
       continue;
     }
@@ -90,16 +91,19 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;
+      case "dash":
       case "dashboard":
         await new DashboardCommand().run({
           ...(limit !== undefined ? { limit } : {}),
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;
+      case "console":
       case "operator-console":
         await new OperatorConsoleCommand().run({
           ...(limit !== undefined ? { limit } : {}),
           json: hasFlag(parsed.flags, "json"),
+          watch: hasFlag(parsed.flags, "watch"),
         });
         return 0;
       case "run-summary":
@@ -149,6 +153,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;
+      case "approve":
       case "approve-run":
         await new ApproveRunCommand().run({
           runId,
@@ -158,6 +163,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;
+      case "exec":
       case "execute-run":
         await new ExecuteRunCommand().run({
           runId,
@@ -168,6 +174,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;
+      case "resume":
       case "resume-run":
         await new ResumeRunCommand().run({
           runId,
@@ -175,6 +182,11 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           ...(mode ? { mode } : {}),
           ...(source ? { source } : {}),
           ...(actor ? { actor } : {}),
+          json: hasFlag(parsed.flags, "json"),
+        });
+        return 0;
+      case "seed-demo":
+        await new SeedDemoCommand().run({
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;

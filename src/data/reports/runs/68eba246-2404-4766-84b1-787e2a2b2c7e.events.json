@@ -1,0 +1,59 @@
+[
+  {
+    "eventId": "7a9a0f47-4afd-4cfd-a0f5-4e67fb016eed",
+    "runId": "68eba246-2404-4766-84b1-787e2a2b2c7e",
+    "type": "run_created",
+    "timestamp": "2026-04-02T22:00:48.516Z",
+    "message": "Demo run created."
+  },
+  {
+    "eventId": "0bc2a8a7-616f-4848-8800-fe9cb615cbe2",
+    "runId": "68eba246-2404-4766-84b1-787e2a2b2c7e",
+    "type": "context_loaded",
+    "timestamp": "2026-04-02T22:00:48.525Z",
+    "message": "Context loaded from brand DNA and source materials."
+  },
+  {
+    "eventId": "6e1143fa-2d59-4bf2-97a2-e7c42be63309",
+    "runId": "68eba246-2404-4766-84b1-787e2a2b2c7e",
+    "type": "workflow_started",
+    "timestamp": "2026-04-02T22:00:48.530Z",
+    "message": "Workflow started: blog-authority."
+  },
+  {
+    "eventId": "9bba103e-8633-4f48-bcfe-92aa1d970649",
+    "runId": "68eba246-2404-4766-84b1-787e2a2b2c7e",
+    "type": "workflow_completed",
+    "timestamp": "2026-04-02T22:00:48.536Z",
+    "message": "Draft complete. All assets generated."
+  },
+  {
+    "eventId": "461a4e85-689e-4304-86b8-49f045242b3a",
+    "runId": "68eba246-2404-4766-84b1-787e2a2b2c7e",
+    "type": "validation_passed",
+    "timestamp": "2026-04-02T22:00:48.540Z",
+    "message": "Validation passed. Quality threshold met."
+  },
+  {
+    "eventId": "cde0db1e-7458-414b-94e0-069294f45fa6",
+    "runId": "68eba246-2404-4766-84b1-787e2a2b2c7e",
+    "type": "approval_requested",
+    "timestamp": "2026-04-02T22:00:48.545Z",
+    "message": "Approval requested.",
+    "metadata": {
+      "workflowId": "blog-authority",
+      "clientId": "client-delta"
+    }
+  },
+  {
+    "eventId": "92fe2b1a-dd23-473e-95c1-f8ddaaed1035",
+    "runId": "68eba246-2404-4766-84b1-787e2a2b2c7e",
+    "type": "approval_revision_requested",
+    "timestamp": "2026-04-02T22:00:48.549Z",
+    "message": "Revision requested by demo-operator.",
+    "metadata": {
+      "actor": "demo-operator",
+      "reason": "Brand voice inconsistency detected in section 2."
+    }
+  }
+]

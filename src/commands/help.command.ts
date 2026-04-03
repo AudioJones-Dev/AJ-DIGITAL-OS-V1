@@ -5,8 +5,14 @@ export interface HelpCommandInput {
 export interface HelpCommandEntry {
   name: string;
   description: string;
-  category: "overview" | "inspection" | "queues" | "actions";
+  category: "overview" | "inspection" | "queues" | "actions" | "setup";
   examples: string[];
+}
+
+export interface HelpAliasEntry {
+  alias: string;
+  target: string;
+  description: string;
 }
 
 export interface HelpCommandResult {
@@ -14,6 +20,7 @@ export interface HelpCommandResult {
   command: "help";
   rendered: boolean;
   commands: HelpCommandEntry[];
+  aliases: HelpAliasEntry[];
   warnings: string[];
   errors: string[];
 }
@@ -28,11 +35,12 @@ export class HelpCommand {
   async run(input: HelpCommandInput = {}): Promise<HelpCommandResult> {
     try {
       const commands = this.getCommandEntries();
+      const aliases = this.getAliasEntries();
 
       if (input.json === true) {
-        this.printJson({ commands });
+        this.printJson({ commands, aliases });
       } else {
-        this.renderHumanHelp(commands);
+        this.renderHumanHelp(commands, aliases);
       }
 
       return {
@@ -40,6 +48,7 @@ export class HelpCommand {
         command: "help",
         rendered: true,
         commands,
+        aliases,
         warnings: [],
         errors: [],
       };
@@ -62,6 +71,7 @@ export class HelpCommand {
         command: "help",
         rendered: true,
         commands: [],
+        aliases: [],
         warnings: [],
         errors: [message],
       };
@@ -86,7 +96,12 @@ export class HelpCommand {
         name: "operator-console",
         description: "Show the unified operator control surface.",
         category: "overview",
-        examples: ["operator-console", "operator-console --limit 10", "operator-console --json"],
+        examples: [
+          "operator-console",
+          "operator-console --watch",
+          "operator-console --limit 10",
+          "operator-console --json",
+        ],
       },
       {
         name: "run-summary",
@@ -114,7 +129,7 @@ export class HelpCommand {
       },
       {
         name: "list-approved-runs",
-        description: "Show runs ready for execution.",
+        description: "Show runs in approved state, ready for execution.",
         category: "queues",
         examples: ["list-approved-runs", "list-approved-runs --limit 5", "list-approved-runs --json"],
       },
@@ -134,7 +149,10 @@ export class HelpCommand {
         name: "approve-run",
         description: "Resolve a pending approval decision for a run.",
         category: "actions",
-        examples: ["approve-run --runId run_123 --decision approve", "approve-run --runId run_123 --decision request_revision"],
+        examples: [
+          "approve-run --runId run_123 --decision approve",
+          "approve-run --runId run_123 --decision request_revision",
+        ],
       },
       {
         name: "execute-run",
@@ -148,10 +166,26 @@ export class HelpCommand {
         category: "actions",
         examples: ["resume-run --runId run_123", "resume-run --runId run_123 --mode auto --json"],
       },
+      {
+        name: "seed-demo",
+        description: "Generate a demo dataset covering all key run lifecycle states.",
+        category: "setup",
+        examples: ["seed-demo", "seed-demo --json"],
+      },
     ];
   }
 
-  private renderHumanHelp(commands: HelpCommandEntry[]): void {
+  private getAliasEntries(): HelpAliasEntry[] {
+    return [
+      { alias: "dash",    target: "dashboard",        description: "Shortcut for dashboard"        },
+      { alias: "console", target: "operator-console", description: "Shortcut for operator-console" },
+      { alias: "approve", target: "approve-run",      description: "Shortcut for approve-run"      },
+      { alias: "exec",    target: "execute-run",      description: "Shortcut for execute-run"      },
+      { alias: "resume",  target: "resume-run",       description: "Shortcut for resume-run"       },
+    ];
+  }
+
+  private renderHumanHelp(commands: HelpCommandEntry[], aliases: HelpAliasEntry[]): void {
     console.log("AJ DIGITAL OS HELP");
     console.log("==================");
 
@@ -159,15 +193,16 @@ export class HelpCommand {
     this.renderCategory("Inspection", commands, "inspection");
     this.renderCategory("Queues", commands, "queues");
     this.renderCategory("Actions", commands, "actions");
+    this.renderCategory("Setup", commands, "setup");
+    this.renderAliases(aliases);
 
     console.log("");
     console.log("Recommended Flow");
-    console.log("1. operator-console");
+    console.log("1. console --watch");
     console.log("2. list-pending-approvals");
-    console.log("3. approve-run --runId <id> --decision approve");
-    console.log("4. list-approved-runs");
-    console.log("5. execute-run --runId <id>");
-    console.log("6. run-summary --runId <id>");
+    console.log("3. approve --runId <id> --decision approve");
+    console.log("4. exec --runId <id>");
+    console.log("5. run-summary --runId <id>");
 
     console.log("");
     console.log("JSON Mode");
@@ -179,14 +214,28 @@ export class HelpCommand {
     commands: HelpCommandEntry[],
     category: HelpCommandEntry["category"],
   ): void {
+    const filtered = commands.filter((entry) => entry.category === category);
+    if (filtered.length === 0) {
+      return;
+    }
+
     console.log("");
     console.log(title);
 
-    for (const command of commands.filter((entry) => entry.category === category)) {
+    for (const command of filtered) {
       console.log(`- ${this.formatCommandLine(command.name, command.description)}`);
       for (const example of command.examples) {
         console.log(`  ${example}`);
       }
+    }
+  }
+
+  private renderAliases(aliases: HelpAliasEntry[]): void {
+    console.log("");
+    console.log("Aliases");
+
+    for (const entry of aliases) {
+      console.log(`- ${entry.alias.padEnd(10, " ")}→  ${entry.target}`);
     }
   }
 

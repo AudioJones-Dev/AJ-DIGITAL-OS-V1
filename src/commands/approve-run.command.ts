@@ -118,6 +118,13 @@ export class ApproveRunCommand {
 
     this.renderWarnings(result.warnings);
     this.renderErrors(result.errors);
+
+    if (result.ok && decision === "approve") {
+      console.log("");
+      console.log("Run approved.");
+      console.log("Next step:");
+      console.log(`  aj-digital-os exec --runId ${runId}`);
+    }
   }
 
   private renderWarnings(warnings: string[]): void {

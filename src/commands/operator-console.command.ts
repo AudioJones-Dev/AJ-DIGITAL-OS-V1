@@ -23,6 +23,7 @@ import {
 export interface OperatorConsoleCommandInput {
   limit?: number;
   json?: boolean;
+  watch?: boolean;
 }
 
 export interface OperatorConsoleCommandResult {
@@ -53,8 +54,50 @@ export class OperatorConsoleCommand {
 
   /**
    * Loads the operator console sections and renders them in human or JSON mode.
+   * Pass watch: true to enter live-refresh mode (Ctrl+C to exit).
    */
   async run(input: OperatorConsoleCommandInput = {}): Promise<OperatorConsoleCommandResult> {
+    if (input.watch === true && input.json !== true) {
+      return this.runWatchMode(input);
+    }
+    return this.fetchAndRender(input);
+  }
+
+  private async runWatchMode(input: OperatorConsoleCommandInput): Promise<OperatorConsoleCommandResult> {
+    let lastResult: OperatorConsoleCommandResult = {
+      ok: true,
+      command: "operator-console",
+      rendered: false,
+      warnings: [],
+      errors: [],
+    };
+
+    const tick = async (): Promise<void> => {
+      process.stdout.write("\x1Bc");
+      lastResult = await this.fetchAndRender(input);
+      const ts = new Date().toLocaleTimeString();
+      console.log("");
+      console.log(`[watch] Refreshing every 3s  —  Ctrl+C to exit  (${ts})`);
+    };
+
+    await tick();
+
+    await new Promise<void>((resolve) => {
+      const interval = setInterval(() => {
+        void tick();
+      }, 3000);
+
+      process.once("SIGINT", () => {
+        clearInterval(interval);
+        console.log("");
+        resolve();
+      });
+    });
+
+    return lastResult;
+  }
+
+  private async fetchAndRender(input: OperatorConsoleCommandInput): Promise<OperatorConsoleCommandResult> {
     const warnings: string[] = [];
     const errors: string[] = [];
 
@@ -97,8 +140,8 @@ export class OperatorConsoleCommand {
       if (input.json === true) {
         this.printJson({ ok: false, command: "operator-console", ...(input.limit !== undefined ? { limit: input.limit } : {}), errors });
       } else {
-        console.log("AJ DIGITAL OS OPERATOR CONSOLE");
-        console.log("==============================");
+        console.log("AJ DIGITAL OS — OPERATOR CONSOLE");
+        console.log("=================================");
         console.log("Failed to load operator console.");
         this.renderErrors(errors);
       }
@@ -116,18 +159,21 @@ export class OperatorConsoleCommand {
 
   private async withSuppressedConsole<T>(callback: () => Promise<T>): Promise<T> {
     const originalLog = console.log;
+    const originalInfo = console.info;
     console.log = () => undefined;
+    console.info = () => undefined;
 
     try {
       return await callback();
     } finally {
       console.log = originalLog;
+      console.info = originalInfo;
     }
   }
 
   private renderHumanConsole(result: OperatorConsoleCommandResult): void {
-    console.log("AJ DIGITAL OS OPERATOR CONSOLE");
-    console.log("==============================");
+    console.log("AJ DIGITAL OS — OPERATOR CONSOLE");
+    console.log("=================================");
 
     if (result.limit !== undefined) {
       console.log(`Limit: ${result.limit}`);
@@ -150,12 +196,12 @@ export class OperatorConsoleCommand {
       "No pending approvals.",
     );
     this.renderRunSection(
-      "Approved Runs",
+      "Approved",
       result.approvedRuns?.approvedRuns ?? [],
       "No approved runs ready for execution.",
     );
     this.renderRunSection(
-      "Failed Runs",
+      "Failed",
       result.failedRuns?.failedRuns ?? [],
       "No failed runs.",
     );
@@ -179,15 +225,14 @@ export class OperatorConsoleCommand {
     }
 
     console.log("");
-    console.log("System Overview");
-    console.log(`- Total Runs: ${metrics.totalRuns}`);
-    console.log(`- Queued: ${metrics.counts.queued}`);
-    console.log(`- Pending Approval: ${metrics.counts.pendingApproval}`);
-    console.log(`- Approved: ${metrics.counts.approved}`);
-    console.log(`- Executed: ${metrics.counts.executed}`);
-    console.log(`- Rejected: ${metrics.counts.rejected}`);
-    console.log(`- Revision Requested: ${metrics.counts.revisionRequested}`);
-    console.log(`- Failed: ${metrics.counts.failed}`);
+    console.log(`-- Overview (${metrics.totalRuns} total) --`);
+    console.log(`  Pending:   ${metrics.counts.pendingApproval}`);
+    console.log(`  Approved:  ${metrics.counts.approved}`);
+    console.log(`  Executed:  ${metrics.counts.executed}`);
+    console.log(`  Failed:    ${metrics.counts.failed}`);
+    console.log(`  Rejected:  ${metrics.counts.rejected}`);
+    console.log(`  Revision:  ${metrics.counts.revisionRequested}`);
+    console.log(`  Queued:    ${metrics.counts.queued}`);
   }
 
   private renderRunSection(
@@ -197,27 +242,28 @@ export class OperatorConsoleCommand {
     includePublishedPath = false,
   ): void {
     console.log("");
-    console.log(title);
+    console.log(`-- ${title} (${items.length}) --`);
 
     if (items.length === 0) {
-      console.log(emptyMessage);
+      console.log(`  ${emptyMessage}`);
       return;
     }
 
     for (const [index, item] of items.entries()) {
-      console.log(`${index + 1}. ${this.formatRunRow(item)}`);
+      console.log(`  ${index + 1}. ${this.formatRunRow(item)}`);
       if (includePublishedPath) {
-        console.log(`   Path: ${item.publishedPath ?? "-"}`);
+        console.log(`     Path: ${item.publishedPath ?? "-"}`);
       }
     }
   }
 
   private renderNextActions(): void {
     console.log("");
-    console.log("Next Actions");
-    console.log("- Use approve-run to resolve pending approvals.");
-    console.log("- Use execute-run to run approved items.");
-    console.log("- Use run-summary or track-run to inspect failed runs.");
+    console.log("-- Next Actions --");
+    console.log("  approve --runId <id> --decision approve");
+    console.log("  exec    --runId <id>");
+    console.log("  resume  --runId <id>");
+    console.log("  run-summary --runId <id>");
   }
 
   private renderNestedWarnings(result: OperatorConsoleCommandResult): void {

@@ -101,6 +101,13 @@ export class ExecuteRunCommand {
     this.renderOutputSection(result);
     this.renderWarnings(result.warnings);
     this.renderErrors(result.errors);
+
+    if (result.ok) {
+      console.log("");
+      console.log("Run executed successfully.");
+      console.log("Inspect:");
+      console.log(`  aj-digital-os run-summary --runId ${result.runId}`);
+    }
   }
 
   private renderPolicySection(result: ExecutionCoordinatorResult): void {

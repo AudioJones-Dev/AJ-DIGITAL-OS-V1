@@ -1,0 +1,48 @@
+[
+  {
+    "eventId": "363fc019-039d-4f8c-ad27-a5856c60381c",
+    "runId": "b720e9ea-f73c-46eb-a1d6-65c27d6fdc61",
+    "type": "run_created",
+    "timestamp": "2026-04-02T22:00:48.513Z",
+    "message": "Demo run created."
+  },
+  {
+    "eventId": "102a999e-5f9e-4818-815c-2744b714fc67",
+    "runId": "b720e9ea-f73c-46eb-a1d6-65c27d6fdc61",
+    "type": "context_loaded",
+    "timestamp": "2026-04-02T22:00:48.523Z",
+    "message": "Context loaded from brand DNA and source materials."
+  },
+  {
+    "eventId": "5667ec4b-d24d-474e-a3f0-400f53a225af",
+    "runId": "b720e9ea-f73c-46eb-a1d6-65c27d6fdc61",
+    "type": "workflow_started",
+    "timestamp": "2026-04-02T22:00:48.528Z",
+    "message": "Workflow started: blog-authority."
+  },
+  {
+    "eventId": "0ba9c26e-52b7-465e-a7fa-f14cb533d21a",
+    "runId": "b720e9ea-f73c-46eb-a1d6-65c27d6fdc61",
+    "type": "workflow_completed",
+    "timestamp": "2026-04-02T22:00:48.534Z",
+    "message": "Draft complete. All assets generated."
+  },
+  {
+    "eventId": "7f7aa823-4855-45dd-baf3-ecc626b3e590",
+    "runId": "b720e9ea-f73c-46eb-a1d6-65c27d6fdc61",
+    "type": "validation_passed",
+    "timestamp": "2026-04-02T22:00:48.538Z",
+    "message": "Validation passed. Quality threshold met."
+  },
+  {
+    "eventId": "5e3d601d-2d2b-430b-8435-b8e6907a4ee5",
+    "runId": "b720e9ea-f73c-46eb-a1d6-65c27d6fdc61",
+    "type": "approval_requested",
+    "timestamp": "2026-04-02T22:00:48.543Z",
+    "message": "Approval requested.",
+    "metadata": {
+      "workflowId": "blog-authority",
+      "clientId": "client-acme"
+    }
+  }
+]

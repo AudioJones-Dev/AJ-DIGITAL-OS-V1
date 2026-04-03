@@ -1,5 +1,6 @@
 export { HelpCommand } from "./help.command.js";
 export type {
+  HelpAliasEntry,
   HelpCommandEntry,
   HelpCommandInput,
   HelpCommandResult,
@@ -78,3 +79,9 @@ export type {
   ResumeRunCommandResult,
   ResumeRunMode,
 } from "./resume-run.command.js";
+
+export { SeedDemoCommand } from "./seed-demo.command.js";
+export type {
+  SeedDemoCommandInput,
+  SeedDemoCommandResult,
+} from "./seed-demo.command.js";

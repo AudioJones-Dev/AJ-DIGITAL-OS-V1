@@ -34,7 +34,7 @@ export class ListApprovedRunsCommand {
     });
 
     const approvedRuns = this.applyLimit(
-      dashboard.recentRuns.filter((item) => item.status === "approved" || item.approvalStatus === "approved"),
+      dashboard.recentRuns.filter((item) => item.status === "approved"),
       input.limit,
     );
     const totalApproved = approvedRuns.length;
