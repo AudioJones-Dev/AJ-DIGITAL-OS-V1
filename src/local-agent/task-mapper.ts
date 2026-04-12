@@ -3,7 +3,7 @@
  * based on intent and target analysis.
  */
 
-export type AgentMode = "read" | "write" | "patch" | "transform";
+export type AgentMode = "read" | "write" | "patch" | "transform" | "generate_env" | "normalize_config";
 
 export interface TaskMapping {
   mode: AgentMode;
@@ -42,6 +42,24 @@ export function mapTask(
     if (inputFiles.length > 0) {
       return { mode: "patch", validationProfile: inferProfile(outputTargets) };
     }
+  }
+
+  // Generate env intents
+  if (
+    intentLower.includes("generate_env") ||
+    intentLower.includes("generate env") ||
+    intentLower.includes("env generation")
+  ) {
+    return { mode: "generate_env", validationProfile: "env" };
+  }
+
+  // Normalize config intents
+  if (
+    intentLower.includes("normalize_config") ||
+    intentLower.includes("normalize config") ||
+    intentLower.includes("structured normalization")
+  ) {
+    return { mode: "normalize_config", validationProfile: "json" };
   }
 
   // Transform intents

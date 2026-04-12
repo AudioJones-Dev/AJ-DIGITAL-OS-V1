@@ -4,6 +4,7 @@ import { safeReadFile, safeWriteFile } from "./file-tools.js";
 import { generateEnvFile, patchEnvFile, serializeEnv } from "./env-tools.js";
 import { validateOutput, type ValidationCheck, type ValidationRule } from "./validators.js";
 import { mapTask, type AgentMode, type ValidationProfile } from "./task-mapper.js";
+import { routeModelTask } from "../model-routing/model-router.js";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -91,6 +92,44 @@ export async function runLocalAgentTask(input: LocalAgentTaskInput): Promise<Loc
     // Step 4: Execute based on mode and context
     const extractedFields = (context.extractedFields ?? {}) as Record<string, string>;
 
+    // ── generate_env mode ────────────────────────────────────────
+    if (mode === "generate_env") {
+      const envPrefix = typeof context.envPrefix === "string" ? context.envPrefix : undefined;
+      const prefixed = envPrefix
+        ? Object.fromEntries(
+            Object.entries(extractedFields).map(([k, v]) => {
+              const upper = k.replace(/([a-z])([A-Z])/g, "$1_$2").replace(/[\s\-.]+/g, "_").toUpperCase();
+              return [upper.startsWith(envPrefix) ? upper : `${envPrefix}${upper}`, v];
+            }),
+          )
+        : extractedFields;
+
+      return await executeGenerateEnv(
+        prefixed,
+        outputTargets,
+        allowedPaths,
+        validationRules,
+        filesRead,
+        warnings,
+        context.requiredKeys as string[] | undefined,
+      );
+    }
+
+    // ── normalize_config mode ────────────────────────────────────
+    if (mode === "normalize_config") {
+      return await executeNormalizeConfig(
+        task,
+        extractedFields,
+        outputTargets,
+        allowedPaths,
+        validationRules,
+        filesRead,
+        warnings,
+        context.requiredKeys as string[] | undefined,
+      );
+    }
+
+    // ── Generic mode dispatch (write/patch/transform/read) ───────
     for (const target of outputTargets) {
       const ext = path.extname(target).toLowerCase();
 
@@ -173,6 +212,178 @@ export async function runLocalAgentTask(input: LocalAgentTaskInput): Promise<Loc
       err instanceof Error ? err.message : "Unknown error",
     );
   }
+}
+
+// ── Mode executors ─────────────────────────────────────────────
+
+async function executeGenerateEnv(
+  fields: Record<string, string>,
+  outputTargets: string[],
+  allowedPaths: string[] | undefined,
+  validationRules: ValidationRule[],
+  filesRead: string[],
+  warnings: string[],
+  requiredKeys?: string[],
+): Promise<LocalAgentResult> {
+  const mode: AgentMode = "generate_env";
+  const filesWritten: string[] = [];
+
+  for (const target of outputTargets) {
+    const result = await generateEnvFile(target, fields, allowedPaths);
+    if (result.ok) {
+      filesWritten.push(target);
+    } else {
+      return failure(mode, filesRead, filesWritten, warnings, result.error ?? "Env generation failed");
+    }
+  }
+
+  // Validate: nonEmpty + validEnv + required keys
+  const rules: ValidationRule[] = validationRules.length > 0
+    ? validationRules
+    : [
+        { type: "exists" },
+        { type: "nonEmpty" },
+        { type: "validEnv" },
+        ...(requiredKeys ? [{ type: "hasKeys" as const, keys: requiredKeys }] : []),
+      ];
+
+  const allChecks: ValidationCheck[] = [{ name: "path", passed: true }];
+  for (const written of filesWritten) {
+    const vr = await validateOutput(written, rules);
+    allChecks.push(...vr.checks);
+  }
+
+  const validationPassed = allChecks.every((c) => c.passed);
+  return {
+    ok: true,
+    mode,
+    filesRead,
+    filesWritten,
+    summary: `Generated ${filesWritten.length} .env file(s)`,
+    validation: { passed: validationPassed, checks: allChecks },
+    warnings,
+    error: null,
+  };
+}
+
+async function executeNormalizeConfig(
+  task: string,
+  rawFields: Record<string, string>,
+  outputTargets: string[],
+  allowedPaths: string[] | undefined,
+  validationRules: ValidationRule[],
+  filesRead: string[],
+  warnings: string[],
+  requiredKeys?: string[],
+): Promise<LocalAgentResult> {
+  const mode: AgentMode = "normalize_config";
+  const filesWritten: string[] = [];
+
+  // Route through local model for structured normalization
+  const prompt = [
+    "You are a config normalization tool.",
+    "Given raw extracted key-value fields, produce a clean JSON object with this shape:",
+    '{ "project": { "id": "...", "title": "..." }, "dataset": "...", "meta": { "organization_id": "...", "source": "extracted" } }',
+    "Map the input fields into the correct positions. Output ONLY valid JSON, nothing else.",
+  ].join("\n");
+
+  const result = await routeModelTask<Record<string, string>, unknown>(
+    {
+      taskType: "transform",
+      task: prompt,
+      context: rawFields,
+      constraints: { mustBeLocal: true },
+      allowEscalation: false,
+    },
+    {},
+  );
+
+  if (!result.ok || result.output === null) {
+    // Fallback: deterministic normalization without model
+    warnings.push(`Local model failed (${result.error ?? "unknown"}), using deterministic fallback`);
+    const normalized = deterministicNormalize(rawFields);
+    return await writeNormalizedOutput(normalized, outputTargets, allowedPaths, validationRules, filesRead, filesWritten, warnings, requiredKeys);
+  }
+
+  // Parse model output — must be valid JSON
+  let normalized: unknown;
+  if (typeof result.output === "string") {
+    try {
+      normalized = JSON.parse(result.output);
+    } catch {
+      warnings.push("Local model returned non-JSON, using deterministic fallback");
+      normalized = deterministicNormalize(rawFields);
+    }
+  } else {
+    normalized = result.output;
+  }
+
+  return await writeNormalizedOutput(normalized, outputTargets, allowedPaths, validationRules, filesRead, filesWritten, warnings, requiredKeys);
+}
+
+async function writeNormalizedOutput(
+  normalized: unknown,
+  outputTargets: string[],
+  allowedPaths: string[] | undefined,
+  validationRules: ValidationRule[],
+  filesRead: string[],
+  filesWritten: string[],
+  warnings: string[],
+  requiredKeys?: string[],
+): Promise<LocalAgentResult> {
+  const mode: AgentMode = "normalize_config";
+  const content = JSON.stringify(normalized, null, 2) + "\n";
+
+  for (const target of outputTargets) {
+    const result = await safeWriteFile(target, content, allowedPaths);
+    if (result.ok) {
+      filesWritten.push(target);
+    } else {
+      return failure(mode, filesRead, filesWritten, warnings, result.error ?? "JSON write failed");
+    }
+  }
+
+  // Validate: validJson + required keys
+  const rules: ValidationRule[] = validationRules.length > 0
+    ? validationRules
+    : [
+        { type: "exists" },
+        { type: "nonEmpty" },
+        { type: "validJson" },
+        ...(requiredKeys ? [{ type: "hasKeys" as const, keys: requiredKeys }] : []),
+      ];
+
+  const allChecks: ValidationCheck[] = [{ name: "path", passed: true }];
+  for (const written of filesWritten) {
+    const vr = await validateOutput(written, rules);
+    allChecks.push(...vr.checks);
+  }
+
+  const validationPassed = allChecks.every((c) => c.passed);
+  return {
+    ok: true,
+    mode,
+    filesRead,
+    filesWritten,
+    summary: `Normalized config → ${filesWritten.length} JSON file(s)`,
+    validation: { passed: validationPassed, checks: allChecks },
+    warnings,
+    error: null,
+  };
+}
+
+function deterministicNormalize(fields: Record<string, string>): Record<string, unknown> {
+  return {
+    project: {
+      id: fields.project_id ?? fields.projectId ?? "",
+      title: fields.title ?? fields.name ?? "",
+    },
+    dataset: fields.dataset ?? "",
+    meta: {
+      organization_id: fields.organization_id ?? fields.organizationId ?? "",
+      source: "extracted",
+    },
+  };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
