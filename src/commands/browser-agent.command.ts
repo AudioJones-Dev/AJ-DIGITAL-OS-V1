@@ -8,6 +8,8 @@ import {
 } from "../browser-agent/workflows/login-session-capture.js";
 import type { WorkflowJobDefinition } from "../browser-agent/workflow-types.js";
 import { runLocalAgentTask, type LocalAgentResult } from "../local-agent/local-agent.js";
+import { beforeRun, afterRun, onFailure } from "../memory-runtime/hooks.js";
+import type { RunContext } from "../memory-runtime/types.js";
 
 export interface BrowserAgentCommandInput {
   workflow?: string | undefined;
@@ -123,6 +125,8 @@ export class BrowserAgentCommand {
   }
 
   private async runExtract(input: BrowserAgentCommandInput): Promise<BrowserAgentCommandResult> {
+    let memoryCtx: RunContext | undefined;
+
     try {
       this.validateRequired(input);
 
@@ -143,7 +147,18 @@ export class BrowserAgentCommand {
         ? createSanityConfigCaptureJob(overrides)
         : createLoginExportConfigJob(overrides);
 
+      // ── Memory: beforeRun ──────────────────────────────────────
+      memoryCtx = await beforeRun({ workflow: job.name, task: `Extract from ${job.startUrl}` });
+
       const result = await runWorkflow(job);
+
+      // Populate memory context with run results
+      memoryCtx.stepCount = result.stepCount;
+      memoryCtx.extractedData = result.extractedFields;
+      memoryCtx.outputFiles = [...result.filesWritten];
+      if (!result.ok && result.errors.length > 0) {
+        memoryCtx.warnings.push(...result.errors);
+      }
 
       const output: BrowserAgentCommandResult = {
         ok: result.ok,
@@ -162,7 +177,16 @@ export class BrowserAgentCommand {
         output.localAgentResult = agentResult;
         if (agentResult.filesWritten.length > 0) {
           output.filesWritten.push(...agentResult.filesWritten);
+          memoryCtx.outputFiles.push(...agentResult.filesWritten);
         }
+      }
+
+      // ── Memory: afterRun ───────────────────────────────────────
+      if (result.ok) {
+        memoryCtx.notes.push(`Extracted ${Object.keys(result.extractedFields).length} fields`);
+        await afterRun(memoryCtx);
+      } else {
+        await onFailure(memoryCtx, result.errors.join("; ") || "Workflow failed");
       }
 
       if (input.json === true) {
@@ -174,6 +198,12 @@ export class BrowserAgentCommand {
       return output;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown browser agent error.";
+
+      // ── Memory: onFailure ──────────────────────────────────────
+      if (memoryCtx) {
+        await onFailure(memoryCtx, err).catch(() => {});
+      }
+
       const output: BrowserAgentCommandResult = {
         ok: false,
         command: "browser-agent",
