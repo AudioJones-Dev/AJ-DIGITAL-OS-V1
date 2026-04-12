@@ -1,6 +1,8 @@
 import { createRuntimeConfig } from "../../core/config.js";
 import type { ModelRoutingResult, TaskType } from "../result-shape.js";
 import { createResult } from "../result-shape.js";
+import { buildModelPrompt } from "../../prompt/model-prompt-builder.js";
+import type { RetrievedContext } from "../../memory-runtime/retrieval.js";
 
 const DEFAULT_MODEL = "gemma3:1b";
 const DEFAULT_TIMEOUT_MS = 60_000;
@@ -13,35 +15,17 @@ interface OllamaGenerateResponse {
 }
 
 /**
- * Build a concise prompt for the local model from the router request.
- */
-function buildPrompt(taskType: string, task: string, context: unknown): string {
-  const parts: string[] = [];
-
-  parts.push(`Task type: ${taskType}`);
-  parts.push(`Task: ${task}`);
-
-  if (context !== null && context !== undefined) {
-    const serialized = typeof context === "string"
-      ? context
-      : JSON.stringify(context, null, 2);
-    parts.push(`Context:\n${serialized}`);
-  }
-
-  parts.push("Respond with ONLY the requested output. No preamble, no explanation.");
-  return parts.join("\n\n");
-}
-
-/**
  * Local model provider — routes to Ollama /api/generate.
  *
  * Uses config.ollamaBaseUrl (default http://localhost:11434).
- * Model is configurable via LOCAL_MODEL env var (default gemma3:4b).
+ * Model is configurable via LOCAL_MODEL env var (default gemma3:1b).
+ * All prompts are built through the prompt injection layer.
  */
 export async function callLocal<TOutput>(
   taskType: string,
   task: string,
   context: unknown,
+  retrievedContext?: RetrievedContext,
 ): Promise<ModelRoutingResult<TOutput>> {
   const config = createRuntimeConfig();
   const baseUrl = config.ollamaBaseUrl || "http://localhost:11434";
@@ -51,7 +35,28 @@ export async function callLocal<TOutput>(
 
   console.error(`[LOCAL-PROVIDER] ${taskType} → ${model} @ ${baseUrl}`);
 
-  const prompt = buildPrompt(taskType, task, context);
+  // Build structured prompt via prompt injection layer
+  const contextStr = context !== null && context !== undefined
+    ? (typeof context === "string" ? context : JSON.stringify(context, null, 2))
+    : "";
+
+  const { prompt: modelPrompt, diagnostics } = buildModelPrompt({
+    task,
+    retrievedContext,
+    input: contextStr,
+    outputSchema: "Return ONLY the requested output as valid JSON when applicable.",
+    constraints: [`Task type: ${taskType}`],
+  });
+
+  // Combine sections into single prompt string for Ollama /api/generate
+  const promptParts = [modelPrompt.system];
+  if (modelPrompt.context.length > 0) {
+    promptParts.push(modelPrompt.context);
+  }
+  promptParts.push(modelPrompt.user);
+  const prompt = promptParts.join("\n\n---\n\n");
+
+  console.error(`[LOCAL-PROVIDER] prompt built: ${diagnostics.totalChars} chars, truncated=${diagnostics.truncated}`);
 
   try {
     const controller = new AbortController();

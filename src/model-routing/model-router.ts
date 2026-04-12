@@ -4,6 +4,7 @@ import { resolveRoute, getEscalationTarget, type ProviderRoute } from "./route-p
 import { callOpenAi } from "./providers/openai-provider.js";
 import { callLocal } from "./providers/local-provider.js";
 import { callDeterministic } from "./providers/deterministic-provider.js";
+import type { RetrievedContext } from "../memory-runtime/retrieval.js";
 
 /**
  * OpenAI-specific call options passed through for planner tasks.
@@ -54,7 +55,7 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
   request: ModelTaskRequest<TContext>,
   dispatch: DispatchOptions<TContext, TOutput>,
 ): Promise<ModelRoutingResult<TOutput>> {
-  const { taskType, task, context, constraints, preferredProvider, allowEscalation } = request;
+  const { taskType, task, context, constraints, preferredProvider, allowEscalation, retrievedContext } = request;
 
   // Step 1: Resolve route via policy
   const route = resolveRoute(taskType, constraints, preferredProvider);
@@ -77,6 +78,7 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
     task,
     context,
     dispatch,
+    retrievedContext,
   );
 
   // Step 3: Escalation if primary failed and escalation is allowed
@@ -98,6 +100,7 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
           task,
           context,
           dispatch,
+          retrievedContext,
         );
 
         if (escalated.ok) {
@@ -125,6 +128,7 @@ async function dispatchToProvider<TContext, TOutput>(
   task: string,
   context: TContext,
   dispatch: DispatchOptions<TContext, TOutput>,
+  retrievedContext?: RetrievedContext,
 ): Promise<ModelRoutingResult<TOutput>> {
   switch (provider) {
     case "openai": {
@@ -154,7 +158,7 @@ async function dispatchToProvider<TContext, TOutput>(
     }
 
     case "local":
-      return callLocal<TOutput>(taskType, task, context);
+      return callLocal<TOutput>(taskType, task, context, retrievedContext);
 
     case "deterministic": {
       if (!dispatch.deterministic) {

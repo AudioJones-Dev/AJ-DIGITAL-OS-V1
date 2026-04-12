@@ -5,6 +5,7 @@ import { generateEnvFile, patchEnvFile, serializeEnv } from "./env-tools.js";
 import { validateOutput, type ValidationCheck, type ValidationRule } from "./validators.js";
 import { mapTask, type AgentMode, type ValidationProfile } from "./task-mapper.js";
 import { routeModelTask } from "../model-routing/model-router.js";
+import type { RetrievedContext } from "../memory-runtime/retrieval.js";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -16,6 +17,8 @@ export interface LocalAgentTaskInput {
   outputTargets: string[];
   validationRules?: ValidationRule[] | undefined;
   context?: Record<string, unknown> | undefined;
+  /** Retrieved memory context — forwarded to model calls via prompt builder. */
+  retrievedContext?: RetrievedContext | undefined;
 }
 
 export interface LocalAgentResult {
@@ -126,6 +129,7 @@ export async function runLocalAgentTask(input: LocalAgentTaskInput): Promise<Loc
         filesRead,
         warnings,
         context.requiredKeys as string[] | undefined,
+        input.retrievedContext,
       );
     }
 
@@ -275,6 +279,7 @@ async function executeNormalizeConfig(
   filesRead: string[],
   warnings: string[],
   requiredKeys?: string[],
+  retrievedContext?: RetrievedContext,
 ): Promise<LocalAgentResult> {
   const mode: AgentMode = "normalize_config";
   const filesWritten: string[] = [];
@@ -294,6 +299,7 @@ async function executeNormalizeConfig(
       context: rawFields,
       constraints: { mustBeLocal: true },
       allowEscalation: false,
+      retrievedContext,
     },
     {},
   );

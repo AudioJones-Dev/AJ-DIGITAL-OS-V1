@@ -35,6 +35,8 @@ export interface ModelTaskRequest<T = unknown> {
   constraints?: RoutingConstraints | undefined;
   preferredProvider?: string | undefined;
   allowEscalation?: boolean | undefined;
+  /** Retrieved memory context — passed through to prompt builder. */
+  retrievedContext?: import("../memory-runtime/retrieval.js").RetrievedContext | undefined;
 }
 
 export function createResult<T>(
