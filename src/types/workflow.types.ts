@@ -1,4 +1,6 @@
-﻿export interface WorkflowContext {
+import type { ModelProvider } from "../providers/model-provider.js";
+
+export interface WorkflowContext {
   runId: string;
   taskType: string;
   objective: string;
@@ -30,8 +32,31 @@ export interface WorkflowExecutionResult {
   warnings: string[];
 }
 
+export type WorkflowModelExecutionEventType =
+  | "model_execution_attempted"
+  | "model_execution_succeeded"
+  | "model_execution_parse_failed"
+  | "model_execution_fallback_used"
+  | "model_execution_failed";
+
+export interface WorkflowModelExecutionEvent {
+  type: WorkflowModelExecutionEventType;
+  message?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface WorkflowModelRuntime {
+  provider: ModelProvider;
+  providerName: string;
+  model: string;
+  system: string;
+  user: string;
+  metadata?: Record<string, unknown>;
+  onEvent?(event: WorkflowModelExecutionEvent): Promise<void>;
+}
+
 export interface WorkflowDefinition {
   id: string;
   supportedTaskTypes: string[];
-  execute(context: WorkflowContext): Promise<WorkflowExecutionResult>;
+  execute(context: WorkflowContext, modelRuntime?: WorkflowModelRuntime): Promise<WorkflowExecutionResult>;
 }

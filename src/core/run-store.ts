@@ -10,7 +10,7 @@ import type { RunRecord } from "../types/run.types.js";
 export class RunStore {
   private readonly runsDirectory: string;
 
-  constructor(runsDirectory = path.resolve("src", "data", "runs")) {
+  constructor(runsDirectory = path.resolve("data", "runs")) {
     this.runsDirectory = runsDirectory;
   }
 

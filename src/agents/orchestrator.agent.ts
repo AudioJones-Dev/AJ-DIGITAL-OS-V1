@@ -4,9 +4,14 @@ import { ApprovalAgent } from "./approval.agent.js";
 import { logger } from "../core/logger.js";
 import { RunManager } from "../core/run-manager.js";
 import { validateContext, validateWorkflowResult, type ValidationReport } from "../core/validator.js";
+import { retrieveRelevantMemorySummary } from "../memory/memory-retriever.js";
+import { buildPrompt } from "../prompt/prompt-builder.js";
+import { createProviderRegistry } from "../providers/index.js";
+import { resolveModelRoute } from "../routing/model-router.js";
 import { ApprovalPacketSchema, type ApprovalPacket } from "../schemas/approval-packet.schema.js";
+import { RunTracker } from "../services/observability/run-tracker.js";
 import type { AgentResponse } from "../types/agent.types.js";
-import type { WorkflowExecutionResult } from "../types/workflow.types.js";
+import type { WorkflowExecutionResult, WorkflowModelRuntime } from "../types/workflow.types.js";
 import { loadContextBundle } from "./context-loader.agent.js";
 import { createDefaultWorkflowRegistry } from "../workflows/workflow-registry.js";
 
@@ -40,7 +45,9 @@ export interface OrchestratorOutput {
 
 const registry = createDefaultWorkflowRegistry();
 const runManager = new RunManager();
+const runTracker = new RunTracker();
 const approvalAgent = new ApprovalAgent();
+const providerRegistry = createProviderRegistry();
 
 /**
  * Starter orchestrator that resolves a workflow, loads context, validates output, and pauses for approval when required.
@@ -108,11 +115,100 @@ export const orchestrateTask = async (
       };
     }
 
+    const orchestrationWarnings = [...contextValidation.warnings];
+    let workflowModelRuntime: WorkflowModelRuntime | undefined;
+
+    try {
+      const outputContract = buildOutputContract(parsedInput.data.taskType);
+      const memorySummary = await retrieveRelevantMemorySummary(parsedInput.data.objective);
+      const builtPrompt = buildPrompt({
+        clientId: parsedInput.data.clientId,
+        workflowId: workflow.id,
+        objective: parsedInput.data.objective,
+        sourceMaterials: parsedInput.data.sourceMaterials,
+        clientConstraints: parsedInput.data.constraints,
+        memorySummary,
+        ...(outputContract ? { outputContract } : {}),
+      });
+      const route = resolveModelRoute(parsedInput.data.taskType);
+      const provider = providerRegistry.get(route.provider);
+      const routeMetadata = {
+        taskType: parsedInput.data.taskType,
+        provider: provider.name,
+        model: route.model,
+        reason: route.reason,
+        promptMetadata: builtPrompt.metadata,
+        promptPreview: {
+          systemLength: builtPrompt.system.length,
+          userLength: builtPrompt.user.length,
+        },
+      };
+
+      logger.info("Model route selected.", {
+        runId: run.runId,
+        ...routeMetadata,
+      });
+
+      if (workflow.id === "workflow.transcript_to_content.v1" || workflow.id === "blog-authority") {
+        workflowModelRuntime = {
+          provider,
+          providerName: provider.name,
+          model: route.model,
+          system: builtPrompt.system,
+          user: builtPrompt.user,
+          metadata: {
+            runId: run.runId,
+            taskType: parsedInput.data.taskType,
+            workflowId: workflow.id,
+          },
+          onEvent: async (event) => {
+            try {
+              await runTracker.trackModelExecutionEvent(
+                run.runId,
+                event.type,
+                {
+                  provider: provider.name,
+                  model: route.model,
+                  workflowId: workflow.id,
+                  ...(event.metadata ?? {}),
+                },
+                event.message,
+              );
+            } catch (error) {
+              logger.warn("Failed to record model execution event.", {
+                runId: run.runId,
+                type: event.type,
+                error: error instanceof Error ? error.message : "Unknown model execution event error.",
+              });
+            }
+          },
+        };
+      }
+
+      try {
+        await runTracker.trackModelRouteSelected(run.runId, routeMetadata);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown routing event error.";
+        orchestrationWarnings.push(`Model routing event could not be recorded: ${message}`);
+        logger.warn("Failed to record model route event.", {
+          runId: run.runId,
+          error: message,
+        });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown model routing error.";
+      orchestrationWarnings.push(`Model routing metadata unavailable: ${message}`);
+      logger.warn("Model routing metadata unavailable.", {
+        runId: run.runId,
+        error: message,
+      });
+    }
+
     await runManager.updateStatus(run.runId, "in_progress", {
-      warnings: contextValidation.warnings,
+      warnings: orchestrationWarnings,
     });
 
-    const workflowResult = await workflow.execute(contextResponse.output);
+    const workflowResult = await workflow.execute(contextResponse.output, workflowModelRuntime);
     await runManager.updateStatus(run.runId, "draft_complete", {
       warnings: workflowResult.warnings,
       workflowResult,
@@ -123,12 +219,12 @@ export const orchestrateTask = async (
       run.runId,
       validation.ok ? "validation_passed" : "validation_failed",
       {
-        warnings: [...contextValidation.warnings, ...validation.warnings],
+        warnings: [...orchestrationWarnings, ...validation.warnings],
         errors: validation.errors,
       },
     );
 
-    const mergedWarnings = [...contextValidation.warnings, ...validation.warnings];
+    const mergedWarnings = [...orchestrationWarnings, ...validation.warnings];
 
     if (!validation.ok) {
       return {
@@ -223,6 +319,28 @@ export const orchestrateTask = async (
       warnings: [],
       errors: [error instanceof Error ? error.message : "Unknown orchestration error."],
     };
+  }
+};
+
+const buildOutputContract = (taskType: string): string | undefined => {
+  switch (taskType) {
+    case "transcript_to_content":
+      return [
+        "Output contract: return strict JSON with keys `summary`, `hooks`, `titles`, and `captions`.",
+        "`summary` must be a string.",
+        "`hooks`, `titles`, and `captions` must each be arrays of strings.",
+        "Do not include markdown fences or extra commentary.",
+      ].join(" ");
+    case "blog_generation":
+    case "authority_blog":
+      return [
+        "Output contract: return strict JSON with keys `summary`, `title`, `outline`, `blogDraft`, `cta`, `seoNotes`, and `hookSet`.",
+        "`summary`, `title`, `blogDraft`, and `cta` must be strings.",
+        "`outline`, `seoNotes`, and `hookSet` must each be arrays of strings.",
+        "Keep the response focused on those fields only and do not include markdown fences or extra commentary.",
+      ].join(" ");
+    default:
+      return undefined;
   }
 };
 

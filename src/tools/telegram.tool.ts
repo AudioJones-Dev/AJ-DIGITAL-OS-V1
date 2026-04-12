@@ -1,5 +1,7 @@
 ﻿import axios from "axios";
 
+import { config } from "../core/config.js";
+
 export interface TelegramMessagePayload {
   chatId: string;
   text: string;
@@ -18,7 +20,7 @@ export class TelegramTool {
   private readonly botToken: string;
   private readonly baseUrl: string;
 
-  constructor(botToken = process.env.TELEGRAM_BOT_TOKEN ?? "") {
+  constructor(botToken = config.telegramBotToken) {
     this.botToken = botToken;
     this.baseUrl = `https://api.telegram.org/bot${this.botToken}`;
   }

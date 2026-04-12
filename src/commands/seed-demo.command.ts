@@ -25,9 +25,9 @@ interface DemoSpec {
 
 const DEMO_SPECS: DemoSpec[] = [
   { workflowId: "blog-authority", taskType: "blog_post", clientId: "client-acme" },
-  { workflowId: "transcript-to-content", taskType: "content_repurpose", clientId: "client-beta" },
+  { workflowId: "workflow.transcript_to_content.v1", taskType: "transcript_to_content", clientId: "client-beta" },
   { workflowId: "blog-authority", taskType: "blog_post", clientId: "client-acme" },
-  { workflowId: "transcript-to-content", taskType: "seo_content", clientId: "client-gamma" },
+  { workflowId: "workflow.transcript_to_content.v1", taskType: "transcript_to_content", clientId: "client-gamma" },
   { workflowId: "blog-authority", taskType: "thought_leadership", clientId: "client-delta" },
 ];
 
@@ -152,8 +152,8 @@ export class SeedDemoCommand {
     await this.runTracker.trackExecutionStarted(runId, { target: "local" });
 
     await this.runManager.updateStatus(runId, "executed", {
-      publishedPath: `src/data/outputs/demo/${runId}/output.md`,
-      publishedFiles: [`src/data/outputs/demo/${runId}/output.md`],
+      publishedPath: `data/outputs/demo/${runId}/output.md`,
+      publishedFiles: [`data/outputs/demo/${runId}/output.md`],
       workflowResult: {
         workflowId: spec.workflowId,
         taskType: spec.taskType,
@@ -168,9 +168,9 @@ export class SeedDemoCommand {
       },
     });
 
-    await this.runTracker.trackExecutionCompleted(runId, { target: "local", publishedPath: `src/data/outputs/demo/${runId}/output.md` });
+    await this.runTracker.trackExecutionCompleted(runId, { target: "local", publishedPath: `data/outputs/demo/${runId}/output.md` });
     await this.trackEvent(runId, "artifact_written", "Output artifact written.", {
-      publishedPath: `src/data/outputs/demo/${runId}/output.md`,
+      publishedPath: `data/outputs/demo/${runId}/output.md`,
     });
 
     return runId;

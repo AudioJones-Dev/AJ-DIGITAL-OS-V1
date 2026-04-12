@@ -8,6 +8,12 @@ import { logger } from "../../core/logger.js";
 export type RunEventType =
   | "run_created"
   | "context_loaded"
+  | "model_route_selected"
+  | "model_execution_attempted"
+  | "model_execution_succeeded"
+  | "model_execution_parse_failed"
+  | "model_execution_fallback_used"
+  | "model_execution_failed"
   | "workflow_started"
   | "workflow_completed"
   | "validation_passed"
@@ -43,6 +49,12 @@ const RunEventSchema = z.object({
   type: z.enum([
     "run_created",
     "context_loaded",
+    "model_route_selected",
+    "model_execution_attempted",
+    "model_execution_succeeded",
+    "model_execution_parse_failed",
+    "model_execution_fallback_used",
+    "model_execution_failed",
     "workflow_started",
     "workflow_completed",
     "validation_passed",
@@ -75,7 +87,7 @@ const RunEventArraySchema = z.array(RunEventSchema);
  */
 export class RunTracker {
   constructor(
-    private readonly reportsDirectory = path.resolve("src", "data", "reports", "runs"),
+    private readonly reportsDirectory = path.resolve("data", "reports", "runs"),
   ) {}
 
   /**
@@ -146,6 +158,31 @@ export class RunTracker {
     await this.track(this.buildEvent(runId, "approval_requested", "Approval requested.", metadata));
   }
 
+  /**
+   * Tracks model routing metadata selected by the orchestrator.
+   */
+  async trackModelRouteSelected(runId: string, metadata?: Record<string, unknown>): Promise<void> {
+    await this.track(this.buildEvent(runId, "model_route_selected", "Model route selected.", metadata));
+  }
+
+  /**
+   * Tracks model execution lifecycle events for model-backed workflows.
+   */
+  async trackModelExecutionEvent(
+    runId: string,
+    type:
+      | "model_execution_attempted"
+      | "model_execution_succeeded"
+      | "model_execution_parse_failed"
+      | "model_execution_fallback_used"
+      | "model_execution_failed",
+    metadata?: Record<string, unknown>,
+    message?: string,
+  ): Promise<void> {
+    const resolvedMessage = message && message.trim().length > 0 ? message : this.getModelExecutionMessage(type);
+    await this.track(this.buildEvent(runId, type, resolvedMessage, metadata));
+  }
+
   private resolveEventFilePath(runId: string): string {
     return path.join(this.reportsDirectory, `${this.sanitizeRunId(runId)}.events.json`);
   }
@@ -191,6 +228,28 @@ export class RunTracker {
       message,
       ...(metadata ? { metadata } : {}),
     });
+  }
+
+  private getModelExecutionMessage(
+    type:
+      | "model_execution_attempted"
+      | "model_execution_succeeded"
+      | "model_execution_parse_failed"
+      | "model_execution_fallback_used"
+      | "model_execution_failed",
+  ): string {
+    switch (type) {
+      case "model_execution_attempted":
+        return "Model execution attempted.";
+      case "model_execution_succeeded":
+        return "Model execution succeeded.";
+      case "model_execution_parse_failed":
+        return "Model execution parse failed.";
+      case "model_execution_fallback_used":
+        return "Model execution fallback used.";
+      case "model_execution_failed":
+        return "Model execution failed.";
+    }
   }
 
   private validateEvent(event: RunEvent): RunEvent {

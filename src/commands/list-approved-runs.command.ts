@@ -2,6 +2,9 @@ import {
   RunDashboardService,
   type RunDashboardItem,
 } from "../services/observability/run-dashboard.js";
+import { RunStore } from "../core/run-store.js";
+import { ExecutionPolicy } from "../services/execution/execution-policy.js";
+import type { RunRecord } from "../types/run.types.js";
 
 export interface ListApprovedRunsCommandInput {
   limit?: number;
@@ -23,7 +26,11 @@ export interface ListApprovedRunsCommandResult {
  * Terminal-facing command for listing runs that are approved and ready to execute.
  */
 export class ListApprovedRunsCommand {
-  constructor(private readonly runDashboardService = new RunDashboardService()) {}
+  constructor(
+    private readonly runDashboardService = new RunDashboardService(),
+    private readonly runStore = new RunStore(),
+    private readonly executionPolicy = new ExecutionPolicy(),
+  ) {}
 
   /**
    * Loads the approved runs queue and renders it in human or JSON mode.
@@ -32,9 +39,10 @@ export class ListApprovedRunsCommand {
     const dashboard = await this.runDashboardService.getDashboard({
       ...(input.limit !== undefined ? { limit: input.limit } : {}),
     });
+    const warnings = [...dashboard.warnings];
 
     const approvedRuns = this.applyLimit(
-      dashboard.recentRuns.filter((item) => item.status === "approved"),
+      await this.filterExecutableApprovedRuns(dashboard.recentRuns, warnings),
       input.limit,
     );
     const totalApproved = approvedRuns.length;
@@ -42,7 +50,7 @@ export class ListApprovedRunsCommand {
     if (input.json === true) {
       this.printJson({ totalApproved, approvedRuns });
     } else {
-      this.renderHumanApprovedRuns(totalApproved, approvedRuns, dashboard.warnings, dashboard.errors);
+      this.renderHumanApprovedRuns(totalApproved, approvedRuns, warnings, dashboard.errors);
     }
 
     return {
@@ -52,9 +60,44 @@ export class ListApprovedRunsCommand {
       rendered: true,
       totalApproved,
       approvedRuns,
-      warnings: dashboard.warnings,
+      warnings,
       errors: dashboard.errors,
     };
+  }
+
+  private async filterExecutableApprovedRuns(
+    items: RunDashboardItem[],
+    warnings: string[],
+  ): Promise<RunDashboardItem[]> {
+    const approvedItems = items.filter((item) => item.status === "approved");
+    const loadedRuns = await Promise.all(
+      approvedItems.map(async (item) => ({
+        item,
+        run: await this.runStore.get(item.runId),
+      })),
+    );
+
+    const executableRuns: RunDashboardItem[] = [];
+
+    for (const { item, run } of loadedRuns) {
+      if (!run) {
+        warnings.push(`Approved run "${item.runId}" could not be loaded for execution policy validation.`);
+        continue;
+      }
+
+      if (this.isExecutable(run)) {
+        executableRuns.push(item);
+        continue;
+      }
+
+      warnings.push(`Approved run "${run.runId}" is excluded because execution policy does not allow it.`);
+    }
+
+    return executableRuns;
+  }
+
+  private isExecutable(run: RunRecord): boolean {
+    return this.executionPolicy.evaluate({ run }).decision === "allow";
   }
 
   private applyLimit(items: RunDashboardItem[], limit: number | undefined): RunDashboardItem[] {

@@ -1,12 +1,14 @@
-﻿import {
+import {
   RunDashboardService,
   type RunDashboardItem,
   type RunDashboardResult,
+  type RunModelFilter,
 } from "../services/observability/run-dashboard.js";
 
 export interface DashboardCommandInput {
   limit?: number;
   json?: boolean;
+  modelFilter?: RunModelFilter;
 }
 
 export interface DashboardCommandResult {
@@ -31,6 +33,7 @@ export class DashboardCommand {
   async run(input: DashboardCommandInput = {}): Promise<DashboardCommandResult> {
     const dashboard = await this.runDashboardService.getDashboard({
       ...(input.limit !== undefined ? { limit: input.limit } : {}),
+      ...(input.modelFilter ? { modelFilter: input.modelFilter } : {}),
     });
 
     if (input.json === true) {
@@ -55,13 +58,25 @@ export class DashboardCommand {
     console.log("=======================");
 
     if (dashboard.totalRuns === 0) {
-      console.log("No runs found.");
+      console.log(
+        dashboard.activeModelFilter
+          ? "No runs matched the active model filters."
+          : "No runs found.",
+      );
+      if (dashboard.activeModelFilter) {
+        console.log(`Source Runs: ${dashboard.sourceTotalRuns}`);
+        this.renderActiveFilters(dashboard.activeModelFilter);
+      }
       this.renderWarnings(dashboard.warnings);
       this.renderErrors(dashboard.errors);
       return;
     }
 
     console.log(`Total Runs: ${dashboard.totalRuns}`);
+    if (dashboard.activeModelFilter) {
+      console.log(`Source Runs: ${dashboard.sourceTotalRuns}`);
+      this.renderActiveFilters(dashboard.activeModelFilter);
+    }
     console.log("");
     console.log("Counts");
     console.log(`- Queued: ${dashboard.counts.queued}`);
@@ -71,6 +86,8 @@ export class DashboardCommand {
     console.log(`- Rejected: ${dashboard.counts.rejected}`);
     console.log(`- Revision Requested: ${dashboard.counts.revisionRequested}`);
     console.log(`- Failed: ${dashboard.counts.failed}`);
+    this.renderModelHealth(dashboard);
+    this.renderModelTrend(dashboard);
 
     this.renderRunList("Pending Approvals", dashboard.pendingApprovals);
     this.renderRunList("Recent Failures", dashboard.recentFailures);
@@ -92,6 +109,136 @@ export class DashboardCommand {
     for (const item of items) {
       console.log(this.formatRunItem(item, includePublishedPath));
     }
+  }
+
+  private renderModelHealth(dashboard: RunDashboardResult): void {
+    console.log("");
+    console.log("Model Health");
+    this.renderModelHealthWindow("All Time", dashboard.modelHealthWindows.allTime);
+    this.renderModelHealthWindow("Last 24 Hours", dashboard.modelHealthWindows.last24Hours);
+    this.renderModelHealthWindow("Last 7 Days", dashboard.modelHealthWindows.last7Days);
+
+    console.log("");
+    console.log("Provider Distribution");
+    this.renderProviderDistributionWindow("All Time", dashboard.providerDistributionWindows.allTime);
+    this.renderProviderDistributionWindow("Last 24 Hours", dashboard.providerDistributionWindows.last24Hours);
+    this.renderProviderDistributionWindow("Last 7 Days", dashboard.providerDistributionWindows.last7Days);
+  }
+
+  private renderActiveFilters(modelFilter: RunModelFilter): void {
+    console.log("");
+    console.log("Active Filters");
+
+    for (const entry of this.formatModelFilterEntries(modelFilter)) {
+      console.log(`- ${entry}`);
+    }
+  }
+
+  private renderModelHealthWindow(
+    label: string,
+    counts: RunDashboardResult["modelHealth"],
+  ): void {
+    console.log(`- ${label}`);
+    console.log(`  Not Attempted: ${counts.notAttempted}`);
+    console.log(`  Attempted: ${counts.attempted}`);
+    console.log(`  Succeeded: ${counts.succeeded}`);
+    console.log(`  Repaired Success: ${counts.repairedSuccess}`);
+    console.log(`  Failed: ${counts.failed}`);
+    console.log(`  Fallback Used: ${counts.fallbackUsed}`);
+  }
+
+  private renderProviderDistributionWindow(
+    label: string,
+    distribution: Record<string, number>,
+  ): void {
+    const providers = Object.entries(distribution).sort(([left], [right]) =>
+      left.localeCompare(right),
+    );
+
+    if (providers.length === 0) {
+      console.log(`- ${label}: None`);
+      return;
+    }
+
+    const providerSummary = providers
+      .map(([provider, count]) => `${provider}=${count}`)
+      .join(", ");
+    console.log(`- ${label}: ${providerSummary}`);
+  }
+
+  private renderModelTrend(dashboard: RunDashboardResult): void {
+    console.log("");
+    console.log("Model Trend");
+    console.log(`- Comparison: ${dashboard.modelHealthTrend.comparison}`);
+    console.log(`- Recent Attempted Runs: ${dashboard.modelHealthTrend.recentAttempted}`);
+    console.log(`- Baseline Attempted Runs: ${dashboard.modelHealthTrend.baselineAttempted}`);
+
+    if (!dashboard.modelHealthTrend.sufficientData) {
+      console.log(`- Status: insufficient_data`);
+      console.log(`- Reason: ${dashboard.modelHealthTrend.reason ?? "Not enough data."}`);
+      return;
+    }
+
+    this.renderTrendMetric("Success Rate", dashboard.modelHealthTrend.successRate);
+    this.renderTrendMetric("Fallback Rate", dashboard.modelHealthTrend.fallbackRate);
+    this.renderTrendMetric("Failure Rate", dashboard.modelHealthTrend.failureRate);
+  }
+
+  private renderTrendMetric(
+    label: string,
+    metric: RunDashboardResult["modelHealthTrend"]["successRate"],
+  ): void {
+    console.log(
+      `- ${label}: ${this.formatPercent(metric.recentRate)} vs ${this.formatPercent(metric.baselineRate)} `
+      + `(delta ${this.formatSignedPercent(metric.delta)}, ${metric.status})`,
+    );
+  }
+
+  private formatPercent(value: number | null): string {
+    if (value === null) {
+      return "-";
+    }
+
+    return `${(value * 100).toFixed(1)}%`;
+  }
+
+  private formatSignedPercent(value: number | null): string {
+    if (value === null) {
+      return "-";
+    }
+
+    const percent = value * 100;
+    return `${percent >= 0 ? "+" : ""}${percent.toFixed(1)}%`;
+  }
+
+  private formatModelFilterEntries(modelFilter: RunModelFilter): string[] {
+    const entries: string[] = [];
+
+    if (modelFilter.attempted === true) {
+      entries.push("modelAttempted=true");
+    }
+
+    if (modelFilter.succeeded === true) {
+      entries.push("modelSucceeded=true");
+    }
+
+    if (modelFilter.repairedSuccess === true) {
+      entries.push("repairedSuccess=true");
+    }
+
+    if (modelFilter.failed === true) {
+      entries.push("modelFailed=true");
+    }
+
+    if (modelFilter.fallbackUsed === true) {
+      entries.push("fallbackUsed=true");
+    }
+
+    if (modelFilter.provider) {
+      entries.push(`provider=${modelFilter.provider}`);
+    }
+
+    return entries;
   }
 
   private renderWarnings(warnings: string[]): void {
@@ -128,6 +275,8 @@ export class DashboardCommand {
       item.clientId ?? "-",
       item.taskType ?? "-",
       item.status ?? "-",
+      item.modelOutcome ?? "not_attempted",
+      item.modelProvider ?? "-",
       item.updatedAt ?? "-",
     ];
 

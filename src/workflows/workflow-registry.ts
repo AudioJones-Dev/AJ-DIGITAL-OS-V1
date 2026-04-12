@@ -17,6 +17,19 @@ export class WorkflowRegistry {
   }
 
   /**
+   * Resolves a workflow by its unique id.
+   */
+  resolveById(workflowId: string): WorkflowDefinition {
+    const workflow = this.workflows.get(workflowId);
+
+    if (!workflow) {
+      throw new WorkflowResolutionError(`Workflow "${workflowId}" is not registered.`);
+    }
+
+    return workflow;
+  }
+
+  /**
    * Resolves the first workflow supporting a task type.
    */
   resolveByTaskType(taskType: string): WorkflowDefinition {

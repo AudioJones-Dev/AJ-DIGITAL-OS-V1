@@ -1,7 +1,24 @@
-﻿import { RunStore } from "../../core/run-store.js";
+import { RunStore } from "../../core/run-store.js";
 import { logger } from "../../core/logger.js";
 import type { RunRecord } from "../../types/run.types.js";
 import { RunTracker, type RunEvent } from "./run-tracker.js";
+
+export interface ModelExecutionSummary {
+  attempted: boolean;
+  succeeded: boolean;
+  repaired: boolean;
+  failed: boolean;
+  fallbackUsed: boolean;
+  lastOutcome:
+    | "not_attempted"
+    | "succeeded"
+    | "repaired_success"
+    | "failed"
+    | "fallback_used";
+  provider?: string;
+  model?: string;
+  lastReason?: string;
+}
 
 export interface RunSummaryInput {
   runId: string;
@@ -25,6 +42,7 @@ export interface RunSummaryResult {
   approvalMessageId?: number;
   eventCount: number;
   lastEventType?: string;
+  modelExecution?: ModelExecutionSummary;
   warnings: string[];
   errors: string[];
   events: RunEvent[];
@@ -59,6 +77,7 @@ export class RunSummaryService {
     const warnings = this.aggregateWarnings(run, events);
     const errors = this.aggregateErrors(run, events);
     const lastEventType = this.deriveLastEventType(events);
+    const modelExecution = this.deriveModelExecutionSummary(events);
 
     logger.info("Run summary aggregated.", {
       runId: run.runId,
@@ -84,6 +103,7 @@ export class RunSummaryService {
       ...(run.approvalMessageId !== undefined ? { approvalMessageId: run.approvalMessageId } : {}),
       eventCount: events.length,
       ...(lastEventType ? { lastEventType } : {}),
+      ...(modelExecution ? { modelExecution } : {}),
       warnings,
       errors,
       events,
@@ -101,6 +121,52 @@ export class RunSummaryService {
   private deriveLastEventType(events: RunEvent[]): string | undefined {
     const lastEvent = events.at(-1);
     return lastEvent?.type;
+  }
+
+  private deriveModelExecutionSummary(events: RunEvent[]): ModelExecutionSummary | undefined {
+    const modelEvents = events.filter((event) => isModelExecutionEventType(event.type));
+
+    if (modelEvents.length === 0) {
+      return undefined;
+    }
+
+    const attemptedEvent = modelEvents.find((event) => event.type === "model_execution_attempted");
+    const succeededEvent = modelEvents.find((event) => event.type === "model_execution_succeeded");
+    const failedEvent = modelEvents.find((event) => event.type === "model_execution_failed");
+    const fallbackEvent = modelEvents.find((event) => event.type === "model_execution_fallback_used");
+    const lastModelEvent = modelEvents.at(-1);
+    const repaired = succeededEvent?.metadata?.repaired === true;
+    const provider = this.readStringMetadata(modelEvents, "provider");
+    const model = this.readStringMetadata(modelEvents, "model");
+    const lastReason = this.readStringMetadata(modelEvents, "reason");
+
+    return {
+      attempted: attemptedEvent !== undefined,
+      succeeded: succeededEvent !== undefined,
+      repaired,
+      failed: failedEvent !== undefined,
+      fallbackUsed: fallbackEvent !== undefined,
+      lastOutcome: this.deriveLastModelOutcome(lastModelEvent?.type, repaired),
+      ...(provider ? { provider } : {}),
+      ...(model ? { model } : {}),
+      ...(lastReason ? { lastReason } : {}),
+    };
+  }
+
+  private deriveLastModelOutcome(
+    eventType: RunEvent["type"] | undefined,
+    repaired: boolean,
+  ): ModelExecutionSummary["lastOutcome"] {
+    switch (eventType) {
+      case "model_execution_succeeded":
+        return repaired ? "repaired_success" : "succeeded";
+      case "model_execution_failed":
+        return "failed";
+      case "model_execution_fallback_used":
+        return "fallback_used";
+      default:
+        return "not_attempted";
+    }
   }
 
   private aggregateWarnings(run: RunRecord, events: RunEvent[]): string[] {
@@ -123,6 +189,17 @@ export class RunSummaryService {
     return Array.from(new Set(messages.filter((message) => message.trim().length > 0)));
   }
 
+  private readStringMetadata(events: RunEvent[], key: string): string | undefined {
+    for (let index = events.length - 1; index >= 0; index -= 1) {
+      const value = events[index]?.metadata?.[key];
+      if (typeof value === "string" && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+
+    return undefined;
+  }
+
   private buildNotFoundResult(runId: string): RunSummaryResult {
     return {
       ok: false,
@@ -135,3 +212,16 @@ export class RunSummaryService {
     };
   }
 }
+
+const isModelExecutionEventType = (type: RunEvent["type"]): boolean => {
+  switch (type) {
+    case "model_execution_attempted":
+    case "model_execution_succeeded":
+    case "model_execution_parse_failed":
+    case "model_execution_fallback_used":
+    case "model_execution_failed":
+      return true;
+    default:
+      return false;
+  }
+};
