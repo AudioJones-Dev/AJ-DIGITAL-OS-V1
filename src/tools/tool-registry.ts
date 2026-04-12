@@ -58,6 +58,16 @@ export class ToolRegistry {
     return Array.from(this.tools.keys()).sort();
   }
 
+  listEnabled(): ToolDefinition[] {
+    return Array.from(this.tools.values()).filter((t) => t.enabled !== false);
+  }
+
+  findByCapability(capabilityId: string): ToolDefinition[] {
+    return Array.from(this.tools.values()).filter(
+      (t) => t.capabilityIds?.includes(capabilityId) === true,
+    );
+  }
+
   listProviders(): ToolProviderDefinition[] {
     return Array.from(this.providers.values()).sort((left, right) => left.displayName.localeCompare(right.displayName));
   }
@@ -76,6 +86,7 @@ export class ToolRegistry {
         name: tool.name,
         displayName: tool.displayName ?? tool.name,
         ...(tool.description ? { description: tool.description } : {}),
+        ...(tool.inputSchema ? { inputSchema: tool.inputSchema } : {}),
         ...(tool.providerId ? { providerId: tool.providerId } : {}),
         kind: tool.kind ?? "native",
         capabilityIds: tool.capabilityIds ?? [],
@@ -84,6 +95,23 @@ export class ToolRegistry {
         enabled: tool.enabled ?? true,
       }))
       .sort((left, right) => left.displayName.localeCompare(right.displayName));
+  }
+
+  getDescriptor(name: string): ToolDescriptor | undefined {
+    const tool = this.tools.get(name);
+    if (!tool) return undefined;
+    return {
+      name: tool.name,
+      displayName: tool.displayName ?? tool.name,
+      ...(tool.description ? { description: tool.description } : {}),
+      ...(tool.inputSchema ? { inputSchema: tool.inputSchema } : {}),
+      ...(tool.providerId ? { providerId: tool.providerId } : {}),
+      kind: tool.kind ?? "native",
+      capabilityIds: tool.capabilityIds ?? [],
+      permissionClassification: tool.permissionClassification ?? "read_only",
+      approvalClassification: tool.approvalClassification ?? "none",
+      enabled: tool.enabled ?? true,
+    };
   }
 
   snapshot(): ToolRegistrySnapshot {

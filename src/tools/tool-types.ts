@@ -10,6 +10,19 @@ export type ToolPermissionClassification =
   | "approval_required";
 export type ToolApprovalClassification = "none" | "guarded" | "explicit_approval";
 
+// ── Input Schema ───────────────────────────────────────────────────
+
+export type ToolInputFieldType = "string" | "number" | "boolean" | "object" | "array";
+
+export interface ToolInputField {
+  type: ToolInputFieldType;
+  description?: string | undefined;
+  required?: boolean | undefined;
+  default?: unknown;
+}
+
+export type ToolInputSchema = Record<string, ToolInputField>;
+
 export interface ToolInvocationMetadata {
   invocationId?: string | undefined;
   runId?: string | undefined;
@@ -32,6 +45,7 @@ export interface ToolDefinition<TPayload = unknown, TResult = unknown> {
   name: string;
   description?: string;
   displayName?: string;
+  inputSchema?: ToolInputSchema | undefined;
   providerId?: string | undefined;
   kind?: ToolImplementationKind | undefined;
   capabilityIds?: string[] | undefined;
@@ -50,7 +64,9 @@ export interface ToolPermissionDecision {
 export interface ToolExecutionResult<TResult = unknown> {
   ok: boolean;
   toolName: string;
+  invocationId: string;
   result?: TResult;
+  durationMs: number;
   warnings: string[];
   errors: string[];
 }
@@ -59,6 +75,7 @@ export interface ToolDescriptor {
   name: string;
   displayName: string;
   description?: string | undefined;
+  inputSchema?: ToolInputSchema | undefined;
   providerId?: string | undefined;
   kind: ToolImplementationKind;
   capabilityIds: string[];
