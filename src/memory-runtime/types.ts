@@ -43,6 +43,8 @@ export const DEFAULT_MEMORY_POLICY: MemoryPolicy = {
 /** Memory bundle produced by beforeRun (prompt-ready). */
 export interface CognitiveContext {
   workingContext: string;
+  lastRun: MemoryRecord | null;
+  lastFailure: MemoryRecord | null;
   recentLogs: Array<{ file: string; content: string }>;
   mistakes: string[];
 }

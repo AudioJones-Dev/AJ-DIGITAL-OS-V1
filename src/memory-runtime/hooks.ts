@@ -7,6 +7,7 @@ import {
   type MemoryPolicy,
   type RunContext,
 } from "./types.js";
+import { retrieve } from "./retrieval.js";
 
 // ── Shared store instance ──────────────────────────────────────────
 
@@ -35,28 +36,30 @@ export interface BeforeRunInput {
 /**
  * Bootstrap memory before a run.
  *
- * Loads working context, recent logs, and relevant mistakes according
- * to the memory policy, then returns a fully initialised RunContext.
+ * Uses the retrieval layer to load memory in priority order
+ * (working context → last run → last failure → recent logs),
+ * applying per-slot budgets and truncation, then returns a
+ * fully initialised RunContext.
  */
 export async function beforeRun(input: BeforeRunInput): Promise<RunContext> {
   const store = getStore();
   const policy = input.memoryPolicy ?? DEFAULT_MEMORY_POLICY;
 
-  const cognitiveContext: CognitiveContext = {
-    workingContext: "",
-    recentLogs: [],
-    mistakes: [],
-  };
+  // Retrieve structured memory via the retrieval layer
+  const retrieved = await retrieve(store, input.workflow);
 
-  if (policy.loadWorkingContext) {
-    cognitiveContext.workingContext = await store.getWorkingContext();
-  }
-  if (policy.loadRecentLogs) {
-    cognitiveContext.recentLogs = await store.getRecentLogs();
-  }
-  if (policy.loadMistakes) {
-    cognitiveContext.mistakes = await store.getRelevantMistakes(input.workflow);
-  }
+  // Load mistakes separately (workflow-filtered, not slot-budgeted)
+  const mistakes = policy.loadMistakes
+    ? await store.getRelevantMistakes(input.workflow)
+    : [];
+
+  const cognitiveContext: CognitiveContext = {
+    workingContext: policy.loadWorkingContext ? retrieved.workingContext : "",
+    lastRun: retrieved.lastRun,
+    lastFailure: retrieved.lastFailure,
+    recentLogs: policy.loadRecentLogs ? retrieved.recentLogs : [],
+    mistakes,
+  };
 
   return {
     runId: randomUUID(),
