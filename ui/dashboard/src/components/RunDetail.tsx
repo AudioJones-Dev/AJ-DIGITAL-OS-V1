@@ -3,9 +3,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   fetchRunById,
   fetchDeliverablesByRunId,
+  fetchReplayData,
   createMissionRun,
 } from "../lib/queries";
-import type { RunWithMission, Deliverable } from "../lib/types";
+import type { RunWithMission, Deliverable, ReplayData } from "../lib/types";
 import {
   BackLink,
   Spinner,
@@ -17,6 +18,13 @@ import {
   DataTable,
   ActionButton,
 } from "./shared";
+import {
+  CollapsibleSection,
+  ReplayTimeline,
+  ObservationPanel,
+  FailurePanel,
+  JsonViewer,
+} from "./ReplayComponents";
 
 export default function RunDetail() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +32,8 @@ export default function RunDetail() {
 
   const [run, setRun] = useState<RunWithMission | null>(null);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
+  const [replay, setReplay] = useState<ReplayData | null>(null);
+  const [replayLoading, setReplayLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
@@ -38,6 +48,18 @@ export default function RunDetail() {
         if (!cancelled) {
           setRun(r);
           setDeliverables(d);
+        }
+        // Fetch replay data from Neon via Hermes API if run_ref exists
+        if (!cancelled && r.run_ref) {
+          setReplayLoading(true);
+          try {
+            const rd = await fetchReplayData(r.run_ref);
+            if (!cancelled) setReplay(rd);
+          } catch {
+            // Replay is supplementary — don't block the page
+          } finally {
+            if (!cancelled) setReplayLoading(false);
+          }
         }
       } catch (err: unknown) {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));
@@ -144,6 +166,81 @@ export default function RunDetail() {
           />
         )}
       </DetailSection>
+
+      {/* ── Replay Data (from Neon) ─────────────────────────────── */}
+
+      {replayLoading && (
+        <div style={{ padding: "16px 0", color: "#64748b", fontSize: 13 }}>
+          Loading execution replay…
+        </div>
+      )}
+
+      {replay && (
+        <>
+          <div style={{ borderTop: "1px solid #334155", margin: "8px 0 24px", paddingTop: 20 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", margin: "0 0 4px" }}>
+              Execution Replay
+            </h3>
+            <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 20px" }}>
+              Step-by-step execution data from Neon · {replay.steps.length} steps · {replay.observations.length} observations · {replay.failures.length} failures
+            </p>
+          </div>
+
+          {replay.run.error && (
+            <DetailSection title="Run Error">
+              <div style={{ padding: "8px 12px", backgroundColor: "#450a0a", borderRadius: 6, color: "#fca5a5", fontSize: 13 }}>
+                {replay.run.error}
+              </div>
+            </DetailSection>
+          )}
+
+          <CollapsibleSection
+            title={`Steps (${replay.steps.length})`}
+            defaultOpen={true}
+            badge={
+              replay.steps.some((s) => !s.ok) ? (
+                <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, backgroundColor: "#7f1d1d", color: "#fca5a5" }}>
+                  {replay.steps.filter((s) => !s.ok).length} failed
+                </span>
+              ) : undefined
+            }
+          >
+            <ReplayTimeline steps={replay.steps} />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title={`Observations (${replay.observations.length})`}
+            defaultOpen={replay.observations.some((o) => !o.healthy)}
+            badge={
+              replay.observations.some((o) => !o.healthy) ? (
+                <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, backgroundColor: "#7f1d1d", color: "#fca5a5" }}>
+                  {replay.observations.filter((o) => !o.healthy).length} unhealthy
+                </span>
+              ) : undefined
+            }
+          >
+            <ObservationPanel observations={replay.observations} />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            title={`Failures (${replay.failures.length})`}
+            defaultOpen={replay.failures.length > 0}
+            badge={
+              replay.failures.length > 0 ? (
+                <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, backgroundColor: "#7f1d1d", color: "#fca5a5" }}>
+                  {replay.failures.length}
+                </span>
+              ) : undefined
+            }
+          >
+            <FailurePanel failures={replay.failures} />
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Neon Run Metadata" defaultOpen={false}>
+            <JsonViewer data={replay.run} />
+          </CollapsibleSection>
+        </>
+      )}
     </div>
   );
 }

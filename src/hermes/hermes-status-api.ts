@@ -13,6 +13,7 @@ import { getSchedulerStatus } from "./hermes-scheduler.js";
 import { isWatcherRunning, getLastCheckAt } from "./hermes-failure-watcher.js";
 import { getRecentNotifications } from "./hermes-notifications.js";
 import { getEnabledSchedules, DEFAULT_SCHEDULES } from "./hermes-schedule-config.js";
+import { getFullRunData } from "../db/neon-client.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -114,6 +115,27 @@ export function startHermesApi(port?: number): void {
     if (req.url === "/status" || req.url === "/") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(buildStatus()));
+      return;
+    }
+
+    // Replay endpoint — load full run data from Neon by run_ref
+    const replayMatch = req.url?.match(/^\/replay\/(.+)$/);
+    if (replayMatch) {
+      const runRef = decodeURIComponent(replayMatch[1]!);
+      getFullRunData(runRef)
+        .then((result) => {
+          if (!result.ok || !result.data) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: result.error ?? "Run not found" }));
+            return;
+          }
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, data: result.data }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }));
+        });
       return;
     }
 

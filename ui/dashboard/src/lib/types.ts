@@ -117,3 +117,70 @@ export interface DashboardSummary {
   failedRuns: number;
   deliverablesThisWeek: number;
 }
+
+// ── Neon Replay Types (mirrors db-types.ts from backend) ───────────
+
+export interface ReplayRun {
+  id: number;
+  run_ref: string;
+  mission_type: string;
+  objective: string;
+  input_payload: Record<string, unknown>;
+  status: "running" | "completed" | "failed";
+  ok: boolean | null;
+  summary: string | null;
+  error: string | null;
+  roles_used: string[];
+  escalation_count: number;
+  duration_ms: number | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export interface ReplayStep {
+  id: number;
+  run_id: number;
+  step_index: number;
+  role: string;
+  pipeline_id: string;
+  ok: boolean;
+  input_snapshot: unknown;
+  output_snapshot: unknown;
+  error: string | null;
+  duration_ms: number;
+  retries: number;
+  warnings: string[];
+  created_at: string;
+}
+
+export interface ReplayObservation {
+  id: number;
+  run_id: number | null;
+  source: string;
+  healthy: boolean;
+  summary: string;
+  checks: unknown[];
+  snapshot_label: string | null;
+  created_at: string;
+}
+
+export interface ReplayFailure {
+  id: number;
+  run_id: number | null;
+  step_id: number | null;
+  role: string;
+  error: string;
+  input_snapshot: unknown;
+  stack_trace: string | null;
+  escalated: boolean;
+  resolved: boolean;
+  resolution: string | null;
+  created_at: string;
+}
+
+export interface ReplayData {
+  run: ReplayRun;
+  steps: ReplayStep[];
+  observations: ReplayObservation[];
+  failures: ReplayFailure[];
+}

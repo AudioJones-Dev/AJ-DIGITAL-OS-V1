@@ -7,6 +7,7 @@ import type {
   Mission,
   MissionRun,
   MissionWithClient,
+  ReplayData,
   RunWithMission,
 } from "./types";
 
@@ -200,4 +201,17 @@ export async function createMissionRun(input: {
     .single();
   if (error) throw new Error(error.message);
   return data as unknown as MissionRun;
+}
+
+// ── Replay (Neon data via Hermes API) ──────────────────────────────
+
+const HERMES_API = import.meta.env.VITE_HERMES_API_URL ?? "http://127.0.0.1:7420";
+
+export async function fetchReplayData(runRef: string): Promise<ReplayData | null> {
+  const res = await fetch(`${HERMES_API}/replay/${encodeURIComponent(runRef)}`, {
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) return null;
+  const body = await res.json() as { ok: boolean; data?: ReplayData };
+  return body.ok && body.data ? body.data : null;
 }
