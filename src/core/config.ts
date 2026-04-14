@@ -64,6 +64,13 @@ export interface RuntimeConfig {
   n8nMcpToken: string;
   n8nBaseUrl: string;
   n8nWebhookUrl: string;
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  neonDatabaseUrl: string;
+  r2Endpoint: string;
+  r2AccessKeyId: string;
+  r2SecretAccessKey: string;
+  r2BucketName: string;
   runtimeDirectories: string[];
   memoryDirectory: string;
   explicitEnv: {
@@ -76,6 +83,10 @@ export interface RuntimeConfig {
     sanityApiToken: boolean;
     telegramBotToken: boolean;
     n8nMcpToken: boolean;
+    supabaseUrl: boolean;
+    supabaseAnonKey: boolean;
+    neonDatabaseUrl: boolean;
+    r2Endpoint: boolean;
   };
 }
 
@@ -142,6 +153,13 @@ export const createRuntimeConfig = (): RuntimeConfig => {
     n8nMcpToken: normalizeSecret(process.env.N8N_MCP_TOKEN),
     n8nBaseUrl: normalizeUrl(process.env.N8N_BASE_URL, ""),
     n8nWebhookUrl: normalizeUrl(process.env.N8N_WEBHOOK_URL, ""),
+    supabaseUrl: normalizeUrl(process.env.SUPABASE_URL, ""),
+    supabaseAnonKey: normalizeSecret(process.env.SUPABASE_ANON_KEY),
+    neonDatabaseUrl: normalizeSecret(process.env.NEON_DATABASE_URL),
+    r2Endpoint: normalizeUrl(process.env.R2_ENDPOINT, ""),
+    r2AccessKeyId: normalizeSecret(process.env.R2_ACCESS_KEY_ID),
+    r2SecretAccessKey: normalizeSecret(process.env.R2_SECRET_ACCESS_KEY),
+    r2BucketName: process.env.R2_BUCKET_NAME?.trim() || "",
     runtimeDirectories: [
       path.resolve("data", "runs"),
       path.resolve("data", "reports", "runs"),
@@ -176,6 +194,10 @@ export const createRuntimeConfig = (): RuntimeConfig => {
       sanityApiToken: hasExplicitValue(process.env.SANITY_API_TOKEN),
       telegramBotToken: hasExplicitValue(process.env.TELEGRAM_BOT_TOKEN),
       n8nMcpToken: hasExplicitValue(process.env.N8N_MCP_TOKEN),
+      supabaseUrl: hasExplicitValue(process.env.SUPABASE_URL),
+      supabaseAnonKey: hasExplicitValue(process.env.SUPABASE_ANON_KEY),
+      neonDatabaseUrl: hasExplicitValue(process.env.NEON_DATABASE_URL),
+      r2Endpoint: hasExplicitValue(process.env.R2_ENDPOINT),
     },
   };
 };

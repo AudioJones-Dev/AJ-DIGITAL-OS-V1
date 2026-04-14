@@ -4,6 +4,8 @@ import { resolveRoute, getEscalationTarget, type ProviderRoute } from "./route-p
 import { callOpenAi } from "./providers/openai-provider.js";
 import { callLocal } from "./providers/local-provider.js";
 import { callDeterministic } from "./providers/deterministic-provider.js";
+import { callPerplexity } from "./providers/perplexity-provider.js";
+import type { PerplexityCallOptions } from "./providers/perplexity-provider.js";
 import type { RetrievedContext } from "../memory-runtime/retrieval.js";
 
 /**
@@ -29,6 +31,7 @@ export type DeterministicExecutor<TContext, TOutput> = (ctx: TContext) => TOutpu
  */
 export interface DispatchOptions<TContext = unknown, TOutput = unknown> {
   openai?: OpenAiCallOptions | undefined;
+  perplexity?: PerplexityCallOptions | undefined;
   deterministic?: DeterministicExecutor<TContext, TOutput> | undefined;
 }
 
@@ -175,6 +178,23 @@ async function dispatchToProvider<TContext, TOutput>(
         context,
         dispatch.deterministic,
       );
+    }
+
+    case "perplexity": {
+      if (!dispatch.perplexity) {
+        // Auto-build dispatch from openai options if available
+        const opts = dispatch.openai;
+        if (opts) {
+          return callPerplexity<TOutput>(taskType, task, context, opts);
+        }
+        return createResult<TOutput>({
+          taskType: taskType as ModelRoutingResult["taskType"],
+          ok: false,
+          provider: "perplexity",
+          error: "Perplexity dispatch options not provided for this task.",
+        });
+      }
+      return callPerplexity<TOutput>(taskType, task, context, dispatch.perplexity);
     }
   }
 }

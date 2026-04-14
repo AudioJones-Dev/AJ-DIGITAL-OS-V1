@@ -1,6 +1,6 @@
 import type { TaskType, RoutingConstraints } from "./result-shape.js";
 
-export type ProviderRoute = "openai" | "local" | "deterministic";
+export type ProviderRoute = "openai" | "local" | "deterministic" | "perplexity";
 
 export interface RouteDecision {
   provider: ProviderRoute;
@@ -20,6 +20,10 @@ const DEFAULT_ROUTES: Record<TaskType, ProviderRoute> = {
   format: "deterministic",
   local_agent: "local",
   retrieval_augmented_answer: "openai",
+  research: "perplexity",
+  validation: "perplexity",
+  structured_output: "openai",
+  low_priority: "local",
 };
 
 export function resolveRoute(
@@ -44,11 +48,11 @@ export function resolveRoute(
   }
 
   // Offline mode blocks cloud providers
-  if (constraints?.offline && provider === "openai") {
+  if (constraints?.offline && (provider === "openai" || provider === "perplexity")) {
     // Try to downgrade to local
-    if (taskType === "planner") {
+    if (taskType === "planner" || taskType === "research") {
       return {
-        provider: "openai",
+        provider,
         blocked: true,
         blockedReason: "Task requires cloud reasoning but offline mode is enabled.",
       };
@@ -69,6 +73,7 @@ export function resolveRoute(
       deterministic: 0,
       local: 1,
       openai: 2,
+      perplexity: 2,
     };
     if (providerCostTier[provider] > constraints.maxCostTier) {
       // Downgrade to the highest-allowed tier
@@ -84,7 +89,7 @@ export function resolveRoute(
 }
 
 function isValidRoute(value: string): value is ProviderRoute {
-  return value === "openai" || value === "local" || value === "deterministic";
+  return value === "openai" || value === "local" || value === "deterministic" || value === "perplexity";
 }
 
 /**
@@ -93,6 +98,8 @@ function isValidRoute(value: string): value is ProviderRoute {
  */
 export function getEscalationTarget(current: ProviderRoute): ProviderRoute | null {
   switch (current) {
+    case "perplexity":
+      return "openai";
     case "deterministic":
       return "local";
     case "local":

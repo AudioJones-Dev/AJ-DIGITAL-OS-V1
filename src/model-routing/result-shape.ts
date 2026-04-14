@@ -18,7 +18,11 @@ export type TaskType =
   | "transform"
   | "format"
   | "local_agent"
-  | "retrieval_augmented_answer";
+  | "retrieval_augmented_answer"
+  | "research"
+  | "validation"
+  | "structured_output"
+  | "low_priority";
 
 export interface RoutingConstraints {
   offline?: boolean | undefined;
