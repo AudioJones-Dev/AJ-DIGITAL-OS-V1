@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { usePolling } from "../hooks/use-polling";
 import { fetchRuns } from "../lib/queries";
 import type { RunWithMission } from "../lib/types";
@@ -144,6 +145,7 @@ const columns: Column<RunWithMission>[] = [
 ];
 
 export function RunsView() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [triggerFilter, setTriggerFilter] = useState("");
@@ -222,7 +224,7 @@ export function RunsView() {
       {loading && !data ? (
         <Spinner />
       ) : filtered.length > 0 ? (
-        <DataTable columns={columns} rows={filtered} rowKey={(r) => r.id} />
+        <DataTable columns={columns} rows={filtered} rowKey={(r) => r.id} onRowClick={(r) => navigate(`/runs/${r.id}`)} />
       ) : (
         <EmptyState message="No runs found." />
       )}

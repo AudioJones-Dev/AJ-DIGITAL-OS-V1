@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { usePolling } from "../hooks/use-polling";
 import { fetchMissions, fetchRuns } from "../lib/queries";
 import type { MissionWithClient, RunWithMission } from "../lib/types";
@@ -39,6 +40,7 @@ const typeOptions = [
 ];
 
 export function MissionsView() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -164,6 +166,23 @@ export function MissionsView() {
       <PageHeader
         title="Missions"
         subtitle={missions ? `${filtered.length} of ${missions.length} missions` : undefined}
+        right={
+          <button
+            onClick={() => navigate("/missions/new")}
+            style={{
+              padding: "8px 18px",
+              borderRadius: 6,
+              border: "none",
+              background: "#2563eb",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            + New Mission
+          </button>
+        }
       />
       <Toolbar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search missions…" />
@@ -192,6 +211,7 @@ export function MissionsView() {
               columns={columns}
               rows={group.missions}
               rowKey={(r) => r.id}
+              onRowClick={(r) => navigate(`/missions/${r.id}`)}
             />
           </div>
         ))

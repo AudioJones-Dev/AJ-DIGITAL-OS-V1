@@ -5,6 +5,9 @@ import { MissionsView } from "./components/MissionsView";
 import { RunsView } from "./components/RunsView";
 import { DeliverablesView } from "./components/DeliverablesView";
 import { AssetsView } from "./components/AssetsView";
+import MissionDetail from "./components/MissionDetail";
+import RunDetail from "./components/RunDetail";
+import MissionTrigger from "./components/MissionTrigger";
 import type { CSSProperties } from "react";
 
 const navItems = [
@@ -96,7 +99,7 @@ export default function App() {
               borderTop: "1px solid #1e293b",
             }}
           >
-            Operator Dashboard v0.2
+            Operator Dashboard v0.3
           </div>
         </nav>
 
@@ -106,7 +109,10 @@ export default function App() {
             <Route path="/" element={<DashboardHome />} />
             <Route path="/clients" element={<ClientsView />} />
             <Route path="/missions" element={<MissionsView />} />
+            <Route path="/missions/new" element={<MissionTrigger />} />
+            <Route path="/missions/:id" element={<MissionDetail />} />
             <Route path="/runs" element={<RunsView />} />
+            <Route path="/runs/:id" element={<RunDetail />} />
             <Route path="/deliverables" element={<DeliverablesView />} />
             <Route path="/assets" element={<AssetsView />} />
             <Route path="*" element={<Navigate to="/" replace />} />

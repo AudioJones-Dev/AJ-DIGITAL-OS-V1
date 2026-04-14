@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { usePolling } from "../hooks/use-polling";
 import { fetchDashboardSummary, fetchRuns } from "../lib/queries";
 import type { DashboardSummary, RunWithMission } from "../lib/types";
@@ -67,6 +68,7 @@ const recentRunColumns: Column<RunWithMission>[] = [
 ];
 
 export function DashboardHome() {
+  const navigate = useNavigate();
   const {
     data: summary,
     loading: summaryLoading,
@@ -91,6 +93,23 @@ export function DashboardHome() {
       <PageHeader
         title="Dashboard"
         subtitle="AJ Digital OS — Operator Overview"
+        right={
+          <button
+            onClick={() => navigate("/missions/new")}
+            style={{
+              padding: "8px 18px",
+              borderRadius: 6,
+              border: "none",
+              background: "#2563eb",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            + Run Mission
+          </button>
+        }
       />
 
       {anyError && <ErrorBanner message={anyError} />}
@@ -114,7 +133,7 @@ export function DashboardHome() {
         </h3>
         {recentFailed.length > 0 ? (
           <div style={{ backgroundColor: "#1e293b", borderRadius: 12, padding: 16 }}>
-            <DataTable columns={recentRunColumns} rows={recentFailed} rowKey={(r) => r.id} />
+            <DataTable columns={recentRunColumns} rows={recentFailed} rowKey={(r) => r.id} onRowClick={(r) => navigate(`/runs/${r.id}`)} />
           </div>
         ) : (
           <div style={{ padding: 24, color: "#64748b", fontSize: 13, backgroundColor: "#1e293b", borderRadius: 12, textAlign: "center" }}>
@@ -130,7 +149,7 @@ export function DashboardHome() {
         </h3>
         {recentCompleted.length > 0 ? (
           <div style={{ backgroundColor: "#1e293b", borderRadius: 12, padding: 16 }}>
-            <DataTable columns={recentRunColumns} rows={recentCompleted} rowKey={(r) => r.id} />
+            <DataTable columns={recentRunColumns} rows={recentCompleted} rowKey={(r) => r.id} onRowClick={(r) => navigate(`/runs/${r.id}`)} />
           </div>
         ) : (
           <div style={{ padding: 24, color: "#64748b", fontSize: 13, backgroundColor: "#1e293b", borderRadius: 12, textAlign: "center" }}>

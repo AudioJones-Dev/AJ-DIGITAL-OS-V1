@@ -333,3 +333,106 @@ export function Toolbar({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+// ── Back link ──────────────────────────────────────────────────────
+
+export function BackLink({ to, label }: { to: string; label: string }) {
+  return (
+    <a
+      href={to}
+      onClick={(e) => {
+        e.preventDefault();
+        window.history.back();
+      }}
+      style={{
+        color: "#38bdf8",
+        fontSize: 13,
+        textDecoration: "none",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        marginBottom: 16,
+      }}
+    >
+      ← {label}
+    </a>
+  );
+}
+
+// ── Detail section ─────────────────────────────────────────────────
+
+export function DetailSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section style={{ marginBottom: 28 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: "#94a3b8", margin: "0 0 12px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+// ── Detail row (label + value) ─────────────────────────────────────
+
+export function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div style={{ display: "flex", gap: 12, padding: "6px 0", borderBottom: "1px solid #1e293b" }}>
+      <span style={{ width: 160, flexShrink: 0, color: "#64748b", fontSize: 13 }}>{label}</span>
+      <span style={{ color: "#e2e8f0", fontSize: 13 }}>{value ?? "—"}</span>
+    </div>
+  );
+}
+
+// ── Action button ──────────────────────────────────────────────────
+
+export function ActionButton({
+  label,
+  onClick,
+  variant = "primary",
+  disabled = false,
+}: {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "danger";
+  disabled?: boolean;
+}) {
+  const bg = variant === "danger" ? "#dc2626" : "#2563eb";
+  const bgHover = variant === "danger" ? "#b91c1c" : "#1d4ed8";
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        padding: "8px 18px",
+        borderRadius: 6,
+        border: "none",
+        background: disabled ? "#334155" : bg,
+        color: disabled ? "#64748b" : "#fff",
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: disabled ? "not-allowed" : "pointer",
+        transition: "background 0.15s",
+      }}
+      onMouseEnter={(e) => {
+        if (!disabled) e.currentTarget.style.background = bgHover;
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled) e.currentTarget.style.background = bg;
+      }}
+    >
+      {label}
+    </button>
+  );
+}
