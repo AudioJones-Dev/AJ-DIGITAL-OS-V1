@@ -37,6 +37,7 @@ import {
   N8nHealthcheckCommand,
   N8nTriggerTestCommand,
   BrowserAgentCommand,
+  MissionRunCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -514,6 +515,17 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
             validateOnly: hasFlag(parsed.flags, "validate-only"),
             postAgent: hasFlag(parsed.flags, "post-agent"),
             postAgentTarget: getStringFlag(parsed.flags, "post-agent-target"),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "mission":
+      case "mission:run":
+      case "mission-run":
+        {
+          const result = await new MissionRunCommand().run({
+            file: getStringFlag(parsed.flags, "file"),
+            envelope: getStringFlag(parsed.flags, "envelope"),
             json: hasFlag(parsed.flags, "json"),
           });
           return result.ok ? 0 : 1;

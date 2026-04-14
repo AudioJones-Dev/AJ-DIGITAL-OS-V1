@@ -238,3 +238,9 @@ export type {
   BrowserAgentCommandInput,
   BrowserAgentCommandResult,
 } from "./browser-agent.command.js";
+
+export { MissionRunCommand } from "./mission-run.command.js";
+export type {
+  MissionRunCommandInput,
+  MissionRunCommandResult,
+} from "./mission-run.command.js";
