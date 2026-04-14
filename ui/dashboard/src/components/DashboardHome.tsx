@@ -11,6 +11,7 @@ import {
   DataTable,
   type Column,
 } from "./shared";
+import { HermesWidget } from "./HermesWidget";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -125,6 +126,9 @@ export function DashboardHome() {
           <SummaryCard label="Deliverables (7d)" value={summary.deliverablesThisWeek} accent="#06b6d4" />
         </div>
       ) : null}
+
+      {/* Hermes orchestrator status */}
+      <HermesWidget />
 
       {/* Recent failed runs */}
       <div style={{ marginBottom: 32 }}>

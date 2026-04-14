@@ -244,3 +244,21 @@ export type {
   MissionRunCommandInput,
   MissionRunCommandResult,
 } from "./mission-run.command.js";
+
+export { HermesStartCommand } from "./hermes-start.command.js";
+export type {
+  HermesStartCommandInput,
+  HermesStartCommandResult,
+} from "./hermes-start.command.js";
+
+export { HermesStopCommand } from "./hermes-stop.command.js";
+export type {
+  HermesStopCommandInput,
+  HermesStopCommandResult,
+} from "./hermes-stop.command.js";
+
+export { HermesStatusCommand } from "./hermes-status.command.js";
+export type {
+  HermesStatusCommandInput,
+  HermesStatusCommandResult,
+} from "./hermes-status.command.js";

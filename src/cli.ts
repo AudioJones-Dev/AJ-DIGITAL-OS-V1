@@ -38,6 +38,9 @@ import {
   N8nTriggerTestCommand,
   BrowserAgentCommand,
   MissionRunCommand,
+  HermesStartCommand,
+  HermesStopCommand,
+  HermesStatusCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -526,6 +529,30 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           const result = await new MissionRunCommand().run({
             file: getStringFlag(parsed.flags, "file"),
             envelope: getStringFlag(parsed.flags, "envelope"),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "hermes:start":
+      case "hermes-start":
+        {
+          const result = await new HermesStartCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "hermes:stop":
+      case "hermes-stop":
+        {
+          const result = await new HermesStopCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "hermes:status":
+      case "hermes-status":
+        {
+          const result = await new HermesStatusCommand().run({
             json: hasFlag(parsed.flags, "json"),
           });
           return result.ok ? 0 : 1;

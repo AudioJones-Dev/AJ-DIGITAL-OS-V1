@@ -62,6 +62,13 @@ export type {
   HermesStatus,
 } from "./hermes-types.js";
 
+// ── Status API ─────────────────────────────────────────────────────
+export {
+  startHermesApi,
+  stopHermesApi,
+} from "./hermes-status-api.js";
+export type { HermesRuntimeStatus } from "./hermes-status-api.js";
+
 // ── Convenience: Start/Stop Everything ─────────────────────────────
 
 import { startScheduler, stopScheduler } from "./hermes-scheduler.js";
@@ -70,6 +77,7 @@ import type { ScheduleDefinition } from "./hermes-types.js";
 import type { ProductionMissionConfig } from "../missions/mission-db-hooks.js";
 import type { WatcherConfig } from "./hermes-failure-watcher.js";
 import { DEFAULT_SCHEDULES } from "./hermes-schedule-config.js";
+import { startHermesApi, stopHermesApi } from "./hermes-status-api.js";
 
 export interface HermesConfig {
   /** Schedule definitions (defaults to DEFAULT_SCHEDULES). */
@@ -78,15 +86,20 @@ export interface HermesConfig {
   missionConfig?: ProductionMissionConfig;
   /** Failure watcher config. */
   watcher?: WatcherConfig;
+  /** Whether to start the status API (default: true). */
+  statusApi?: boolean;
 }
 
 /**
- * Start the full Hermes orchestration layer (scheduler + watcher).
+ * Start the full Hermes orchestration layer (scheduler + watcher + status API).
  */
 export function startHermes(config?: HermesConfig): void {
   const schedules = config?.schedules ?? DEFAULT_SCHEDULES;
   startScheduler(schedules, config?.missionConfig);
   startFailureWatcher(config?.watcher);
+  if (config?.statusApi !== false) {
+    startHermesApi();
+  }
   console.log("[HERMES] Hermes is online.");
 }
 
@@ -96,5 +109,6 @@ export function startHermes(config?: HermesConfig): void {
 export function stopHermes(): void {
   stopScheduler();
   stopFailureWatcher();
+  stopHermesApi();
   console.log("[HERMES] Hermes is offline.");
 }
