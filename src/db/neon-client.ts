@@ -347,3 +347,21 @@ export async function getFullRunData(
     count: null,
   };
 }
+
+// ── Health Check ───────────────────────────────────────────────────
+
+export async function checkNeonConnection(
+  config?: Partial<NeonConfig>,
+): Promise<{ ok: boolean; latencyMs: number; error: string | null }> {
+  const cfg = resolveConfig(config);
+  if (!isConfigured(cfg)) return { ok: false, latencyMs: 0, error: "Neon not configured" };
+
+  const start = Date.now();
+  try {
+    const result = await neonQuery<{ n: number }>(cfg, "SELECT 1 AS n", []);
+    const latencyMs = Date.now() - start;
+    return { ok: result.ok, latencyMs, error: result.error };
+  } catch (err) {
+    return { ok: false, latencyMs: Date.now() - start, error: String(err) };
+  }
+}
