@@ -76,6 +76,22 @@ export interface DbDeliverable {
   created_at: string;
 }
 
+export type AssetStatus = "pending" | "uploaded" | "published" | "failed";
+
+export interface DbAsset {
+  id: string;
+  deliverable_id: string | null;
+  client_id: string | null;
+  filename: string;
+  r2_key: string;
+  public_url: string | null;
+  content_type: string;
+  size_bytes: number | null;
+  status: AssetStatus;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // Neon — Data Layer
 // ═══════════════════════════════════════════════════════════════════
@@ -169,6 +185,7 @@ export type InsertClient = Omit<DbClient, "id" | "created_at" | "updated_at">;
 export type InsertMission = Omit<DbMission, "id" | "created_at" | "updated_at">;
 export type InsertMissionRun = Omit<DbMissionRun, "id" | "created_at">;
 export type InsertDeliverable = Omit<DbDeliverable, "id" | "created_at">;
+export type InsertAsset = Omit<DbAsset, "id" | "created_at">;
 export type InsertRun = Omit<DbRun, "id" | "started_at" | "completed_at">;
 export type InsertStep = Omit<DbStep, "id" | "created_at">;
 export type InsertObservation = Omit<DbObservation, "id" | "created_at">;

@@ -114,12 +114,34 @@ create index if not exists idx_deliverables_run on deliverables (mission_run_id)
 create index if not exists idx_deliverables_client on deliverables (client_id);
 create index if not exists idx_deliverables_status on deliverables (status);
 
+-- ─── Assets (individual files within a deliverable) ────────────────
+
+create table if not exists assets (
+  id              uuid primary key default gen_random_uuid(),
+  deliverable_id  uuid references deliverables(id) on delete cascade,
+  client_id       uuid references clients(id) on delete set null,
+  filename        text not null,
+  r2_key          text not null,
+  public_url      text,
+  content_type    text not null default 'application/octet-stream',
+  size_bytes      integer,
+  status          text not null default 'pending'
+                  check (status in ('pending', 'uploaded', 'published', 'failed')),
+  metadata        jsonb not null default '{}',
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists idx_assets_deliverable on assets (deliverable_id);
+create index if not exists idx_assets_client on assets (client_id);
+create index if not exists idx_assets_status on assets (status);
+
 -- ─── Row Level Security ────────────────────────────────────────────
 
 alter table clients enable row level security;
 alter table missions enable row level security;
 alter table mission_runs enable row level security;
 alter table deliverables enable row level security;
+alter table assets enable row level security;
 
 -- Service role has full access; anon gets nothing by default.
 -- Add policies per your auth requirements:

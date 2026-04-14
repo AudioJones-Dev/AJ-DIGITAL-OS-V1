@@ -1,5 +1,5 @@
 // ── Supabase Database typegen (manual) ─────────────────────────────
-// Matches sql/supabase-schema.sql + deliverables table.
+// Matches sql/supabase-schema.sql + deliverables + assets tables.
 
 export type ClientTier = "standard" | "professional" | "enterprise";
 export type ClientStatus = "active" | "paused" | "archived";
@@ -7,6 +7,7 @@ export type MissionDbStatus = "active" | "paused" | "retired";
 export type RunDbStatus = "pending" | "running" | "completed" | "failed";
 export type TriggerType = "manual" | "cron" | "webhook" | "hermes";
 export type DeliverableStatus = "pending" | "uploaded" | "published" | "failed";
+export type AssetStatus = "pending" | "uploaded" | "published" | "failed";
 
 // ── Row types ──────────────────────────────────────────────────────
 
@@ -67,6 +68,20 @@ export interface Deliverable {
   created_at: string;
 }
 
+export interface Asset {
+  id: string;
+  deliverable_id: string | null;
+  client_id: string | null;
+  filename: string;
+  r2_key: string;
+  public_url: string | null;
+  content_type: string;
+  size_bytes: number | null;
+  status: AssetStatus;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
 // ── Supabase Database type map (for typed queries) ─────────────────
 
 export interface Database {
@@ -76,6 +91,7 @@ export interface Database {
       missions: { Row: Mission; Insert: Omit<Mission, "id" | "created_at" | "updated_at">; Update: Partial<Omit<Mission, "id" | "created_at">> };
       mission_runs: { Row: MissionRun; Insert: Omit<MissionRun, "id" | "created_at">; Update: Partial<Omit<MissionRun, "id" | "created_at">> };
       deliverables: { Row: Deliverable; Insert: Omit<Deliverable, "id" | "created_at">; Update: Partial<Omit<Deliverable, "id" | "created_at">> };
+      assets: { Row: Asset; Insert: Omit<Asset, "id" | "created_at">; Update: Partial<Omit<Asset, "id" | "created_at">> };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -91,4 +107,13 @@ export interface MissionWithClient extends Mission {
 
 export interface RunWithMission extends MissionRun {
   missions: Pick<Mission, "mission_type" | "objective" | "client_id"> | null;
+}
+
+// ── Summary types (for dashboard home) ─────────────────────────────
+
+export interface DashboardSummary {
+  activeClients: number;
+  runningMissions: number;
+  failedRuns: number;
+  deliverablesThisWeek: number;
 }

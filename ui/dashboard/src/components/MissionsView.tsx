@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { usePolling } from "../hooks/use-polling";
 import { fetchMissions, fetchRuns } from "../lib/queries";
 import type { MissionWithClient, RunWithMission } from "../lib/types";
@@ -9,6 +9,9 @@ import {
   Spinner,
   EmptyState,
   ErrorBanner,
+  SearchInput,
+  FilterSelect,
+  Toolbar,
   type Column,
 } from "./shared";
 
@@ -20,7 +23,26 @@ function formatDate(iso: string | null): string {
   });
 }
 
+const statusOptions = [
+  { value: "", label: "All Statuses" },
+  { value: "active", label: "Active" },
+  { value: "paused", label: "Paused" },
+  { value: "retired", label: "Retired" },
+];
+
+const typeOptions = [
+  { value: "", label: "All Types" },
+  { value: "build_and_review", label: "Build & Review" },
+  { value: "extract_normalize_store", label: "Extract/Normalize" },
+  { value: "repair_failed_workflow", label: "Repair" },
+  { value: "monitor_only", label: "Monitor" },
+];
+
 export function MissionsView() {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+
   const { data: missions, loading, error } = usePolling({
     fetcher: fetchMissions,
     interval: 12_000,
@@ -41,18 +63,35 @@ export function MissionsView() {
     return map;
   }, [runs]);
 
-  // Group missions by client
-  const grouped = useMemo(() => {
+  // Filter missions
+  const filtered = useMemo(() => {
     if (!missions) return [];
+    let result = missions;
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (m) =>
+          m.objective.toLowerCase().includes(q) ||
+          m.mission_type.toLowerCase().includes(q) ||
+          (m.clients?.display_name?.toLowerCase().includes(q) ?? false),
+      );
+    }
+    if (statusFilter) result = result.filter((m) => m.status === statusFilter);
+    if (typeFilter) result = result.filter((m) => m.mission_type === typeFilter);
+    return result;
+  }, [missions, search, statusFilter, typeFilter]);
+
+  // Group by client
+  const grouped = useMemo(() => {
     const map = new Map<string, { label: string; missions: MissionWithClient[] }>();
-    for (const m of missions) {
+    for (const m of filtered) {
       const clientKey = m.clients?.slug ?? "__none__";
       const clientLabel = m.clients?.display_name ?? "No Client";
       if (!map.has(clientKey)) map.set(clientKey, { label: clientLabel, missions: [] });
       map.get(clientKey)!.missions.push(m);
     }
     return [...map.values()].sort((a, b) => a.label.localeCompare(b.label));
-  }, [missions]);
+  }, [filtered]);
 
   const columns: Column<MissionWithClient>[] = [
     {
@@ -64,7 +103,7 @@ export function MissionsView() {
       key: "objective",
       header: "Objective",
       render: (r) => (
-        <span style={{ maxWidth: 320, display: "inline-block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ maxWidth: 280, display: "inline-block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#e2e8f0" }}>
           {r.objective}
         </span>
       ),
@@ -88,7 +127,7 @@ export function MissionsView() {
         return (
           <span>
             <StatusBadge value={last.status} />{" "}
-            <span style={{ color: "#6b7280", fontSize: 12 }}>
+            <span style={{ color: "#64748b", fontSize: 12 }}>
               {formatDate(last.started_at)}
             </span>
           </span>
@@ -109,8 +148,8 @@ export function MissionsView() {
                   padding: "1px 6px",
                   borderRadius: 4,
                   fontSize: 11,
-                  backgroundColor: "#f3f4f6",
-                  color: "#374151",
+                  backgroundColor: "#1e293b",
+                  color: "#94a3b8",
                 }}
               >
                 {t}
@@ -124,8 +163,13 @@ export function MissionsView() {
     <div>
       <PageHeader
         title="Missions"
-        subtitle={missions ? `${missions.length} missions` : undefined}
+        subtitle={missions ? `${filtered.length} of ${missions.length} missions` : undefined}
       />
+      <Toolbar>
+        <SearchInput value={search} onChange={setSearch} placeholder="Search missions…" />
+        <FilterSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
+        <FilterSelect value={typeFilter} onChange={setTypeFilter} options={typeOptions} />
+      </Toolbar>
       {error && <ErrorBanner message={error} />}
       {loading && !missions ? (
         <Spinner />
@@ -136,8 +180,8 @@ export function MissionsView() {
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: "#374151",
-                borderBottom: "1px solid #e5e7eb",
+                color: "#94a3b8",
+                borderBottom: "1px solid #1e293b",
                 paddingBottom: 6,
                 marginBottom: 8,
               }}

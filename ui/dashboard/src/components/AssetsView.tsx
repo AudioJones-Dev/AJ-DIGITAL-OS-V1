@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { usePolling } from "../hooks/use-polling";
-import { fetchDeliverables } from "../lib/queries";
-import type { Deliverable } from "../lib/types";
+import { fetchAssets } from "../lib/queries";
+import type { Asset } from "../lib/types";
 import {
   DataTable,
   StatusBadge,
@@ -30,7 +30,7 @@ const statusOptions = [
   { value: "failed", label: "Failed" },
 ];
 
-const columns: Column<Deliverable>[] = [
+const columns: Column<Asset>[] = [
   {
     key: "filename",
     header: "Filename",
@@ -86,12 +86,12 @@ const columns: Column<Deliverable>[] = [
   },
 ];
 
-export function DeliverablesView() {
+export function AssetsView() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
   const { data, loading, error } = usePolling({
-    fetcher: fetchDeliverables,
+    fetcher: fetchAssets,
     interval: 15_000,
   });
 
@@ -101,24 +101,24 @@ export function DeliverablesView() {
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
-        (d) =>
-          d.filename.toLowerCase().includes(q) ||
-          d.content_type.toLowerCase().includes(q) ||
-          d.r2_key.toLowerCase().includes(q),
+        (a) =>
+          a.filename.toLowerCase().includes(q) ||
+          a.content_type.toLowerCase().includes(q) ||
+          a.r2_key.toLowerCase().includes(q),
       );
     }
-    if (statusFilter) result = result.filter((d) => d.status === statusFilter);
+    if (statusFilter) result = result.filter((a) => a.status === statusFilter);
     return result;
   }, [data, search, statusFilter]);
 
   return (
     <div>
       <PageHeader
-        title="Deliverables"
-        subtitle={data ? `${filtered.length} of ${data.length} outputs` : undefined}
+        title="Assets"
+        subtitle={data ? `${filtered.length} of ${data.length} assets` : undefined}
       />
       <Toolbar>
-        <SearchInput value={search} onChange={setSearch} placeholder="Search deliverables…" />
+        <SearchInput value={search} onChange={setSearch} placeholder="Search assets…" />
         <FilterSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
       </Toolbar>
       {error && <ErrorBanner message={error} />}
@@ -127,7 +127,7 @@ export function DeliverablesView() {
       ) : filtered.length > 0 ? (
         <DataTable columns={columns} rows={filtered} rowKey={(r) => r.id} />
       ) : (
-        <EmptyState message="No deliverables found." />
+        <EmptyState message="No assets found." />
       )}
     </div>
   );
