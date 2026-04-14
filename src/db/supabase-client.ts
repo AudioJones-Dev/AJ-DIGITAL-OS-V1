@@ -217,3 +217,23 @@ export async function getMissionRunsByMission(
   if (!isConfigured(cfg)) return { ok: false, data: null, error: "Supabase not configured", count: null };
   return supabaseGet<DbMissionRun>(cfg, "mission_runs", `mission_id=eq.${encodeURIComponent(missionId)}&order=created_at.desc`);
 }
+
+export async function getRecentFailedRuns(
+  limit = 20,
+  config?: Partial<SupabaseConfig>,
+): Promise<QueryResult<DbMissionRun[]>> {
+  const cfg = resolveConfig(config);
+  if (!isConfigured(cfg)) return { ok: false, data: null, error: "Supabase not configured", count: null };
+  return supabaseGet<DbMissionRun>(cfg, "mission_runs", `status=eq.failed&order=created_at.desc&limit=${limit}`);
+}
+
+export async function getMissionById(
+  missionId: string,
+  config?: Partial<SupabaseConfig>,
+): Promise<QueryResult<DbMission>> {
+  const cfg = resolveConfig(config);
+  if (!isConfigured(cfg)) return { ok: false, data: null, error: "Supabase not configured", count: null };
+  return supabaseGet<DbMission>(cfg, "missions", `id=eq.${encodeURIComponent(missionId)}&limit=1`).then(
+    (r) => ({ ...r, data: r.data?.[0] ?? null }),
+  ) as Promise<QueryResult<DbMission>>;
+}
