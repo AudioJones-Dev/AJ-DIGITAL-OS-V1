@@ -93,11 +93,33 @@ create trigger missions_updated_at
   before update on missions
   for each row execute function update_updated_at();
 
+-- ─── Deliverables (outputs linked to runs + clients) ───────────────
+
+create table if not exists deliverables (
+  id              uuid primary key default gen_random_uuid(),
+  mission_run_id  uuid references mission_runs(id) on delete set null,
+  client_id       uuid references clients(id) on delete set null,
+  filename        text not null,
+  content_type    text not null default 'application/octet-stream',
+  size_bytes      integer,
+  r2_key          text not null,
+  public_url      text,
+  status          text not null default 'pending'
+                  check (status in ('pending', 'uploaded', 'published', 'failed')),
+  metadata        jsonb not null default '{}',
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists idx_deliverables_run on deliverables (mission_run_id);
+create index if not exists idx_deliverables_client on deliverables (client_id);
+create index if not exists idx_deliverables_status on deliverables (status);
+
 -- ─── Row Level Security ────────────────────────────────────────────
 
 alter table clients enable row level security;
 alter table missions enable row level security;
 alter table mission_runs enable row level security;
+alter table deliverables enable row level security;
 
 -- Service role has full access; anon gets nothing by default.
 -- Add policies per your auth requirements:
