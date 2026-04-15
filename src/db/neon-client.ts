@@ -64,7 +64,8 @@ function parseConnectionString(url: string): ParsedNeon | null {
 
 export interface NeonQueryResponse {
   fields: Array<{ name: string }>;
-  rows: unknown[][];
+  rows: unknown[];
+  rowAsArray?: boolean;
 }
 
 /**
@@ -73,6 +74,8 @@ export interface NeonQueryResponse {
  * Uses Neon's serverless SQL-over-HTTP API:
  *   POST https://{host}/sql
  *   Authorization: Bearer {password}
+ *
+ * Neon returns rows as objects by default (rowAsArray: false).
  */
 async function neonQuery<T>(
   cfg: NeonConfig,
@@ -102,16 +105,22 @@ async function neonQuery<T>(
     }
 
     const result = (await res.json()) as NeonQueryResponse;
-    const fields = result.fields.map((f) => f.name);
 
-    // Convert row arrays to objects
-    const rows = result.rows.map((row) => {
-      const obj: Record<string, unknown> = {};
-      for (let i = 0; i < fields.length; i++) {
-        obj[fields[i]!] = row[i];
-      }
-      return obj as T;
-    });
+    let rows: T[];
+    if (result.rowAsArray) {
+      // Array-of-arrays format: convert to objects using field names
+      const fields = result.fields.map((f) => f.name);
+      rows = (result.rows as unknown[][]).map((row) => {
+        const obj: Record<string, unknown> = {};
+        for (let i = 0; i < fields.length; i++) {
+          obj[fields[i]!] = row[i];
+        }
+        return obj as T;
+      });
+    } else {
+      // Object format (default): rows are already keyed by column name
+      rows = result.rows as T[];
+    }
 
     return { ok: true, data: rows, error: null, count: rows.length };
   } catch (err) {

@@ -3,6 +3,13 @@ import type { CSSProperties, ReactNode } from "react";
 import type { ReplayStep, ReplayObservation, ReplayFailure } from "../lib/types";
 import { StatusBadge } from "./shared";
 
+// ── Helpers ────────────────────────────────────────────────────────
+
+function fmtTime(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString();
+}
+
 // ── Collapsible Section ────────────────────────────────────────────
 
 export function CollapsibleSection({
@@ -105,7 +112,7 @@ export function JsonViewer({ data, label }: { data: unknown; label?: string }) {
   );
 }
 
-// ── Step Card ──────────────────────────────────────────────────────
+// ── Replay Step Card ───────────────────────────────────────────────
 
 const stepCardStyle: CSSProperties = {
   position: "relative",
@@ -116,9 +123,10 @@ const stepCardStyle: CSSProperties = {
   marginBottom: 2,
 };
 
-function StepCard({ step, isLast }: { step: ReplayStep; isLast: boolean }) {
+export function ReplayStepCard({ step, isLast }: { step: ReplayStep; isLast: boolean }) {
   const [open, setOpen] = useState(false);
   const accent = step.ok ? "#22c55e" : "#ef4444";
+  const statusLabel = step.ok ? "passed" : "failed";
 
   return (
     <div style={{ display: "flex", gap: 0 }}>
@@ -151,6 +159,7 @@ function StepCard({ step, isLast }: { step: ReplayStep; isLast: boolean }) {
               #{step.step_index}
             </span>
             <StatusBadge value={step.role} />
+            <StatusBadge value={statusLabel} />
             {step.pipeline_id && (
               <span style={{ fontSize: 11, color: "#64748b" }}>
                 {step.pipeline_id}
@@ -171,15 +180,17 @@ function StepCard({ step, isLast }: { step: ReplayStep; isLast: boolean }) {
             <span style={{ fontSize: 12, color: "#64748b", fontVariantNumeric: "tabular-nums" }}>
               {step.duration_ms != null ? `${step.duration_ms}ms` : "—"}
             </span>
-            <span style={{ fontSize: 14, color: step.ok ? "#22c55e" : "#ef4444" }}>
-              {step.ok ? "✓" : "✗"}
-            </span>
           </div>
         </div>
 
-        {step.error && (
+        {/* Step summary line */}
+        {step.error ? (
           <div style={{ marginTop: 8, padding: "6px 10px", backgroundColor: "#450a0a", borderRadius: 4, fontSize: 12, color: "#fca5a5" }}>
             {step.error}
+          </div>
+        ) : (
+          <div style={{ marginTop: 4, fontSize: 11, color: "#64748b" }}>
+            {step.role} · {step.pipeline_id || "default"} · {step.duration_ms ?? 0}ms{step.retries > 0 ? ` · ${step.retries} retries` : ""}
           </div>
         )}
 
@@ -193,8 +204,8 @@ function StepCard({ step, isLast }: { step: ReplayStep; isLast: boolean }) {
 
         {open && (
           <div style={{ marginTop: 10 }}>
-            <JsonViewer data={step.input_snapshot} label="Input" />
-            <JsonViewer data={step.output_snapshot} label="Output" />
+            <JsonViewer data={step.input_snapshot} label="Input Snapshot" />
+            <JsonViewer data={step.output_snapshot} label="Output Snapshot" />
           </div>
         )}
       </div>
@@ -223,7 +234,7 @@ export function ReplayTimeline({ steps }: { steps: ReplayStep[] }) {
       </div>
       <div>
         {steps.map((step, i) => (
-          <StepCard key={step.id} step={step} isLast={i === steps.length - 1} />
+          <ReplayStepCard key={step.id} step={step} isLast={i === steps.length - 1} />
         ))}
       </div>
     </div>
@@ -265,9 +276,12 @@ export function ObservationPanel({ observations }: { observations: ReplayObserva
               <StatusBadge value={obs.source} />
               <span style={{ fontSize: 13, color: "#e2e8f0" }}>{obs.summary}</span>
             </div>
-            <span style={{ fontSize: 14, color: obs.healthy ? "#22c55e" : "#ef4444" }}>
-              {obs.healthy ? "✓" : "✗"}
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 11, color: "#64748b" }}>{fmtTime(obs.created_at)}</span>
+              <span style={{ fontSize: 14, color: obs.healthy ? "#22c55e" : "#ef4444" }}>
+                {obs.healthy ? "✓" : "✗"}
+              </span>
+            </div>
           </div>
           {obs.snapshot_label && (
             <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
@@ -290,7 +304,7 @@ const failCardStyle: CSSProperties = {
   backgroundColor: "#1c1117",
   borderRadius: 8,
   borderLeft: "3px solid #ef4444",
-  marginBottom: 8,
+  marginBottom: 10,
 };
 
 export function FailurePanel({ failures }: { failures: ReplayFailure[] }) {
@@ -309,49 +323,88 @@ export function FailurePanel({ failures }: { failures: ReplayFailure[] }) {
         {resolved > 0 && <span style={{ color: "#22c55e" }}>{resolved} resolved</span>}
       </div>
       {failures.map((f) => (
-        <div key={f.id} style={failCardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <StatusBadge value={f.role} />
-              {f.escalated && (
-                <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, backgroundColor: "#78350f", color: "#fcd34d" }}>
-                  escalated
-                </span>
-              )}
-              {f.resolved && (
-                <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, backgroundColor: "#064e3b", color: "#6ee7b7" }}>
-                  resolved
-                </span>
-              )}
-            </div>
-            {f.step_id != null && (
-              <span style={{ fontSize: 11, color: "#64748b" }}>step #{f.step_id}</span>
-            )}
-          </div>
+        <FailureCard key={f.id} failure={f} />
+      ))}
+    </div>
+  );
+}
 
-          <div style={{ fontSize: 13, color: "#fca5a5", marginBottom: 6 }}>
-            {f.error}
-          </div>
+function FailureCard({ failure: f }: { failure: ReplayFailure }) {
+  const [stackOpen, setStackOpen] = useState(false);
 
-          {f.resolution && (
-            <div style={{ fontSize: 12, color: "#6ee7b7", marginBottom: 6 }}>
-              Resolution: {f.resolution}
-            </div>
+  return (
+    <div style={failCardStyle}>
+      {/* Header row: role, badges, timestamp */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <StatusBadge value={f.role} />
+          <StatusBadge value="failed" />
+          {f.escalated && (
+            <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, backgroundColor: "#78350f", color: "#fcd34d" }}>
+              escalated
+            </span>
           )}
+          {f.resolved && (
+            <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, backgroundColor: "#064e3b", color: "#6ee7b7" }}>
+              resolved
+            </span>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {f.step_id != null && (
+            <span style={{ fontSize: 11, color: "#64748b" }}>step #{f.step_id}</span>
+          )}
+          <span style={{ fontSize: 11, color: "#64748b" }}>{fmtTime(f.created_at)}</span>
+        </div>
+      </div>
 
-          {f.stack_trace && (
+      {/* Error message — visually prominent */}
+      <div style={{ fontSize: 13, color: "#fca5a5", marginBottom: 6, padding: "6px 10px", backgroundColor: "#450a0a", borderRadius: 4 }}>
+        {f.error}
+      </div>
+
+      {f.resolution && (
+        <div style={{ fontSize: 12, color: "#6ee7b7", marginBottom: 6 }}>
+          Resolution: {f.resolution}
+        </div>
+      )}
+
+      {/* Stack trace — collapsible by default */}
+      {f.stack_trace && (
+        <div style={{ marginTop: 6 }}>
+          <button
+            onClick={() => setStackOpen((o) => !o)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: 0,
+              marginBottom: stackOpen ? 6 : 0,
+            }}
+          >
+            <span style={{ color: "#64748b", fontSize: 11, width: 12, textAlign: "center", transition: "transform 0.15s", transform: stackOpen ? "rotate(90deg)" : "rotate(0)" }}>
+              ▶
+            </span>
+            <span style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Stack Trace
+            </span>
+          </button>
+          {stackOpen && (
             <pre
               style={{
-                margin: "6px 0 0",
-                padding: "6px 10px",
+                margin: 0,
+                padding: "8px 10px",
                 backgroundColor: "#0f172a",
                 border: "1px solid #1e293b",
                 borderRadius: 4,
                 fontSize: 10,
-                color: "#64748b",
+                color: "#94a3b8",
                 lineHeight: 1.4,
                 overflowX: "auto",
-                maxHeight: 120,
+                maxHeight: 200,
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
               }}
@@ -359,10 +412,10 @@ export function FailurePanel({ failures }: { failures: ReplayFailure[] }) {
               {f.stack_trace}
             </pre>
           )}
-
-          <JsonViewer data={f.input_snapshot} label="Input Snapshot" />
         </div>
-      ))}
+      )}
+
+      <JsonViewer data={f.input_snapshot} label="Input Snapshot" />
     </div>
   );
 }
