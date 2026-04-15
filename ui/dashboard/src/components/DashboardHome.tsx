@@ -12,6 +12,7 @@ import {
   type Column,
 } from "./shared";
 import { HermesWidget } from "./HermesWidget";
+import { RepairWidget } from "./RepairWidget";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -129,6 +130,9 @@ export function DashboardHome() {
 
       {/* Hermes orchestrator status */}
       <HermesWidget />
+
+      {/* Failure Auto-Repair */}
+      <RepairWidget />
 
       {/* Recent failed runs */}
       <div style={{ marginBottom: 32 }}>

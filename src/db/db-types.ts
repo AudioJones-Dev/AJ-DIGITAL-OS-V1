@@ -169,6 +169,31 @@ export interface DbPattern {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// Neon — Repair Events
+// ═══════════════════════════════════════════════════════════════════
+
+export type FailureClassification = "transient" | "network" | "dependency" | "data_schema" | "auth_config" | "unknown";
+export type RepairStrategy = "retry_immediate" | "retry_backoff" | "retry_targeted" | "alert_only" | "retry_then_escalate";
+export type RepairResult = "pending" | "success" | "failed" | "escalated";
+
+export interface DbRepairEvent {
+  id: number;
+  failure_id: number | null;
+  run_id: number | null;
+  run_ref: string;
+  classification: FailureClassification;
+  strategy: RepairStrategy;
+  retry_count: number;
+  max_retries: number;
+  result: RepairResult;
+  escalated: boolean;
+  error_message: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Query Abstractions
 // ═══════════════════════════════════════════════════════════════════
 
@@ -191,3 +216,4 @@ export type InsertStep = Omit<DbStep, "id" | "created_at">;
 export type InsertObservation = Omit<DbObservation, "id" | "created_at">;
 export type InsertFailure = Omit<DbFailure, "id" | "created_at">;
 export type InsertPattern = Omit<DbPattern, "id" | "created_at">;
+export type InsertRepairEvent = Omit<DbRepairEvent, "id" | "created_at" | "resolved_at">;

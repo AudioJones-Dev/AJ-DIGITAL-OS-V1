@@ -101,3 +101,30 @@ create table if not exists patterns (
 
 create index if not exists idx_patterns_type on patterns (pattern_type);
 create index if not exists idx_patterns_confidence on patterns (confidence desc);
+
+-- ─── Repair Events ─────────────────────────────────────────────────
+
+create table if not exists repair_events (
+  id              bigserial primary key,
+  failure_id      bigint references failures(id) on delete set null,
+  run_id          bigint references runs(id) on delete cascade,
+  run_ref         text not null,
+  classification  text not null
+                  check (classification in ('transient', 'network', 'dependency', 'data_schema', 'auth_config', 'unknown')),
+  strategy        text not null
+                  check (strategy in ('retry_immediate', 'retry_backoff', 'retry_targeted', 'alert_only', 'retry_then_escalate')),
+  retry_count     integer not null default 0,
+  max_retries     integer not null default 1,
+  result          text not null default 'pending'
+                  check (result in ('pending', 'success', 'failed', 'escalated')),
+  escalated       boolean not null default false,
+  error_message   text,
+  metadata        jsonb not null default '{}',
+  created_at      timestamptz not null default now(),
+  resolved_at     timestamptz
+);
+
+create index if not exists idx_repair_events_run on repair_events (run_id);
+create index if not exists idx_repair_events_classification on repair_events (classification);
+create index if not exists idx_repair_events_result on repair_events (result);
+create index if not exists idx_repair_events_created on repair_events (created_at desc);

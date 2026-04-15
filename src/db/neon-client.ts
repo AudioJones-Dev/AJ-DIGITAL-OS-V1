@@ -18,11 +18,13 @@ import type {
   DbObservation,
   DbFailure,
   DbPattern,
+  DbRepairEvent,
   InsertRun,
   InsertStep,
   InsertObservation,
   InsertFailure,
   InsertPattern,
+  InsertRepairEvent,
   QueryResult,
 } from "./db-types.js";
 
@@ -355,6 +357,70 @@ export async function getFullRunData(
     error: null,
     count: null,
   };
+}
+
+// ── Repair Event Operations ────────────────────────────────────────
+
+export async function insertRepairEvent(
+  event: InsertRepairEvent,
+  config?: Partial<NeonConfig>,
+): Promise<QueryResult<DbRepairEvent>> {
+  const cfg = resolveConfig(config);
+  if (!isConfigured(cfg)) return { ok: false, data: null, error: "Neon not configured", count: null };
+
+  return neonInsert<DbRepairEvent>(cfg,
+    `INSERT INTO repair_events (failure_id, run_id, run_ref, classification, strategy, retry_count, max_retries, result, escalated, error_message, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     RETURNING *`,
+    [
+      event.failure_id, event.run_id, event.run_ref,
+      event.classification, event.strategy,
+      event.retry_count, event.max_retries,
+      event.result, event.escalated,
+      event.error_message, JSON.stringify(event.metadata),
+    ],
+  );
+}
+
+export async function updateRepairEvent(
+  id: number,
+  update: { result: string; retry_count: number; escalated: boolean; error_message: string | null; resolved_at?: string | undefined },
+  config?: Partial<NeonConfig>,
+): Promise<QueryResult<DbRepairEvent>> {
+  const cfg = resolveConfig(config);
+  if (!isConfigured(cfg)) return { ok: false, data: null, error: "Neon not configured", count: null };
+
+  return neonInsert<DbRepairEvent>(cfg,
+    `UPDATE repair_events SET result = $1, retry_count = $2, escalated = $3, error_message = $4, resolved_at = $5
+     WHERE id = $6 RETURNING *`,
+    [update.result, update.retry_count, update.escalated, update.error_message, update.resolved_at ?? null, id],
+  );
+}
+
+export async function getRecentRepairEvents(
+  limit: number = 20,
+  config?: Partial<NeonConfig>,
+): Promise<QueryResult<DbRepairEvent[]>> {
+  const cfg = resolveConfig(config);
+  if (!isConfigured(cfg)) return { ok: false, data: null, error: "Neon not configured", count: null };
+
+  return neonQuery<DbRepairEvent>(cfg,
+    `SELECT * FROM repair_events ORDER BY created_at DESC LIMIT $1`,
+    [limit],
+  );
+}
+
+export async function getRepairEventsByRun(
+  runId: number,
+  config?: Partial<NeonConfig>,
+): Promise<QueryResult<DbRepairEvent[]>> {
+  const cfg = resolveConfig(config);
+  if (!isConfigured(cfg)) return { ok: false, data: null, error: "Neon not configured", count: null };
+
+  return neonQuery<DbRepairEvent>(cfg,
+    `SELECT * FROM repair_events WHERE run_id = $1 ORDER BY created_at DESC`,
+    [runId],
+  );
 }
 
 // ── Health Check ───────────────────────────────────────────────────

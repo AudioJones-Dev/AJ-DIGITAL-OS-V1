@@ -13,7 +13,8 @@ import { getSchedulerStatus } from "./hermes-scheduler.js";
 import { isWatcherRunning, getLastCheckAt } from "./hermes-failure-watcher.js";
 import { getRecentNotifications } from "./hermes-notifications.js";
 import { getEnabledSchedules, DEFAULT_SCHEDULES } from "./hermes-schedule-config.js";
-import { getFullRunData } from "../db/neon-client.js";
+import { getFullRunData, getRecentRepairEvents } from "../db/neon-client.js";
+import { getRecentRepairs } from "./hermes-repair-engine.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -135,6 +136,29 @@ export function startHermesApi(port?: number): void {
         .catch((err: unknown) => {
           res.writeHead(500, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }));
+        });
+      return;
+    }
+
+    // Repairs endpoint — recent repair events from Neon + in-memory
+    if (req.url === "/repairs" || req.url?.startsWith("/repairs?")) {
+      getRecentRepairEvents(30)
+        .then((result) => {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            ok: true,
+            data: result.ok ? result.data : [],
+            inMemory: getRecentRepairs(),
+          }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            ok: true,
+            data: [],
+            inMemory: getRecentRepairs(),
+            error: err instanceof Error ? err.message : "Failed to fetch repair events",
+          }));
         });
       return;
     }

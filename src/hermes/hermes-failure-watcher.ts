@@ -15,6 +15,7 @@ import type { FailureAlert } from "./hermes-types.js";
 import type { MissionTypeName } from "../missions/mission-entry-types.js";
 import { notify, notifyAll } from "./hermes-notifications.js";
 import { retryMission } from "./hermes-bridge.js";
+import { repairFailure, type RepairConfig } from "./hermes-repair-engine.js";
 import type { ProductionMissionConfig } from "../missions/mission-db-hooks.js";
 
 const TAG = "[HERMES-WATCHER]";
@@ -32,8 +33,10 @@ export interface WatcherConfig {
   pollIntervalMs?: number;
   /** Maximum failed runs to fetch per poll. Default: 20. */
   fetchLimit?: number;
-  /** Whether to auto-retry failed runs. Default: false. */
+  /** Whether to auto-retry failed runs (legacy simple retry). Default: false. */
   autoRetry?: boolean;
+  /** Whether to run the full repair engine (classify → strategy → retry). Default: false. */
+  autoRepair?: boolean;
   /** Maximum auto-retries per run. Default: 1. */
   maxAutoRetries?: number;
   /** Supabase config override. */
@@ -46,6 +49,7 @@ const DEFAULT_CONFIG: Required<Omit<WatcherConfig, "supabase" | "missionConfig">
   pollIntervalMs: 60_000,
   fetchLimit: 20,
   autoRetry: false,
+  autoRepair: false,
   maxAutoRetries: 1,
 };
 
@@ -154,8 +158,16 @@ async function checkForFailures(config?: WatcherConfig): Promise<void> {
         },
       );
 
-      // Auto-retry if configured
-      if (config?.autoRetry) {
+      // Auto-repair (full classify → strategy → retry pipeline)
+      if (config?.autoRepair) {
+        const errorText = alert.summary ?? "unknown failure";
+        await repairFailure(alert, errorText, {
+          supabase: config.supabase ?? {},
+          missionConfig: config.missionConfig ?? ({} as ProductionMissionConfig),
+        });
+      }
+      // Legacy auto-retry (simple retry without classification)
+      else if (config?.autoRetry) {
         await attemptAutoRetry(alert, config);
       }
     }

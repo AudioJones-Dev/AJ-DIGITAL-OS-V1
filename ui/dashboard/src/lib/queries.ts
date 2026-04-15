@@ -8,6 +8,7 @@ import type {
   MissionRun,
   MissionWithClient,
   ReplayData,
+  RepairEvent,
   RunWithMission,
 } from "./types";
 
@@ -214,4 +215,15 @@ export async function fetchReplayData(runRef: string): Promise<ReplayData | null
   if (!res.ok) return null;
   const body = await res.json() as { ok: boolean; data?: ReplayData };
   return body.ok && body.data ? body.data : null;
+}
+
+// ── Repair Events (Neon via Hermes API) ────────────────────────────
+
+export async function fetchRepairEvents(): Promise<RepairEvent[]> {
+  const res = await fetch(`${HERMES_API}/repairs`, {
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) return [];
+  const body = await res.json() as { ok: boolean; data?: RepairEvent[] };
+  return body.ok && body.data ? body.data : [];
 }
