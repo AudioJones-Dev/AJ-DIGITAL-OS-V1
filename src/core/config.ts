@@ -60,6 +60,7 @@ export interface RuntimeConfig {
   sanityProjectId: string;
   sanityDataset: string;
   telegramBotToken: string;
+  telegramBotUsername: string;
   telegramChatId: string;
   n8nMcpToken: string;
   n8nBaseUrl: string;
@@ -149,6 +150,7 @@ export const createRuntimeConfig = (): RuntimeConfig => {
     sanityProjectId: normalizeSecret(process.env.SANITY_PROJECT_ID),
     sanityDataset: process.env.SANITY_DATASET?.trim() || "production",
     telegramBotToken: normalizeSecret(process.env.TELEGRAM_BOT_TOKEN),
+    telegramBotUsername: process.env.TELEGRAM_BOT_USERNAME?.trim() || "",
     telegramChatId: normalizeSecret(process.env.TELEGRAM_CHAT_ID),
     n8nMcpToken: normalizeSecret(process.env.N8N_MCP_TOKEN),
     n8nBaseUrl: normalizeUrl(process.env.N8N_BASE_URL, ""),

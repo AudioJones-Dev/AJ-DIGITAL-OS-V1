@@ -44,7 +44,7 @@ export interface FailureAlert {
 // ── Notification ───────────────────────────────────────────────────
 
 export type NotificationSeverity = "info" | "warning" | "critical";
-export type NotificationChannel = "console" | "log" | "webhook";
+export type NotificationChannel = "console" | "log" | "webhook" | "telegram";
 
 export interface HermesNotification {
   severity: NotificationSeverity;

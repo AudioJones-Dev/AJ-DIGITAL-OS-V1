@@ -131,6 +131,50 @@ async function deliverWebhook(n: HermesNotification): Promise<void> {
   }
 }
 
+// ── Telegram Delivery ──────────────────────────────────────────────
+
+function getTelegramConfig(): { token: string; chatId: string } | null {
+  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const chatId = process.env.TELEGRAM_CHAT_ID?.trim();
+  if (!token || !chatId) return null;
+  return { token, chatId };
+}
+
+async function deliverTelegram(n: HermesNotification): Promise<void> {
+  const tg = getTelegramConfig();
+  if (!tg) return;
+
+  const icon = n.severity === "critical" ? "🔴" : n.severity === "warning" ? "🟡" : "🟢";
+  const metaLines = n.metadata && Object.keys(n.metadata).length > 0
+    ? "\n" + Object.entries(n.metadata).map(([k, v]) => `• *${k}:* ${String(v)}`).join("\n")
+    : "";
+
+  const text = `${icon} *\\[${n.severity.toUpperCase()}\\]* ${n.title}\n${n.message}${metaLines}`;
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${tg.token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: tg.chatId,
+        text,
+        parse_mode: "MarkdownV2",
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (res.ok) {
+      console.log(`${TAG} [TELEGRAM] Delivered: ${n.title}`);
+    } else {
+      const body = await res.text().catch(() => "");
+      console.warn(`${TAG} [TELEGRAM] Failed (${res.status}): ${body.slice(0, 200)}`);
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`${TAG} [TELEGRAM] Error: ${msg}`);
+  }
+}
+
 // ── Channel Handlers ───────────────────────────────────────────────
 
 const channelHandlers: Record<NotificationChannel, (n: HermesNotification) => void> = {
@@ -154,6 +198,11 @@ const channelHandlers: Record<NotificationChannel, (n: HermesNotification) => vo
   webhook: (n) => {
     // Fire-and-forget webhook delivery — never throws
     void deliverWebhook(n);
+  },
+
+  telegram: (n) => {
+    // Fire-and-forget Telegram delivery — never throws
+    void deliverTelegram(n);
   },
 };
 
