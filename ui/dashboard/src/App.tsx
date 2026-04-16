@@ -8,15 +8,35 @@ import { AssetsView } from "./components/AssetsView";
 import MissionDetail from "./components/MissionDetail";
 import RunDetail from "./components/RunDetail";
 import MissionTrigger from "./components/MissionTrigger";
+import { AgentsView } from "./components/AgentsView";
+import { WorkspaceBoard } from "./components/WorkspaceBoard";
+import { TaskDetail } from "./components/TaskDetail";
+import { ClientAlerts } from "./components/ClientAlerts";
+import { ClientDeliverables } from "./components/ClientDeliverables";
+import { ViewModeSwitcher } from "./components/ViewModeSwitcher";
+import { ViewModeProvider, useViewMode } from "./lib/view-mode";
 import type { CSSProperties } from "react";
 
-const navItems = [
+// ── Nav items by mode ──────────────────────────────────────────────
+
+const operatorNav = [
   { to: "/", label: "Dashboard" },
+  { to: "/agents", label: "Agents" },
+  { to: "/workspace", label: "Workspace" },
   { to: "/clients", label: "Clients" },
   { to: "/missions", label: "Missions" },
   { to: "/runs", label: "Runs" },
   { to: "/deliverables", label: "Deliverables" },
   { to: "/assets", label: "Assets" },
+  { to: "/alerts", label: "Alerts" },
+];
+
+const clientNav = [
+  { to: "/", label: "Home" },
+  { to: "/agents", label: "Your Team" },
+  { to: "/workspace", label: "Task Board" },
+  { to: "/outputs", label: "Outputs" },
+  { to: "/alerts", label: "Notifications" },
 ];
 
 const shellStyle: CSSProperties = {
@@ -75,50 +95,68 @@ const contentStyle: CSSProperties = {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <div style={shellStyle}>
-        {/* Sidebar */}
-        <nav style={sidebarStyle}>
-          <div style={logoStyle}>AJ DIGITAL OS</div>
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              style={({ isActive }) => (isActive ? navLinkActive : navLinkBase)}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-          <div style={{ flex: 1 }} />
-          <div
-            style={{
-              padding: "12px 20px",
-              fontSize: 11,
-              color: "#475569",
-              borderTop: "1px solid #1e293b",
-            }}
-          >
-            Operator Dashboard v0.3
-          </div>
-        </nav>
+    <ViewModeProvider>
+      <BrowserRouter>
+        <AppShell />
+      </BrowserRouter>
+    </ViewModeProvider>
+  );
+}
 
-        {/* Main content */}
-        <main style={contentStyle}>
-          <Routes>
-            <Route path="/" element={<DashboardHome />} />
-            <Route path="/clients" element={<ClientsView />} />
-            <Route path="/missions" element={<MissionsView />} />
-            <Route path="/missions/new" element={<MissionTrigger />} />
-            <Route path="/missions/:id" element={<MissionDetail />} />
-            <Route path="/runs" element={<RunsView />} />
-            <Route path="/runs/:id" element={<RunDetail />} />
-            <Route path="/deliverables" element={<DeliverablesView />} />
-            <Route path="/assets" element={<AssetsView />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+function AppShell() {
+  const { isClient } = useViewMode();
+  const navItems = isClient ? clientNav : operatorNav;
+  const versionLabel = isClient ? "Client Portal v1.0" : "Operator Dashboard v0.4";
+
+  return (
+    <div style={shellStyle}>
+      {/* Sidebar */}
+      <nav style={sidebarStyle}>
+        <div style={logoStyle}>AJ DIGITAL OS</div>
+        <ViewModeSwitcher />
+        <div style={{ height: 12 }} />
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === "/"}
+            style={({ isActive }) => (isActive ? navLinkActive : navLinkBase)}
+          >
+            {item.label}
+          </NavLink>
+        ))}
+        <div style={{ flex: 1 }} />
+        <div
+          style={{
+            padding: "12px 20px",
+            fontSize: 11,
+            color: "#475569",
+            borderTop: "1px solid #1e293b",
+          }}
+        >
+          {versionLabel}
+        </div>
+      </nav>
+
+      {/* Main content */}
+      <main style={contentStyle}>
+        <Routes>
+          <Route path="/" element={<DashboardHome />} />
+          <Route path="/agents" element={<AgentsView />} />
+          <Route path="/workspace" element={<WorkspaceBoard />} />
+          <Route path="/clients" element={<ClientsView />} />
+          <Route path="/missions" element={<MissionsView />} />
+          <Route path="/missions/new" element={<MissionTrigger />} />
+          <Route path="/missions/:id" element={<MissionDetail />} />
+          <Route path="/runs" element={<RunsView />} />
+          <Route path="/runs/:id" element={isClient ? <TaskDetail /> : <RunDetail />} />
+          <Route path="/deliverables" element={<DeliverablesView />} />
+          <Route path="/outputs" element={<ClientDeliverables />} />
+          <Route path="/assets" element={<AssetsView />} />
+          <Route path="/alerts" element={<ClientAlerts />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </div>
   );
 }
