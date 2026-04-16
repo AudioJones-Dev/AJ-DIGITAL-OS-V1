@@ -8,6 +8,8 @@ export type RunDbStatus = "pending" | "running" | "completed" | "failed";
 export type TriggerType = "manual" | "cron" | "webhook" | "hermes";
 export type DeliverableStatus = "pending" | "uploaded" | "published" | "failed";
 export type AssetStatus = "pending" | "uploaded" | "published" | "failed";
+export type SubscriptionStatus = "incomplete" | "active" | "past_due" | "canceled" | "unpaid" | "trialing";
+export type AgentRoleName = "planner" | "executor" | "validator" | "monitor";
 
 // ── Row types ──────────────────────────────────────────────────────
 
@@ -82,6 +84,28 @@ export interface Asset {
   created_at: string;
 }
 
+export interface Subscription {
+  id: string;
+  client_id: string;
+  stripe_customer_id: string;
+  stripe_subscription_id: string;
+  status: SubscriptionStatus;
+  plan_tier: ClientTier;
+  current_period_end: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientAgent {
+  id: string;
+  client_id: string;
+  role: AgentRoleName;
+  config: Record<string, unknown>;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Supabase Database type map (for typed queries) ─────────────────
 
 export interface Database {
@@ -92,6 +116,8 @@ export interface Database {
       mission_runs: { Row: MissionRun; Insert: Omit<MissionRun, "id" | "created_at">; Update: Partial<Omit<MissionRun, "id" | "created_at">> };
       deliverables: { Row: Deliverable; Insert: Omit<Deliverable, "id" | "created_at">; Update: Partial<Omit<Deliverable, "id" | "created_at">> };
       assets: { Row: Asset; Insert: Omit<Asset, "id" | "created_at">; Update: Partial<Omit<Asset, "id" | "created_at">> };
+      subscriptions: { Row: Subscription; Insert: Omit<Subscription, "id" | "created_at" | "updated_at">; Update: Partial<Omit<Subscription, "id" | "created_at">> };
+      client_agents: { Row: ClientAgent; Insert: Omit<ClientAgent, "id" | "created_at" | "updated_at">; Update: Partial<Omit<ClientAgent, "id" | "created_at">> };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

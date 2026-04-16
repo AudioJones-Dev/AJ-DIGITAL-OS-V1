@@ -27,20 +27,20 @@ export interface SupabaseConfig {
   anonKey: string;
 }
 
-function resolveConfig(override?: Partial<SupabaseConfig>): SupabaseConfig {
+export function resolveConfig(override?: Partial<SupabaseConfig>): SupabaseConfig {
   return {
     url: override?.url ?? process.env.SUPABASE_URL?.trim() ?? "",
     anonKey: override?.anonKey ?? process.env.SUPABASE_ANON_KEY?.trim() ?? "",
   };
 }
 
-function isConfigured(cfg: SupabaseConfig): boolean {
+export function isConfigured(cfg: SupabaseConfig): boolean {
   return cfg.url.length > 0 && cfg.anonKey.length > 0;
 }
 
 // ── Generic REST Helpers ───────────────────────────────────────────
 
-async function supabaseGet<T>(
+export async function supabaseGet<T>(
   cfg: SupabaseConfig,
   table: string,
   query: string,
@@ -64,7 +64,7 @@ async function supabaseGet<T>(
   }
 }
 
-async function supabaseInsert<T>(
+export async function supabaseInsert<T>(
   cfg: SupabaseConfig,
   table: string,
   row: Record<string, unknown>,
@@ -92,7 +92,7 @@ async function supabaseInsert<T>(
   }
 }
 
-async function supabasePatch<T>(
+export async function supabasePatch<T>(
   cfg: SupabaseConfig,
   table: string,
   query: string,

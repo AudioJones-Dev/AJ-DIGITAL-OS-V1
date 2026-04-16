@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import type {
   Asset,
   Client,
+  ClientAgent,
   DashboardSummary,
   Deliverable,
   Mission,
@@ -10,6 +11,7 @@ import type {
   ReplayData,
   RepairEvent,
   RunWithMission,
+  Subscription,
 } from "./types";
 
 // ── Clients ────────────────────────────────────────────────────────
@@ -226,4 +228,51 @@ export async function fetchRepairEvents(): Promise<RepairEvent[]> {
   if (!res.ok) return [];
   const body = await res.json() as { ok: boolean; data?: RepairEvent[] };
   return body.ok && body.data ? body.data : [];
+}
+
+// ── Subscriptions ──────────────────────────────────────────────────
+
+export async function fetchSubscriptionByClientId(clientId: string): Promise<Subscription | null> {
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select("*")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (error) throw new Error(error.message);
+  return data?.[0] ?? null;
+}
+
+// ── Client Agents ──────────────────────────────────────────────────
+
+export async function fetchClientAgents(clientId: string): Promise<ClientAgent[]> {
+  const { data, error } = await supabase
+    .from("client_agents")
+    .select("*")
+    .eq("client_id", clientId)
+    .order("role");
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+// ── Onboarding: Create Checkout ────────────────────────────────────
+
+export async function createCheckoutSession(input: {
+  email: string;
+  tier: string;
+  clientId?: string;
+}): Promise<{ ok: boolean; url: string | null; error: string | null }> {
+  const res = await fetch(`${HERMES_API}/api/stripe/create-checkout-session`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: input.email,
+      tier: input.tier,
+      clientId: input.clientId,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) return { ok: false, url: null, error: `HTTP ${res.status}` };
+  const body = await res.json() as { ok: boolean; url?: string; error?: string };
+  return { ok: body.ok, url: body.url ?? null, error: body.error ?? null };
 }

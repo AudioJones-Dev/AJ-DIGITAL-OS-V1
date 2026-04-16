@@ -15,6 +15,13 @@ import { getRecentNotifications } from "./hermes-notifications.js";
 import { getEnabledSchedules, DEFAULT_SCHEDULES } from "./hermes-schedule-config.js";
 import { getFullRunData, getRecentRepairEvents } from "../db/neon-client.js";
 import { getRecentRepairs } from "./hermes-repair-engine.js";
+import {
+  createCheckoutSession,
+  verifyWebhookSignature,
+  handleStripeWebhook,
+  type StripeWebhookEvent,
+} from "../api/stripe.js";
+import { createStripeWebhookHandlers } from "../api/stripe-handlers.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -90,6 +97,28 @@ function buildStatus(): HermesRuntimeStatus {
   };
 }
 
+// ── Body Collector ─────────────────────────────────────────────────
+
+function collectBody(req: import("node:http").IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let size = 0;
+    const MAX = 1_048_576; // 1 MB
+
+    req.on("data", (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > MAX) {
+        req.destroy();
+        reject(new Error("Request body too large"));
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+    req.on("error", reject);
+  });
+}
+
 /**
  * Start the Hermes status API on localhost.
  */
@@ -104,8 +133,8 @@ export function startHermesApi(port?: number): void {
   server = createServer((req, res) => {
     // CORS headers for dashboard access
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Stripe-Signature");
 
     if (req.method === "OPTIONS") {
       res.writeHead(204);
@@ -159,6 +188,71 @@ export function startHermesApi(port?: number): void {
             inMemory: getRecentRepairs(),
             error: err instanceof Error ? err.message : "Failed to fetch repair events",
           }));
+        });
+      return;
+    }
+
+    // ── Stripe: Create Checkout Session ─────────────────────────────
+    if (req.url === "/api/stripe/create-checkout-session" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const clientId = body["clientId"] as string | undefined;
+          const email = body["email"] as string | undefined;
+          const tier = (body["tier"] as string | undefined) ?? "standard";
+
+          if (!email) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "email is required" }));
+            return;
+          }
+
+          return createCheckoutSession({
+            clientId: clientId ?? "",
+            email,
+            tier: tier as "standard" | "professional" | "enterprise",
+          }).then((result) => {
+            res.writeHead(result.ok ? 200 : 500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
+          });
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Stripe: Webhook ──────────────────────────────────────────────
+    if (req.url === "/api/stripe/webhook" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const sig = req.headers["stripe-signature"];
+          if (typeof sig !== "string") {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "Missing Stripe-Signature header" }));
+            return;
+          }
+
+          const verification = verifyWebhookSignature(raw, sig);
+          if (!verification.verified) {
+            res.writeHead(401, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: verification.error }));
+            return;
+          }
+
+          const event = JSON.parse(raw) as StripeWebhookEvent;
+          const handlers = createStripeWebhookHandlers();
+
+          return handleStripeWebhook(event, handlers).then((result) => {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
+          });
+        })
+        .catch((err: unknown) => {
+          console.error(`${TAG} Stripe webhook error:`, err);
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "Internal webhook error" }));
         });
       return;
     }

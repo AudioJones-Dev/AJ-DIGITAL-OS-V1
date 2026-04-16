@@ -93,6 +93,42 @@ export interface DbAsset {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// Supabase — SaaS / Subscriptions
+// ═══════════════════════════════════════════════════════════════════
+
+export type SubscriptionStatus =
+  | "incomplete"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "unpaid"
+  | "trialing";
+
+export interface DbSubscription {
+  id: string;
+  client_id: string;
+  stripe_customer_id: string;
+  stripe_subscription_id: string;
+  status: SubscriptionStatus;
+  plan_tier: ClientTier;
+  current_period_end: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AgentRoleName = "planner" | "executor" | "validator" | "monitor";
+
+export interface DbClientAgent {
+  id: string;
+  client_id: string;
+  role: AgentRoleName;
+  config: Record<string, unknown>;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Neon — Data Layer
 // ═══════════════════════════════════════════════════════════════════
 
@@ -217,3 +253,5 @@ export type InsertObservation = Omit<DbObservation, "id" | "created_at">;
 export type InsertFailure = Omit<DbFailure, "id" | "created_at">;
 export type InsertPattern = Omit<DbPattern, "id" | "created_at">;
 export type InsertRepairEvent = Omit<DbRepairEvent, "id" | "created_at" | "resolved_at">;
+export type InsertSubscription = Omit<DbSubscription, "id" | "created_at" | "updated_at">;
+export type InsertClientAgent = Omit<DbClientAgent, "id" | "created_at" | "updated_at">;

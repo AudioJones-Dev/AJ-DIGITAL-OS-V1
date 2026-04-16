@@ -14,6 +14,7 @@ import { TaskDetail } from "./components/TaskDetail";
 import { ClientAlerts } from "./components/ClientAlerts";
 import { ClientDeliverables } from "./components/ClientDeliverables";
 import { ViewModeSwitcher } from "./components/ViewModeSwitcher";
+import { OnboardingView } from "./components/OnboardingView";
 import { ViewModeProvider, useViewMode } from "./lib/view-mode";
 import type { CSSProperties } from "react";
 
@@ -154,9 +155,41 @@ function AppShell() {
           <Route path="/outputs" element={<ClientDeliverables />} />
           <Route path="/assets" element={<AssetsView />} />
           <Route path="/alerts" element={<ClientAlerts />} />
+          <Route path="/onboarding" element={<OnboardingView />} />
+          <Route path="/onboarding/success" element={<OnboardingSuccess />} />
+          <Route path="/onboarding/cancel" element={<OnboardingCancel />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+    </div>
+  );
+}
+
+function OnboardingSuccess() {
+  return (
+    <div style={{ textAlign: "center", paddingTop: 80 }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: "#22c55e", marginBottom: 8 }}>Welcome to AJ Digital OS</h1>
+      <p style={{ color: "#94a3b8", fontSize: 15, marginBottom: 24 }}>
+        Your AI team is being provisioned. You'll be ready to go in a few moments.
+      </p>
+      <a href="/" style={{ color: "#3b82f6", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>
+        Go to Dashboard →
+      </a>
+    </div>
+  );
+}
+
+function OnboardingCancel() {
+  return (
+    <div style={{ textAlign: "center", paddingTop: 80 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: "#f1f5f9", marginBottom: 8 }}>Checkout Canceled</h1>
+      <p style={{ color: "#94a3b8", fontSize: 15, marginBottom: 24 }}>
+        No worries — you can try again whenever you're ready.
+      </p>
+      <a href="/onboarding" style={{ color: "#3b82f6", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>
+        ← Back to Plans
+      </a>
     </div>
   );
 }
