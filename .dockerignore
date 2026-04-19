@@ -1,0 +1,15 @@
+.dockerignore
+node_modules/
+dist/
+.npm-cache/
+.env
+data/
+memory/
+output/
+sessions/
+*.log
+.git/
+.tools/
+.agents/
+.vscode/
+supabase/
