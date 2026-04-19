@@ -7,3 +7,58 @@ memory/
 output/
 sessions/
 *.log
+
+# IDE / editor configs
+.vscode/
+.idea/
+
+# Agent / AI tool configs (local-only)
+.adal/
+.agents/
+.augment/
+.bob/
+.claude/
+.codebuddy/
+.commandcode/
+.continue/
+.cortex/
+.crush/
+.factory/
+.goose/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
+
+# Local tools (not shipped)
+.tools/
+
+# Local skills cache (referenced, not shipped)
+skills/
+skills-lock.json
+
+# Ops scripts (local operator only)
+ops/
+
+# Notes (local only)
+notes/
+
+# Supabase local config
+supabase/
+
+# Local caches
+*.tsbuildinfo

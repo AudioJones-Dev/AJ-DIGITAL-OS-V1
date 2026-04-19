@@ -5,8 +5,8 @@
  * Manages: clients, missions, mission_runs (metadata only).
  *
  * Requires env:
- *   SUPABASE_URL      — e.g. https://xxxxx.supabase.co
- *   SUPABASE_ANON_KEY — public anon key (or service role key for server-side)
+ *   SUPABASE_URL              — e.g. https://xxxxx.supabase.co
+ *   SUPABASE_SERVICE_ROLE_KEY — service role key (required for RLS-protected writes)
  */
 
 import type {
@@ -24,18 +24,18 @@ import type {
 
 export interface SupabaseConfig {
   url: string;
-  anonKey: string;
+  serviceRoleKey: string;
 }
 
 export function resolveConfig(override?: Partial<SupabaseConfig>): SupabaseConfig {
   return {
     url: override?.url ?? process.env.SUPABASE_URL?.trim() ?? "",
-    anonKey: override?.anonKey ?? process.env.SUPABASE_ANON_KEY?.trim() ?? "",
+    serviceRoleKey: override?.serviceRoleKey ?? process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "",
   };
 }
 
 export function isConfigured(cfg: SupabaseConfig): boolean {
-  return cfg.url.length > 0 && cfg.anonKey.length > 0;
+  return cfg.url.length > 0 && cfg.serviceRoleKey.length > 0;
 }
 
 // ── Generic REST Helpers ───────────────────────────────────────────
@@ -49,8 +49,8 @@ export async function supabaseGet<T>(
   try {
     const res = await fetch(url, {
       headers: {
-        apikey: cfg.anonKey,
-        Authorization: `Bearer ${cfg.anonKey}`,
+        apikey: cfg.serviceRoleKey,
+        Authorization: `Bearer ${cfg.serviceRoleKey}`,
       },
     });
     if (!res.ok) {
@@ -74,8 +74,8 @@ export async function supabaseInsert<T>(
     const res = await fetch(url, {
       method: "POST",
       headers: {
-        apikey: cfg.anonKey,
-        Authorization: `Bearer ${cfg.anonKey}`,
+        apikey: cfg.serviceRoleKey,
+        Authorization: `Bearer ${cfg.serviceRoleKey}`,
         "Content-Type": "application/json",
         Prefer: "return=representation",
       },
@@ -103,8 +103,8 @@ export async function supabasePatch<T>(
     const res = await fetch(url, {
       method: "PATCH",
       headers: {
-        apikey: cfg.anonKey,
-        Authorization: `Bearer ${cfg.anonKey}`,
+        apikey: cfg.serviceRoleKey,
+        Authorization: `Bearer ${cfg.serviceRoleKey}`,
         "Content-Type": "application/json",
         Prefer: "return=representation",
       },
@@ -194,6 +194,7 @@ export async function updateMissionRunStatus(
     failure_ref?: string | undefined;
     completed_at?: string | undefined;
     duration_ms?: number | undefined;
+    mission_config_at_execution?: Record<string, unknown> | undefined;
   },
   config?: Partial<SupabaseConfig>,
 ): Promise<QueryResult<DbMissionRun>> {
@@ -206,6 +207,7 @@ export async function updateMissionRunStatus(
   if (update.failure_ref !== undefined) patch.failure_ref = update.failure_ref;
   if (update.completed_at !== undefined) patch.completed_at = update.completed_at;
   if (update.duration_ms !== undefined) patch.duration_ms = update.duration_ms;
+  if (update.mission_config_at_execution !== undefined) patch.mission_config_at_execution = update.mission_config_at_execution;
   return supabasePatch<DbMissionRun>(cfg, "mission_runs", `run_ref=eq.${encodeURIComponent(runRef)}`, patch);
 }
 

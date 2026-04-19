@@ -10,6 +10,8 @@ import { executeProductionMission } from "../missions/mission-db-hooks.js";
 import type { ProductionMissionConfig } from "../missions/mission-db-hooks.js";
 import type { ScheduleDefinition } from "./hermes-types.js";
 import { notify } from "./hermes-notifications.js";
+import { applyMutation } from "./missions/apply-mutation.js";
+import type { MutationConfigSnapshot } from "./missions/apply-mutation.js";
 
 const TAG = "[HERMES-BRIDGE]";
 
@@ -26,7 +28,12 @@ export async function triggerMission(
   const start = Date.now();
   console.log(`${TAG} Triggering mission: ${envelope.mission_type} — "${envelope.objective}"`);
 
-  const result = await executeProductionMission(envelope, config);
+  // ── Pattern-based mutation (safe — never blocks execution) ────
+  const clientTier = (envelope.input.client_tier as string | undefined) ?? null;
+  const mutation = await applyMutation(envelope, clientTier);
+  const executionEnvelope = mutation.envelope;
+
+  const result = await executeProductionMission(executionEnvelope, config, mutation.configSnapshot as unknown as Record<string, unknown>);
 
   const durationSec = ((Date.now() - start) / 1000).toFixed(1);
 

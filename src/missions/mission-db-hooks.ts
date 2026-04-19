@@ -57,6 +57,7 @@ export interface ProductionMissionConfig {
 export async function executeProductionMission(
   envelope: MissionEnvelope,
   config?: ProductionMissionConfig,
+  configSnapshot?: Record<string, unknown> | null,
 ): Promise<MissionResultEnvelope> {
   const dryRun = config?.dryRun === true;
 
@@ -116,6 +117,7 @@ export async function executeProductionMission(
     failure_ref: resultEnvelope.failure_ref ?? undefined,
     completed_at: new Date().toISOString(),
     duration_ms: resultEnvelope.metrics.durationMs,
+    mission_config_at_execution: configSnapshot ?? undefined,
   }, config?.supabase).catch((err: unknown) => {
     console.error(`[MISSION-DB-HOOKS] Supabase update failed: ${err instanceof Error ? err.message : String(err)}`);
   });

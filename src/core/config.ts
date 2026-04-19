@@ -66,7 +66,7 @@ export interface RuntimeConfig {
   n8nBaseUrl: string;
   n8nWebhookUrl: string;
   supabaseUrl: string;
-  supabaseAnonKey: string;
+  supabaseServiceRoleKey: string;
   neonDatabaseUrl: string;
   r2Endpoint: string;
   r2AccessKeyId: string;
@@ -85,7 +85,7 @@ export interface RuntimeConfig {
     telegramBotToken: boolean;
     n8nMcpToken: boolean;
     supabaseUrl: boolean;
-    supabaseAnonKey: boolean;
+    supabaseServiceRoleKey: boolean;
     neonDatabaseUrl: boolean;
     r2Endpoint: boolean;
   };
@@ -156,7 +156,7 @@ export const createRuntimeConfig = (): RuntimeConfig => {
     n8nBaseUrl: normalizeUrl(process.env.N8N_BASE_URL, ""),
     n8nWebhookUrl: normalizeUrl(process.env.N8N_WEBHOOK_URL, ""),
     supabaseUrl: normalizeUrl(process.env.SUPABASE_URL, ""),
-    supabaseAnonKey: normalizeSecret(process.env.SUPABASE_ANON_KEY),
+    supabaseServiceRoleKey: normalizeSecret(process.env.SUPABASE_SERVICE_ROLE_KEY),
     neonDatabaseUrl: normalizeSecret(process.env.NEON_DATABASE_URL),
     r2Endpoint: normalizeUrl(process.env.R2_ENDPOINT, ""),
     r2AccessKeyId: normalizeSecret(process.env.R2_ACCESS_KEY_ID),
@@ -197,7 +197,7 @@ export const createRuntimeConfig = (): RuntimeConfig => {
       telegramBotToken: hasExplicitValue(process.env.TELEGRAM_BOT_TOKEN),
       n8nMcpToken: hasExplicitValue(process.env.N8N_MCP_TOKEN),
       supabaseUrl: hasExplicitValue(process.env.SUPABASE_URL),
-      supabaseAnonKey: hasExplicitValue(process.env.SUPABASE_ANON_KEY),
+      supabaseServiceRoleKey: hasExplicitValue(process.env.SUPABASE_SERVICE_ROLE_KEY),
       neonDatabaseUrl: hasExplicitValue(process.env.NEON_DATABASE_URL),
       r2Endpoint: hasExplicitValue(process.env.R2_ENDPOINT),
     },
