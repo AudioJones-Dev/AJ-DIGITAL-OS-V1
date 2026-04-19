@@ -1,0 +1,38 @@
+# AJ Digital OS Grafana Dashboard Map
+
+## 1) Runtime Health
+- Panel: Container up/down status
+- Panel: Restart count by container
+- Panel: Container CPU %
+- Panel: Container memory usage
+
+## 2) Model Serving (Ollama)
+- Panel: Request throughput
+- Panel: Avg response latency
+- Panel: Error rate
+- Panel: Active model inventory
+
+## 3) Queue and Workflow (n8n + Redis)
+- Panel: n8n executions total
+- Panel: n8n failed executions
+- Panel: Redis memory usage
+- Panel: Redis ops/sec
+
+## 4) Data Layer
+- Panel: PostgreSQL connections
+- Panel: PostgreSQL cache hit ratio
+- Panel: PostgreSQL TPS
+- Panel: Qdrant request count
+- Panel: Qdrant latency p95
+
+## 5) Logs (Loki)
+- Panel: Log volume by service
+- Panel: Error logs by service
+- Panel: Warning logs by service
+
+## 6) Alert Seeds
+- Alert: Any core service down > 2m
+- Alert: PostgreSQL unavailable
+- Alert: Redis memory > 85%
+- Alert: n8n failures spike > baseline
+- Alert: Ollama error rate > 5%

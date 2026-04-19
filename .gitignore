@@ -1,0 +1,12 @@
+.env
+env/.env
+
+# Secrets and local runtime artifacts
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Backup outputs (runtime data stays on F:\CACHE)
+backups/
+logs/
