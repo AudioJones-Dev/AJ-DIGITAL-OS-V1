@@ -5,6 +5,7 @@ import path from "node:path";
 import type { AssistantRuntimeResult } from "./assistant-runtime.js";
 import { DeliverableStore } from "../../core/deliverable-store.js";
 import { SemanticMemoryIndexer } from "../../memory/semantic-memory-indexer.js";
+import { updateDeliverableOutcome } from "../deliverables.js";
 import type { TaskCategoryId } from "../../types/task-category.types.js";
 import type {
   DeliverableApprovalRoutingPolicy,
@@ -181,6 +182,7 @@ export class DeliverableRecorder {
         },
       }));
       await this.safeIndexDeliverable(updated);
+      await this.safeSyncOutcome(updated.deliverableId, input.run.runId);
       return updated;
     }
 
@@ -200,6 +202,7 @@ export class DeliverableRecorder {
 
     const saved = await this.store.save(fallbackRecord);
     await this.safeIndexDeliverable(saved);
+    await this.safeSyncOutcome(saved.deliverableId, input.run.runId);
     return saved;
   }
 
@@ -417,6 +420,14 @@ export class DeliverableRecorder {
       assistant?.warnings.push(
         `Semantic memory indexing failed for deliverable "${deliverable.deliverableId}": ${error instanceof Error ? error.message : "Unknown error."}`,
       );
+    }
+  }
+
+  private async safeSyncOutcome(deliverableId: string, runRef?: string): Promise<void> {
+    try {
+      await updateDeliverableOutcome(deliverableId, "used", undefined, runRef);
+    } catch {
+      // Outcome sync is best-effort — does not block recording.
     }
   }
 }

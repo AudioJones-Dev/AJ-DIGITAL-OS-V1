@@ -4,6 +4,7 @@ import path from "node:path";
 import { PublisherAgent } from "../../agents/publisher.agent.js";
 import { DeliverableStore } from "../../core/deliverable-store.js";
 import { SemanticMemoryIndexer } from "../../memory/semantic-memory-indexer.js";
+import { syncOutcomeFromLocalStatus } from "../deliverables.js";
 import type { DeliverableRecord, DeliverableStatus } from "../../types/deliverable.types.js";
 import { OutputPathResolver } from "./output-path-resolver.js";
 
@@ -170,6 +171,7 @@ export class DeliverableLifecycleService {
         ...(input.nextStatus === "published" ? { publishedAt: timestamp } : {}),
       }));
       await this.safeIndexDeliverable(deliverable);
+      await this.safeSyncOutcome(deliverable.deliverableId, input.nextStatus, deliverable.runId);
 
       return {
         ok: true,
@@ -281,6 +283,14 @@ export class DeliverableLifecycleService {
       await this.semanticMemoryIndexer.indexDeliverable(deliverable);
     } catch {
       // Semantic memory indexing is best-effort.
+    }
+  }
+
+  private async safeSyncOutcome(deliverableId: string, status: DeliverableStatus, runId?: string): Promise<void> {
+    try {
+      await syncOutcomeFromLocalStatus(deliverableId, status, undefined, runId);
+    } catch {
+      // Outcome sync is best-effort — does not block lifecycle.
     }
   }
 }
