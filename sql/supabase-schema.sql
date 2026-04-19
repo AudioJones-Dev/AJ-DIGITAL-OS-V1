@@ -13,7 +13,7 @@ create table if not exists clients (
   tier          text not null default 'standard'
                 check (tier in ('standard', 'professional', 'enterprise')),
   status        text not null default 'active'
-                check (status in ('active', 'paused', 'archived')),
+                check (status in ('active', 'paused', 'archived', 'provisioning')),
   metadata      jsonb not null default '{}',
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()

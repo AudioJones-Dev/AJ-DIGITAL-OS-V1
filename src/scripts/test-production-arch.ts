@@ -364,7 +364,7 @@ function testConfig(): void {
 
   // Verify RuntimeConfig has the new fields (they'll be empty strings without .env)
   assert("config.supabaseUrl exists", typeof runtimeConfig.supabaseUrl === "string");
-  assert("config.supabaseAnonKey exists", typeof runtimeConfig.supabaseAnonKey === "string");
+  assert("config.supabaseServiceRoleKey exists", typeof runtimeConfig.supabaseServiceRoleKey === "string");
   assert("config.neonDatabaseUrl exists", typeof runtimeConfig.neonDatabaseUrl === "string");
   assert("config.r2Endpoint exists", typeof runtimeConfig.r2Endpoint === "string");
   assert("config.r2AccessKeyId exists", typeof runtimeConfig.r2AccessKeyId === "string");
@@ -386,7 +386,7 @@ function testTypeChecks(): void {
   assert("ProductionMissionConfig accepts dryRun", hookConfig.dryRun === true);
 
   const fullHookConfig: ProductionMissionConfig = {
-    supabase: { url: "https://test.supabase.co", anonKey: "test" },
+    supabase: { url: "https://test.supabase.co", serviceRoleKey: "test" },
     neon: { dryRun: true },
     r2: { endpoint: "https://r2.test.com", accessKeyId: "key", secretAccessKey: "secret", bucketName: "test" },
     entry: { dryRun: true },
@@ -416,8 +416,8 @@ function testTypeChecks(): void {
   assert("NeonConfig accepts databaseUrl", neonCfg.databaseUrl.length > 0);
 
   // SupabaseConfig shape
-  const supabaseCfg: SupabaseConfig = { url: "https://test.supabase.co", anonKey: "test" };
-  assert("SupabaseConfig accepts url + anonKey", supabaseCfg.url.length > 0);
+  const supabaseCfg: SupabaseConfig = { url: "https://test.supabase.co", serviceRoleKey: "test" };
+  assert("SupabaseConfig accepts url + serviceRoleKey", supabaseCfg.url.length > 0);
 }
 
 // ═══════════════════════════════════════════════════════════════════
