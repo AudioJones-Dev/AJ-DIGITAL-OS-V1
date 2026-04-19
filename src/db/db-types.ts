@@ -255,3 +255,40 @@ export type InsertPattern = Omit<DbPattern, "id" | "created_at">;
 export type InsertRepairEvent = Omit<DbRepairEvent, "id" | "created_at" | "resolved_at">;
 export type InsertSubscription = Omit<DbSubscription, "id" | "created_at" | "updated_at">;
 export type InsertClientAgent = Omit<DbClientAgent, "id" | "created_at" | "updated_at">;
+
+// ═══════════════════════════════════════════════════════════════════
+// Supabase — Distribution Layer
+// ═══════════════════════════════════════════════════════════════════
+
+export type DistributionAssetStatus = "draft" | "approved" | "scheduled" | "published" | "failed";
+
+export interface DbDistributionAsset {
+  id: string;
+  client_id: string | null;
+  source_deliverable_id: string | null;
+  channel: string;
+  format: string;
+  title: string;
+  content: string;
+  cta: string;
+  status: DistributionAssetStatus;
+  scheduled_at: string | null;
+  published_at: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export type InsertDistributionAsset = Omit<DbDistributionAsset, "id" | "created_at">;
+
+export interface DbDistributionMetric {
+  id: string;
+  distribution_asset_id: string;
+  channel: string;
+  impressions: number;
+  clicks: number;
+  engagements: number;
+  leads: number;
+  captured_at: string;
+}
+
+export type InsertDistributionMetric = Omit<DbDistributionMetric, "id" | "captured_at">;

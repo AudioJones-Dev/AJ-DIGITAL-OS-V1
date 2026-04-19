@@ -22,7 +22,10 @@ import {
   type StripeWebhookEvent,
 } from "../api/stripe.js";
 import { createStripeWebhookHandlers } from "../api/stripe-handlers.js";
-import { resolveConfig, isConfigured, supabaseGet, type SupabaseConfig } from "../db/supabase-client.js";
+import { resolveConfig, isConfigured, supabaseGet, supabasePatch, type SupabaseConfig } from "../db/supabase-client.js";
+import type { DbDistributionAsset } from "../db/db-types.js";
+import { recordDistributionMetrics } from "../services/distribution-metrics.js";
+import { getDistributionPerformance } from "../services/distribution-metrics.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -174,6 +177,9 @@ async function buildProofPayload(): Promise<Record<string, unknown>> {
     uptimeDays = Math.floor((Date.now() - firstRun.getTime()) / (24 * 60 * 60 * 1000));
   }
 
+  // Distribution metrics
+  const distPerf = await getDistributionPerformance();
+
   console.log(`${TAG} [PROOF] updated — missions=${totalMissions} clients=${totalClients} patterns=${totalPatterns}`);
 
   return {
@@ -184,6 +190,11 @@ async function buildProofPayload(): Promise<Record<string, unknown>> {
     avg_improvement_pct: avgImprovement,
     total_patterns: totalPatterns,
     uptime_days: uptimeDays,
+    total_distribution_assets: distPerf.total_assets,
+    total_published: distPerf.published,
+    distribution_impressions: distPerf.total_impressions,
+    distribution_engagements: distPerf.total_engagements,
+    distribution_leads: distPerf.total_leads,
     timestamp: new Date().toISOString(),
   };
 }
@@ -198,6 +209,11 @@ interface ClientPerformance {
   avg_quality: number | null;
   improvement_pct: number | null;
   patterns_learned: number;
+  distribution_assets: number;
+  published_assets: number;
+  distribution_impressions: number;
+  distribution_engagements: number;
+  distribution_leads: number;
   timestamp: string;
 }
 
@@ -205,7 +221,7 @@ async function buildClientPerformance(clientId: string): Promise<ClientPerforman
   const cfg = resolveConfig();
 
   if (!isConfigured(cfg)) {
-    return { total_runs: 0, avg_quality: null, improvement_pct: null, patterns_learned: 0, timestamp: new Date().toISOString() };
+    return { total_runs: 0, avg_quality: null, improvement_pct: null, patterns_learned: 0, distribution_assets: 0, published_assets: 0, distribution_impressions: 0, distribution_engagements: 0, distribution_leads: 0, timestamp: new Date().toISOString() };
   }
 
   // 1. Fetch missions for this client to get mission_ids
@@ -256,11 +272,19 @@ async function buildClientPerformance(clientId: string): Promise<ClientPerforman
     patternsLearned = patternsResult.data.length;
   }
 
+  // 5. Distribution performance for this client
+  const distPerf = await getDistributionPerformance(clientId);
+
   return {
     total_runs: totalRuns,
     avg_quality: avgQuality,
     improvement_pct: improvementPct,
     patterns_learned: patternsLearned,
+    distribution_assets: distPerf.total_assets,
+    published_assets: distPerf.published,
+    distribution_impressions: distPerf.total_impressions,
+    distribution_engagements: distPerf.total_engagements,
+    distribution_leads: distPerf.total_leads,
     timestamp: new Date().toISOString(),
   };
 }
@@ -459,6 +483,131 @@ export function startHermesApi(port?: number): void {
         .catch((err: unknown) => {
           res.writeHead(500, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: err instanceof Error ? err.message : "Internal error" }));
+        });
+      return;
+    }
+
+    // ── Distribution Queue endpoints ──────────────────────────────────
+    const distListMatch = req.url?.match(/^\/api\/distribution-assets(?:\?(.*))?$/);
+    if (distListMatch && req.method === "GET") {
+      const params = new URLSearchParams(distListMatch[1] ?? "");
+      const status = params.get("status");
+      const cfg = resolveConfig();
+
+      if (!isConfigured(cfg)) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, data: [], note: "Supabase not configured" }));
+        return;
+      }
+
+      let query = "select=*&order=created_at.desc&limit=100";
+      if (status) {
+        query += `&status=eq.${encodeURIComponent(status)}`;
+      }
+
+      supabaseGet<DbDistributionAsset>(cfg, "distribution_assets", query)
+        .then((result) => {
+          console.log(`${TAG} [QUEUE] listed distribution_assets — status=${status ?? "all"} count=${result.data?.length ?? 0}`);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: result.ok, data: result.data ?? [], error: result.error }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }));
+        });
+      return;
+    }
+
+    const distApproveMatch = req.url?.match(/^\/api\/distribution-assets\/([^/]+)\/approve$/);
+    if (distApproveMatch && req.method === "POST") {
+      const assetId = decodeURIComponent(distApproveMatch[1]!);
+      if (!UUID_RE.test(assetId)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid asset id format" }));
+        return;
+      }
+
+      const cfg = resolveConfig();
+      supabasePatch<DbDistributionAsset>(cfg, "distribution_assets", `id=eq.${encodeURIComponent(assetId)}&status=eq.draft`, { status: "approved" })
+        .then((result) => {
+          console.log(`${TAG} [QUEUE] approved asset — id=${assetId} ok=${result.ok}`);
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: result.ok, data: result.data, error: result.error }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }));
+        });
+      return;
+    }
+
+    const distScheduleMatch = req.url?.match(/^\/api\/distribution-assets\/([^/]+)\/schedule$/);
+    if (distScheduleMatch && req.method === "POST") {
+      const assetId = decodeURIComponent(distScheduleMatch[1]!);
+      if (!UUID_RE.test(assetId)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid asset id format" }));
+        return;
+      }
+
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const scheduledAt = body["scheduled_at"] as string | undefined;
+          if (!scheduledAt || isNaN(Date.parse(scheduledAt))) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "scheduled_at (ISO 8601) is required" }));
+            return;
+          }
+
+          const cfg = resolveConfig();
+          return supabasePatch<DbDistributionAsset>(cfg, "distribution_assets", `id=eq.${encodeURIComponent(assetId)}&status=eq.approved`, { status: "scheduled", scheduled_at: scheduledAt })
+            .then((result) => {
+              console.log(`${TAG} [QUEUE] scheduled asset — id=${assetId} at=${scheduledAt} ok=${result.ok}`);
+              res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: result.ok, data: result.data, error: result.error }));
+            });
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Distribution Metrics endpoint ────────────────────────────────
+    const distMetricsMatch = req.url?.match(/^\/api\/distribution-assets\/([^/]+)\/metrics$/);
+    if (distMetricsMatch && req.method === "POST") {
+      const assetId = decodeURIComponent(distMetricsMatch[1]!);
+      if (!UUID_RE.test(assetId)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid asset id format" }));
+        return;
+      }
+
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const channel = body["channel"] as string | undefined;
+          if (!channel) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "channel is required" }));
+            return;
+          }
+
+          return recordDistributionMetrics(assetId, channel, {
+            impressions: typeof body["impressions"] === "number" ? body["impressions"] : undefined,
+            clicks: typeof body["clicks"] === "number" ? body["clicks"] : undefined,
+            engagements: typeof body["engagements"] === "number" ? body["engagements"] : undefined,
+            leads: typeof body["leads"] === "number" ? body["leads"] : undefined,
+          }).then((result) => {
+            res.writeHead(result.ok ? 200 : 500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
+          });
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
         });
       return;
     }

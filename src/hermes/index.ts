@@ -84,6 +84,8 @@ import { computeIntelligence } from "./missions/compute-intelligence.js";
 import { extractPatterns } from "./missions/extract-patterns.js";
 import { generatePerformanceReports } from "./missions/generate-performance-report.js";
 import { generateCaseStudies } from "./missions/generate-case-study.js";
+import { expandDistributionAssets } from "./missions/expand-distribution-assets.js";
+import { publishScheduledAssets } from "./missions/publish-scheduled-assets.js";
 
 export interface HermesConfig {
   /** Schedule definitions (defaults to DEFAULT_SCHEDULES). */
@@ -101,11 +103,15 @@ const INTELLIGENCE_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const PATTERNS_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const REPORT_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const CASE_STUDY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const DISTRIBUTION_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const PUBLISH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 let scoreIntervalId: ReturnType<typeof setInterval> | null = null;
 let intelligenceIntervalId: ReturnType<typeof setInterval> | null = null;
 let patternsIntervalId: ReturnType<typeof setInterval> | null = null;
 let reportIntervalId: ReturnType<typeof setInterval> | null = null;
 let caseStudyIntervalId: ReturnType<typeof setInterval> | null = null;
+let distributionIntervalId: ReturnType<typeof setInterval> | null = null;
+let publishIntervalId: ReturnType<typeof setInterval> | null = null;
 
 /**
  * Start the full Hermes orchestration layer (scheduler + watcher + status API).
@@ -140,6 +146,15 @@ export async function startHermes(config?: HermesConfig): Promise<void> {
   // Check case study milestones daily
   caseStudyIntervalId = setInterval(() => void generateCaseStudies(), CASE_STUDY_INTERVAL_MS);
   console.log("[HERMES] Case-study-checks registered — every 24h");
+
+  // Expand proof deliverables into distribution assets daily
+  distributionIntervalId = setInterval(() => void expandDistributionAssets(), DISTRIBUTION_INTERVAL_MS);
+  console.log("[HERMES] Distribution-expansion registered — every 24h");
+
+  // Publish scheduled distribution assets every 15 minutes
+  publishIntervalId = setInterval(() => void publishScheduledAssets(), PUBLISH_INTERVAL_MS);
+  console.log("[HERMES] Publish-scheduled registered — every 15m");
+
   console.log("[HERMES] Hermes is online.");
 }
 
@@ -169,6 +184,14 @@ export function stopHermes(): void {
   if (caseStudyIntervalId) {
     clearInterval(caseStudyIntervalId);
     caseStudyIntervalId = null;
+  }
+  if (distributionIntervalId) {
+    clearInterval(distributionIntervalId);
+    distributionIntervalId = null;
+  }
+  if (publishIntervalId) {
+    clearInterval(publishIntervalId);
+    publishIntervalId = null;
   }
   console.log("[HERMES] Hermes is offline.");
 }
