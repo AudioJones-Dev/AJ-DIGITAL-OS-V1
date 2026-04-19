@@ -200,7 +200,7 @@ export async function expandProofDeliverable(
   if (!deliverableResult.ok || !deliverableResult.data?.length) {
     return { saved: 0, errors: [`Deliverable ${deliverableId} not found`] };
   }
-  const deliverable = deliverableResult.data[0];
+  const deliverable = deliverableResult.data[0]!;
 
   // Build variants
   const variants = buildDistributionVariants(deliverable);

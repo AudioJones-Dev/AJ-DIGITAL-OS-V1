@@ -33,8 +33,9 @@ export async function recordDistributionMetrics(
   const result = await supabaseInsert<DbDistributionMetric>(cfg, "distribution_metrics", row);
   if (result.ok) {
     console.log(`${TAG} Recorded metrics — asset=${assetId} channel=${channel}`);
+    return { ok: true };
   }
-  return { ok: result.ok, error: result.error };
+  return { ok: false, error: result.error ?? "Unknown insert error" };
 }
 
 export interface DistributionPerformance {

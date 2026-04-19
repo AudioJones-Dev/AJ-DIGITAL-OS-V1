@@ -596,10 +596,10 @@ export function startHermesApi(port?: number): void {
           }
 
           return recordDistributionMetrics(assetId, channel, {
-            impressions: typeof body["impressions"] === "number" ? body["impressions"] : undefined,
-            clicks: typeof body["clicks"] === "number" ? body["clicks"] : undefined,
-            engagements: typeof body["engagements"] === "number" ? body["engagements"] : undefined,
-            leads: typeof body["leads"] === "number" ? body["leads"] : undefined,
+            impressions: typeof body["impressions"] === "number" ? body["impressions"] : 0,
+            clicks: typeof body["clicks"] === "number" ? body["clicks"] : 0,
+            engagements: typeof body["engagements"] === "number" ? body["engagements"] : 0,
+            leads: typeof body["leads"] === "number" ? body["leads"] : 0,
           }).then((result) => {
             res.writeHead(result.ok ? 200 : 500, { "Content-Type": "application/json" });
             res.end(JSON.stringify(result));
