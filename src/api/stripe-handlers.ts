@@ -43,10 +43,7 @@ async function handleCheckoutCompleted(
   session: Record<string, unknown>,
   cfg: SupabaseConfig,
 ): Promise<WebhookHandlerResult> {
-  if (!isConfigured(cfg)) {
-    return { ok: false, action: "checkout_completed", error: "Supabase not configured" };
-  }
-
+  const eventId = session["id"] || "(no session id)";
   const metadata = session["metadata"] as Record<string, string> | undefined;
   const clientId = metadata?.["client_id"];
   const planTier = (metadata?.["plan_tier"] ?? "standard") as ClientTier;
@@ -54,9 +51,23 @@ async function handleCheckoutCompleted(
   const subscriptionId = session["subscription"] as string | undefined;
   const customerEmail = session["customer_email"] as string | undefined;
 
+  console.log(`${TAG} [handler entered] checkout.session.completed`, {
+    eventId,
+    clientId,
+    planTier,
+    customerId,
+    subscriptionId,
+    customerEmail,
+  });
+
+  if (!isConfigured(cfg)) {
+    console.log(`${TAG} [handler completed] checkout.session.completed — Supabase not configured`, { eventId });
+    return { ok: false, action: "checkout_completed", error: "Supabase not configured" };
+  }
+
   if (!clientId) {
     // No client_id in metadata — create a new client from checkout info
-    console.log(`${TAG} Checkout without client_id — creating new client`);
+    console.log(`${TAG} [provisioning started] Creating new client from checkout`, { eventId, customerEmail, planTier });
 
     const slug = (customerEmail ?? `client-${Date.now()}`)
       .replace(/[^a-z0-9]/gi, "-")
@@ -73,6 +84,7 @@ async function handleCheckoutCompleted(
     });
 
     if (!clientResult.ok || !clientResult.data) {
+      console.log(`${TAG} [provisioning failed] Could not create client`, { eventId, error: clientResult.error });
       return { ok: false, action: "checkout_completed", error: `Failed to create client: ${clientResult.error}` };
     }
 
@@ -92,6 +104,12 @@ async function handleCheckoutCompleted(
 
     // Provision
     const provision = await provisionClient(newClientId, planTier, cfg);
+    if (provision.ok) {
+      console.log(`${TAG} [provisioning completed] New client provisioned`, { eventId, newClientId, planTier });
+    } else {
+      console.log(`${TAG} [provisioning failed] New client`, { eventId, newClientId, planTier, error: provision.error });
+    }
+    console.log(`${TAG} [handler completed] checkout.session.completed (new client)`, { eventId, newClientId, planTier });
     return {
       ok: provision.ok,
       action: `checkout_completed:new_client:${newClientId}`,
@@ -112,6 +130,12 @@ async function handleCheckoutCompleted(
   }
 
   const provision = await provisionClient(clientId, planTier, cfg);
+  if (provision.ok) {
+    console.log(`${TAG} [provisioning completed] Existing client provisioned`, { eventId, clientId, planTier });
+  } else {
+    console.log(`${TAG} [provisioning failed] Existing client`, { eventId, clientId, planTier, error: provision.error });
+  }
+  console.log(`${TAG} [handler completed] checkout.session.completed (existing client)`, { eventId, clientId, planTier });
   return {
     ok: provision.ok,
     action: `checkout_completed:provisioned:${clientId}`,
@@ -125,13 +149,16 @@ async function handleSubscriptionCreated(
   sub: Record<string, unknown>,
   cfg: SupabaseConfig,
 ): Promise<WebhookHandlerResult> {
+  const eventId = sub["id"] || "(no subscription id)";
+  const customerId = sub["customer"] as string | undefined;
+  const status = sub["status"] as string | undefined;
+  console.log(`${TAG} [handler entered] customer.subscription.created`, { eventId, customerId, status });
   if (!isConfigured(cfg)) {
+    console.log(`${TAG} [handler completed] customer.subscription.created — Supabase not configured`, { eventId });
     return { ok: false, action: "subscription_created", error: "Supabase not configured" };
   }
 
   const stripeSubId = sub["id"] as string;
-  const customerId = sub["customer"] as string;
-  const status = sub["status"] as string;
   const periodEnd = sub["current_period_end"] as number | undefined;
 
   // Check if we already recorded this from checkout.session.completed
@@ -152,10 +179,12 @@ async function handleSubscriptionCreated(
         current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
       },
     );
+    console.log(`${TAG} [subscription updated]`, { eventId, stripeSubId, status });
     return { ok: true, action: "subscription_created:updated_existing", error: null };
   }
 
-  console.log(`${TAG} Subscription created: ${stripeSubId} (customer: ${customerId})`);
+  console.log(`${TAG} [subscription created]`, { eventId, stripeSubId, customerId });
+  console.log(`${TAG} [handler completed] customer.subscription.created`, { eventId, stripeSubId });
   return { ok: true, action: "subscription_created:acknowledged", error: null };
 }
 
@@ -165,12 +194,15 @@ async function handleSubscriptionUpdated(
   sub: Record<string, unknown>,
   cfg: SupabaseConfig,
 ): Promise<WebhookHandlerResult> {
+  const eventId = sub["id"] || "(no subscription id)";
+  const status = sub["status"] as string | undefined;
+  console.log(`${TAG} [handler entered] customer.subscription.updated`, { eventId, status });
   if (!isConfigured(cfg)) {
+    console.log(`${TAG} [handler completed] customer.subscription.updated — Supabase not configured`, { eventId });
     return { ok: false, action: "subscription_updated", error: "Supabase not configured" };
   }
 
   const stripeSubId = sub["id"] as string;
-  const status = sub["status"] as string;
   const periodEnd = sub["current_period_end"] as number | undefined;
 
   const result = await supabasePatch(
@@ -184,10 +216,12 @@ async function handleSubscriptionUpdated(
   );
 
   if (!result.ok) {
+    console.log(`${TAG} [subscription update failed]`, { eventId, stripeSubId, error: result.error });
     return { ok: false, action: "subscription_updated", error: result.error };
   }
 
-  console.log(`${TAG} Subscription updated: ${stripeSubId} → ${status}`);
+  console.log(`${TAG} [subscription updated]`, { eventId, stripeSubId, status });
+  console.log(`${TAG} [handler completed] customer.subscription.updated`, { eventId, stripeSubId });
   return { ok: true, action: `subscription_updated:${status}`, error: null };
 }
 
@@ -197,7 +231,10 @@ async function handleSubscriptionDeleted(
   sub: Record<string, unknown>,
   cfg: SupabaseConfig,
 ): Promise<WebhookHandlerResult> {
+  const eventId = sub["id"] || "(no subscription id)";
+  console.log(`${TAG} [handler entered] customer.subscription.deleted`, { eventId });
   if (!isConfigured(cfg)) {
+    console.log(`${TAG} [handler completed] customer.subscription.deleted — Supabase not configured`, { eventId });
     return { ok: false, action: "subscription_deleted", error: "Supabase not configured" };
   }
 
@@ -235,9 +272,10 @@ async function handleSubscriptionDeleted(
       metadata: { client_id: clientId, stripe_subscription_id: stripeSubId },
       timestamp: new Date().toISOString(),
     });
+    console.log(`${TAG} [subscription canceled]`, { eventId, stripeSubId, clientId });
   }
 
-  console.log(`${TAG} Subscription canceled: ${stripeSubId}`);
+  console.log(`${TAG} [handler completed] customer.subscription.deleted`, { eventId, stripeSubId, clientId });
   return { ok: true, action: `subscription_deleted:paused:${clientId ?? "unknown"}`, error: null };
 }
 
@@ -247,12 +285,15 @@ async function handlePaymentFailed(
   invoice: Record<string, unknown>,
   cfg: SupabaseConfig,
 ): Promise<WebhookHandlerResult> {
+  const eventId = invoice["id"] || "(no invoice id)";
+  const customerId = invoice["customer"] as string | undefined;
+  const subscriptionId = invoice["subscription"] as string | undefined;
+  console.log(`${TAG} [handler entered] invoice.payment_failed`, { eventId, customerId, subscriptionId });
   if (!isConfigured(cfg)) {
+    console.log(`${TAG} [handler completed] invoice.payment_failed — Supabase not configured`, { eventId });
     return { ok: false, action: "payment_failed", error: "Supabase not configured" };
   }
 
-  const customerId = invoice["customer"] as string;
-  const subscriptionId = invoice["subscription"] as string | undefined;
 
   if (subscriptionId) {
     await supabasePatch(
@@ -261,6 +302,7 @@ async function handlePaymentFailed(
       `stripe_subscription_id=eq.${encodeURIComponent(subscriptionId)}`,
       { status: "past_due" },
     );
+    console.log(`${TAG} [subscription marked past_due]`, { eventId, subscriptionId });
   }
 
   // Find client for notification
@@ -283,6 +325,7 @@ async function handlePaymentFailed(
     timestamp: new Date().toISOString(),
   });
 
-  console.log(`${TAG} Payment failed: customer ${customerId}, subscription ${subscriptionId ?? "n/a"}`);
+  console.log(`${TAG} [payment failed handled]`, { eventId, customerId, subscriptionId, clientId });
+  console.log(`${TAG} [handler completed] invoice.payment_failed`, { eventId, customerId, subscriptionId });
   return { ok: true, action: `payment_failed:${customerId}`, error: null };
 }

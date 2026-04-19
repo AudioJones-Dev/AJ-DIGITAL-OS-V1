@@ -239,7 +239,7 @@ async function testProvisioningDry(): Promise<void> {
   const result: ProvisionResult = await provisionClient(
     "dry-test-client",
     "professional",
-    { url: "", anonKey: "" },
+    { url: "", serviceRoleKey: "" },
   );
 
   check("provisioning returns structured result", typeof result.ok === "boolean");

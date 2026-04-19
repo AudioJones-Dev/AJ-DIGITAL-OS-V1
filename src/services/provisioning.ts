@@ -107,7 +107,7 @@ export async function provisionClient(
 
   const features = PLAN_FEATURES[planTier];
 
-  console.log(`${TAG} Provisioning client ${clientId} (tier: ${planTier})…`);
+  console.log(`${TAG} [provisioning started]`, { clientId, planTier });
 
   // Step 1: Create default agents
   const agentResult = await createDefaultAgents(clientId, features.agents, cfg);
@@ -132,7 +132,7 @@ export async function provisionClient(
   const allOk = steps.every((s) => s.ok);
 
   if (allOk) {
-    console.log(`${TAG} ✓ Client ${clientId} fully provisioned (${planTier})`);
+    console.log(`${TAG} [provisioning completed]`, { clientId, planTier });
     notify({
       severity: "info",
       channel: "console",
@@ -143,7 +143,7 @@ export async function provisionClient(
     });
   } else {
     const failedSteps = steps.filter((s) => !s.ok).map((s) => s.name).join(", ");
-    console.error(`${TAG} ✘ Client ${clientId} provisioning partial failure: ${failedSteps}`);
+    console.error(`${TAG} [provisioning failed]`, { clientId, planTier, failedSteps });
     notify({
       severity: "critical",
       channel: "console",

@@ -15,6 +15,13 @@
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { ClientTier } from "../db/db-types.js";
+import {
+  supabaseGet,
+  supabaseInsert,
+  resolveConfig,
+  isConfigured,
+  type SupabaseConfig,
+} from "../db/supabase-client.js";
 
 const TAG = "[STRIPE]";
 
@@ -201,26 +208,60 @@ export async function handleStripeWebhook(
 ): Promise<WebhookHandlerResult> {
   console.log(`${TAG} Webhook received: ${event.type} (${event.id})`);
 
+  // ── Idempotency: skip already-processed events ─────────────────
+  const cfg = resolveConfig();
+  if (isConfigured(cfg)) {
+    const existing = await supabaseGet<{ id: string }>(
+      cfg,
+      "stripe_events",
+      `id=eq.${encodeURIComponent(event.id)}&limit=1`,
+    );
+    if (existing.ok && existing.data && existing.data.length > 0) {
+      console.log(`${TAG} Duplicate event skipped: ${event.id} (${event.type})`);
+      return { ok: true, action: "duplicate_skipped", error: null };
+    }
+
+    // Record event before processing — fail-open if insert fails
+    const insertResult = await supabaseInsert(cfg, "stripe_events", {
+      id: event.id,
+      event_type: event.type,
+    });
+    if (!insertResult.ok) {
+      console.warn(`${TAG} Failed to record event ${event.id} in stripe_events: ${insertResult.error} — proceeding anyway`);
+    }
+  }
+
+  // ── Route to handler ───────────────────────────────────────────
+  let result: WebhookHandlerResult;
+
   switch (event.type) {
     case "checkout.session.completed":
-      return handlers.onCheckoutCompleted(event.data.object);
+      result = await handlers.onCheckoutCompleted(event.data.object);
+      break;
 
     case "customer.subscription.created":
-      return handlers.onSubscriptionCreated(event.data.object);
+      result = await handlers.onSubscriptionCreated(event.data.object);
+      break;
 
     case "customer.subscription.updated":
-      return handlers.onSubscriptionUpdated(event.data.object);
+      result = await handlers.onSubscriptionUpdated(event.data.object);
+      break;
 
     case "customer.subscription.deleted":
-      return handlers.onSubscriptionDeleted(event.data.object);
+      result = await handlers.onSubscriptionDeleted(event.data.object);
+      break;
 
     case "invoice.payment_failed":
-      return handlers.onPaymentFailed(event.data.object);
+      result = await handlers.onPaymentFailed(event.data.object);
+      break;
 
     default:
       console.log(`${TAG} Unhandled event type: ${event.type}`);
-      return { ok: true, action: "ignored", error: null };
+      result = { ok: true, action: "ignored", error: null };
   }
+
+  console.log(`${TAG} Event processed: ${event.id} (${event.type}) → ${result.action}`);
+  return result;
 }
 
 /**
