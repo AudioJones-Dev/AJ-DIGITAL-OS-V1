@@ -33,7 +33,28 @@ interface TestResult {
   errors: string[];
 }
 
+interface ValidationContext {
+  runId: string;
+  clientId: string | null;
+  missionId: string | null;
+  missionRunId: string | null;
+  deliverableId: string | null;
+  assetIds: string[];
+  queuedAssetId: string | null;
+  publishedAssetId: string | null;
+}
+
 const results: TestResult[] = [];
+const context: ValidationContext = {
+  runId: `e2e-${Date.now()}`,
+  clientId: null,
+  missionId: null,
+  missionRunId: null,
+  deliverableId: null,
+  assetIds: [],
+  queuedAssetId: null,
+  publishedAssetId: null,
+};
 
 function report(name: string, passed: boolean, details: string[], errors: string[] = []): void {
   results.push({ name, passed, details, errors });
@@ -46,112 +67,93 @@ function report(name: string, passed: boolean, details: string[], errors: string
 // ── Helpers ────────────────────────────────────────────────────────
 
 async function ensureDistributionTables(cfg: ReturnType<typeof resolveConfig>): Promise<boolean> {
-  // Check if distribution_assets table exists by doing a simple GET
-  const check = await supabaseGet<DbDistributionAsset>(cfg, "distribution_assets", "select=id&limit=0");
-  return check.ok;
+  let lastError: string | null = null;
+
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    const check = await supabaseGet<DbDistributionAsset>(cfg, "distribution_assets", "select=id&limit=0");
+    if (check.ok) return true;
+
+    lastError = check.error ?? "Unknown pre-check failure";
+    if (attempt < 5) {
+      console.log(`${TAG} distribution pre-check retry ${attempt}/5: ${lastError}`);
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+    }
+  }
+
+  console.log(`${TAG} distribution table pre-check failed after retries: ${lastError}`);
+  return false;
 }
 
-async function findOrCreateTestDeliverable(cfg: ReturnType<typeof resolveConfig>): Promise<DbDeliverable | null> {
-  // First try to find an existing proof deliverable
-  const existing = await supabaseGet<DbDeliverable>(
-    cfg,
-    "deliverables",
-    "or=(metadata->>report_type.eq.performance,metadata->>report_type.eq.case_study)&limit=1",
-  );
-
-  if (existing.ok && existing.data && existing.data.length > 0) {
-    console.log(`${TAG} Found existing proof deliverable: ${existing.data[0]!.id}`);
-    return existing.data[0]!;
-  }
-
-  // No proof deliverable — we need to seed parent rows first
-  console.log(`${TAG} No proof deliverable found — seeding test data`);
-
-  // 1. Ensure a client exists
-  const clients = await supabaseGet<{ id: string }>(cfg, "clients", "select=id&limit=1");
-  let clientId: string;
-
-  if (clients.ok && clients.data?.[0]) {
-    clientId = clients.data[0].id;
-    console.log(`${TAG} Using existing client: ${clientId}`);
-  } else {
-    console.log(`${TAG} Seeding test client`);
-    const clientResult = await supabaseInsert<{ id: string }>(cfg, "clients", {
-      slug: "e2e-validation-client",
-      display_name: "E2E Validation Client",
-      contact_email: "e2e@ajdigital.test",
-      tier: "standard",
-      status: "active",
-      metadata: { test: true },
-    });
-    if (!clientResult.ok || !clientResult.data) {
-      console.log(`${TAG} Failed to seed client: ${clientResult.error}`);
-      return null;
+async function seedTestDeliverable(cfg: ReturnType<typeof resolveConfig>): Promise<DbDeliverable | null> {
+  if (context.deliverableId) {
+    const existing = await supabaseGet<DbDeliverable>(
+      cfg,
+      "deliverables",
+      `id=eq.${context.deliverableId}&select=*`,
+    );
+    if (existing.ok && existing.data?.[0]) {
+      return existing.data[0];
     }
-    clientId = clientResult.data.id;
-    console.log(`${TAG} Seeded client: ${clientId}`);
   }
 
-  // 2. Ensure a mission exists
-  const missions = await supabaseGet<{ id: string }>(cfg, "missions", `client_id=eq.${clientId}&select=id&limit=1`);
-  let missionId: string;
+  console.log(`${TAG} Seeding isolated test data for run ${context.runId}`);
 
-  if (missions.ok && missions.data?.[0]) {
-    missionId = missions.data[0].id;
-  } else {
-    console.log(`${TAG} Seeding test mission`);
-    const missionResult = await supabaseInsert<{ id: string }>(cfg, "missions", {
-      client_id: clientId,
-      mission_type: "content",
-      objective: "E2E validation mission",
-      priority: "medium",
-      input_payload: {},
-      status: "active",
-      tags: ["e2e", "validation"],
-    });
-    if (!missionResult.ok || !missionResult.data) {
-      console.log(`${TAG} Failed to seed mission: ${missionResult.error}`);
-      return null;
-    }
-    missionId = missionResult.data.id;
-    console.log(`${TAG} Seeded mission: ${missionId}`);
+  const clientSlug = `e2e-validation-${context.runId}`;
+  const clientResult = await supabaseInsert<{ id: string }>(cfg, "clients", {
+    slug: clientSlug,
+    display_name: `E2E Validation ${context.runId}`,
+    contact_email: `${context.runId}@ajdigital.test`,
+    tier: "standard",
+    status: "active",
+    metadata: { test: true, run_id: context.runId },
+  });
+  if (!clientResult.ok || !clientResult.data) {
+    console.log(`${TAG} Failed to seed client: ${clientResult.error}`);
+    return null;
   }
+  context.clientId = clientResult.data.id;
 
-  // 3. Ensure a mission_run exists
-  const runs = await supabaseGet<{ id: string }>(cfg, "mission_runs", `mission_id=eq.${missionId}&select=id&limit=1`);
-  let runId: string;
-
-  if (runs.ok && runs.data?.[0]) {
-    runId = runs.data[0].id;
-  } else {
-    console.log(`${TAG} Seeding test mission_run`);
-    const runResult = await supabaseInsert<{ id: string }>(cfg, "mission_runs", {
-      mission_id: missionId,
-      run_ref: `e2e-val-${Date.now()}`,
-      status: "completed",
-      trigger_type: "manual",
-      ok: true,
-      summary: "E2E validation run",
-      artifacts: [],
-    });
-    if (!runResult.ok || !runResult.data) {
-      console.log(`${TAG} Failed to seed mission_run: ${runResult.error}`);
-      return null;
-    }
-    runId = runResult.data.id;
-    console.log(`${TAG} Seeded mission_run: ${runId}`);
+  const missionResult = await supabaseInsert<{ id: string }>(cfg, "missions", {
+    client_id: context.clientId,
+    mission_type: "build_and_review",
+    objective: `E2E validation mission ${context.runId}`,
+    priority: "normal",
+    input_payload: { test: true, run_id: context.runId },
+    status: "active",
+    tags: ["e2e", "validation", context.runId],
+  });
+  if (!missionResult.ok || !missionResult.data) {
+    console.log(`${TAG} Failed to seed mission: ${missionResult.error}`);
+    return null;
   }
+  context.missionId = missionResult.data.id;
 
-  // 4. Create the proof deliverable
-  const simRow = {
-    client_id: clientId,
-    mission_run_id: runId,
-    filename: "e2e-validation-proof-report.json",
+  const runResult = await supabaseInsert<{ id: string }>(cfg, "mission_runs", {
+    mission_id: context.missionId,
+    run_ref: context.runId,
+    status: "completed",
+    trigger_type: "manual",
+    ok: true,
+    summary: `E2E validation run ${context.runId}`,
+    artifacts: [],
+  });
+  if (!runResult.ok || !runResult.data) {
+    console.log(`${TAG} Failed to seed mission_run: ${runResult.error}`);
+    return null;
+  }
+  context.missionRunId = runResult.data.id;
+
+  const deliverableResult = await supabaseInsert<DbDeliverable>(cfg, "deliverables", {
+    client_id: context.clientId,
+    mission_run_id: context.missionRunId,
+    filename: `${context.runId}-proof-report.json`,
     content_type: "application/json",
     size_bytes: 1024,
-    r2_key: "validation/e2e-proof-report.json",
+    r2_key: `validation/${context.runId}/proof-report.json`,
     status: "published",
     metadata: {
+      test: true,
+      run_id: context.runId,
       report_type: "performance",
       headline: "E2E Validation Performance Report",
       summary: "Automated validation proving the distribution pipeline works end-to-end.",
@@ -159,16 +161,15 @@ async function findOrCreateTestDeliverable(cfg: ReturnType<typeof resolveConfig>
       improvement_signal: "+28% overall improvement",
       cta: "Book a strategy call to see your results.",
     },
-  };
-
-  const inserted = await supabaseInsert<DbDeliverable>(cfg, "deliverables", simRow);
-  if (!inserted.ok || !inserted.data) {
-    console.log(`${TAG} Failed to insert simulated deliverable: ${inserted.error}`);
+  });
+  if (!deliverableResult.ok || !deliverableResult.data) {
+    console.log(`${TAG} Failed to insert simulated deliverable: ${deliverableResult.error}`);
     return null;
   }
 
-  console.log(`${TAG} Simulated proof deliverable created: ${inserted.data.id}`);
-  return inserted.data;
+  context.deliverableId = deliverableResult.data.id;
+  console.log(`${TAG} Simulated proof deliverable created: ${deliverableResult.data.id}`);
+  return deliverableResult.data;
 }
 
 // ── Test 1: Validate Expansion ─────────────────────────────────────
@@ -178,7 +179,7 @@ async function test1_expansion(cfg: ReturnType<typeof resolveConfig>): Promise<v
   const details: string[] = [];
   const errors: string[] = [];
 
-  const deliverable = await findOrCreateTestDeliverable(cfg);
+  const deliverable = await seedTestDeliverable(cfg);
   if (!deliverable) {
     report(name, false, [], ["No deliverable available — cannot test expansion"]);
     return;
@@ -217,12 +218,13 @@ async function test1_expansion(cfg: ReturnType<typeof resolveConfig>): Promise<v
   const dbAssets = await supabaseGet<DbDistributionAsset>(
     cfg,
     "distribution_assets",
-    `source_deliverable_id=eq.${deliverable.id}&select=*`,
+    `source_deliverable_id=eq.${deliverable.id}&select=*&order=created_at.asc`,
   );
   const assets = dbAssets.ok && dbAssets.data ? dbAssets.data : [];
+  context.assetIds = assets.map((asset) => asset.id);
   details.push(`Assets in DB: ${assets.length}`);
 
-  if (assets.length < 5) {
+  if (assets.length !== 5) {
     errors.push(`Expected 5 assets in DB, got ${assets.length}`);
   }
 
@@ -240,19 +242,24 @@ async function test2_queueApi(cfg: ReturnType<typeof resolveConfig>): Promise<vo
   const details: string[] = [];
   const errors: string[] = [];
 
-  // GET all assets
-  const allAssets = await supabaseGet<DbDistributionAsset>(
-    cfg,
-    "distribution_assets",
-    "select=*&status=eq.draft&limit=5",
-  );
-  if (!allAssets.ok || !allAssets.data?.length) {
-    report(name, false, [], ["No draft assets found — cannot test queue"]);
+  const testAssetId = context.assetIds[0];
+  if (!testAssetId) {
+    report(name, false, [], ["No isolated assets found from expansion test"]);
     return;
   }
 
-  details.push(`Draft assets available: ${allAssets.data.length}`);
-  const testAsset = allAssets.data[0]!;
+  const testAssetResult = await supabaseGet<DbDistributionAsset>(
+    cfg,
+    "distribution_assets",
+    `id=eq.${testAssetId}&select=*`,
+  );
+  const testAsset = testAssetResult.data?.[0];
+  if (!testAsset || testAsset.status !== "draft") {
+    report(name, false, [], [`Expected isolated draft asset ${testAssetId}, got '${testAsset?.status ?? "missing"}'`]);
+    return;
+  }
+
+  details.push(`Draft assets available: ${context.assetIds.length}`);
   details.push(`Test asset: ${testAsset.id} (${testAsset.channel})`);
 
   // Approve: draft → approved
@@ -317,6 +324,8 @@ async function test2_queueApi(cfg: ReturnType<typeof resolveConfig>): Promise<vo
     errors.push("scheduled_at not set");
   }
 
+  context.queuedAssetId = testAsset.id;
+
   report(name, errors.length === 0, details, errors);
 }
 
@@ -327,15 +336,18 @@ async function test3_publish(cfg: ReturnType<typeof resolveConfig>): Promise<voi
   const details: string[] = [];
   const errors: string[] = [];
 
-  // Find an asset that is scheduled with scheduled_at in the past
+  if (!context.queuedAssetId) {
+    report(name, false, [], ["No isolated scheduled asset found — queue test likely failed"]);
+    return;
+  }
+
   const scheduledAssets = await supabaseGet<DbDistributionAsset>(
     cfg,
     "distribution_assets",
-    `status=eq.scheduled&select=id,channel,title,scheduled_at&limit=5`,
+    `id=eq.${context.queuedAssetId}&status=eq.scheduled&select=id,channel,title,scheduled_at`,
   );
-
   if (!scheduledAssets.ok || !scheduledAssets.data?.length) {
-    report(name, false, [], ["No scheduled assets found — cannot test publish"]);
+    report(name, false, [], [`Scheduled isolated asset ${context.queuedAssetId} not found`]);
     return;
   }
 
@@ -364,6 +376,10 @@ async function test3_publish(cfg: ReturnType<typeof resolveConfig>): Promise<voi
     errors.push("published_at not set after publish");
   }
 
+  if (asset?.status === "published") {
+    context.publishedAssetId = asset.id;
+  }
+
   report(name, errors.length === 0, details, errors);
 }
 
@@ -374,15 +390,19 @@ async function test4_metrics(cfg: ReturnType<typeof resolveConfig>): Promise<voi
   const details: string[] = [];
   const errors: string[] = [];
 
-  // Find a published asset
+  if (!context.publishedAssetId) {
+    report(name, false, [], ["No isolated published asset found — publish test likely failed"]);
+    return;
+  }
+
   const publishedAssets = await supabaseGet<DbDistributionAsset>(
     cfg,
     "distribution_assets",
-    "status=eq.published&select=id,channel&limit=1",
+    `id=eq.${context.publishedAssetId}&status=eq.published&select=id,channel`,
   );
 
   if (!publishedAssets.ok || !publishedAssets.data?.length) {
-    report(name, false, [], ["No published assets found — cannot test metrics"]);
+    report(name, false, [], [`Published isolated asset ${context.publishedAssetId} not found`]);
     return;
   }
 
@@ -421,12 +441,24 @@ async function test4_metrics(cfg: ReturnType<typeof resolveConfig>): Promise<voi
     errors.push("No metrics row found in DB after insert");
   }
 
-  // Verify aggregation
-  const perf = await getDistributionPerformance();
+  // Verify aggregation for the isolated test client
+  const perf = await getDistributionPerformance(context.clientId ?? undefined);
   details.push(`Aggregation: total_assets=${perf.total_assets} published=${perf.published} impressions=${perf.total_impressions} leads=${perf.total_leads}`);
 
-  if (perf.total_impressions < 1500) {
-    errors.push(`Aggregation impressions too low: ${perf.total_impressions}`);
+  if (perf.total_assets !== 5) {
+    errors.push(`Aggregation total_assets: expected 5, got ${perf.total_assets}`);
+  }
+  if (perf.published !== 1) {
+    errors.push(`Aggregation published: expected 1, got ${perf.published}`);
+  }
+  if (perf.total_impressions !== 1500) {
+    errors.push(`Aggregation impressions: expected 1500, got ${perf.total_impressions}`);
+  }
+  if (perf.total_engagements !== 45) {
+    errors.push(`Aggregation engagements: expected 45, got ${perf.total_engagements}`);
+  }
+  if (perf.total_leads !== 8) {
+    errors.push(`Aggregation leads: expected 8, got ${perf.total_leads}`);
   }
 
   if (Object.keys(perf.by_channel).length > 0) {
@@ -445,7 +477,12 @@ async function test5_proofEndpoint(cfg: ReturnType<typeof resolveConfig>): Promi
 
   // We can't hit HTTP directly without starting the server.
   // Instead, test the underlying getDistributionPerformance used by buildProofPayload.
-  const perf = await getDistributionPerformance();
+  if (!context.clientId) {
+    report(name, false, [], ["No isolated client found for proof validation"]);
+    return;
+  }
+
+  const perf = await getDistributionPerformance(context.clientId);
 
   const fields: Array<[string, unknown]> = [
     ["total_assets", perf.total_assets],
@@ -462,6 +499,12 @@ async function test5_proofEndpoint(cfg: ReturnType<typeof resolveConfig>): Promi
       details.push(`${field} = ${value}`);
     }
   }
+
+  if (perf.total_assets !== 5) errors.push(`total_assets: expected 5, got ${perf.total_assets}`);
+  if (perf.published !== 1) errors.push(`published: expected 1, got ${perf.published}`);
+  if (perf.total_impressions !== 1500) errors.push(`total_impressions: expected 1500, got ${perf.total_impressions}`);
+  if (perf.total_engagements !== 45) errors.push(`total_engagements: expected 45, got ${perf.total_engagements}`);
+  if (perf.total_leads !== 8) errors.push(`total_leads: expected 8, got ${perf.total_leads}`);
 
   details.push(`timestamp = ${perf.timestamp}`);
 
@@ -483,16 +526,9 @@ async function test6_clientPerformance(cfg: ReturnType<typeof resolveConfig>): P
   const details: string[] = [];
   const errors: string[] = [];
 
-  // Find a client with distribution assets
-  const assets = await supabaseGet<DbDistributionAsset>(
-    cfg,
-    "distribution_assets",
-    "select=client_id&limit=1",
-  );
-  const clientId = assets.data?.[0]?.client_id;
-
+  const clientId = context.clientId;
   if (!clientId) {
-    report(name, false, [], ["No distribution assets with client_id found"]);
+    report(name, false, [], ["No isolated client found for client performance test"]);
     return;
   }
 
@@ -514,6 +550,12 @@ async function test6_clientPerformance(cfg: ReturnType<typeof resolveConfig>): P
       details.push(`${field} = ${value}`);
     }
   }
+
+  if (perf.total_assets !== 5) errors.push(`distribution_assets: expected 5, got ${perf.total_assets}`);
+  if (perf.published !== 1) errors.push(`published_assets: expected 1, got ${perf.published}`);
+  if (perf.total_impressions !== 1500) errors.push(`distribution_impressions: expected 1500, got ${perf.total_impressions}`);
+  if (perf.total_engagements !== 45) errors.push(`distribution_engagements: expected 45, got ${perf.total_engagements}`);
+  if (perf.total_leads !== 8) errors.push(`distribution_leads: expected 8, got ${perf.total_leads}`);
 
   report(name, errors.length === 0, details, errors);
 }

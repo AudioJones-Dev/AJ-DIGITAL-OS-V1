@@ -11,8 +11,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "build": "node scripts/run-tsc.cjs",
+    "typecheck": "node scripts/run-tsc.cjs --noEmit",
     "smoke:ollama-provider": "npm run build && node dist/providers/ollama.provider.smoke.js",
     "cli": "node dist/cli.js",
     "release:check": "node dist/cli.js healthcheck --json",
