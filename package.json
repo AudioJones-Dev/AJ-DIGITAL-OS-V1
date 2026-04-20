@@ -27,7 +27,9 @@
     "cli:approve": "npm run cli -- approve-run",
     "cli:execute": "npm run cli -- execute-run",
     "cli:resume": "npm run cli -- resume-run",
-    "link:local": "npm run build && npm link"
+    "link:local": "npm run build && npm link",
+    "seed:demo": "node scripts/seed-demo-data.mjs",
+    "smoke:cli": "node scripts/smoke-cli.mjs"
   },
   "dependencies": {
     "axios": "^1.11.0",

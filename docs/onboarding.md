@@ -49,6 +49,18 @@ npm run link:local
 aj-digital-os help
 ```
 
+
+## Demo Data + Smoke Validation
+
+To quickly validate a realistic local operator surface:
+
+```bash
+npm run seed:demo
+npm run smoke:cli
+```
+
+`seed:demo` creates deterministic run and event data under `src/data/runs` and `src/data/reports/runs`.
+
 ## Key Docs To Read Next
 
 - `README.md`
@@ -56,4 +68,5 @@ aj-digital-os help
 - `docs/recovery-playbook.md`
 - `docs/system-architecture.md`
 - `docs/publish-preparation-checklist.md`
+- `docs/go-live-production-plan.md`
 - `docs/versioning-policy.md`
