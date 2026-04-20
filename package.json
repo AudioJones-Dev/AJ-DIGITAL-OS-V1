@@ -13,6 +13,8 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
+    "verify:brand-template": "npm run build && node scripts/verify-brand-dna-template.mjs",
+    "verify": "npm run typecheck && npm run verify:brand-template",
     "cli": "node dist/cli.js",
     "cli:help": "npm run cli -- help",
     "cli:dashboard": "npm run cli -- dashboard",

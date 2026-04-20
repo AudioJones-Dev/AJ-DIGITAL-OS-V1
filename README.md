@@ -10,6 +10,7 @@ Build the project first so the compiled CLI is available under `dist/cli.js`.
 
 ```bash
 npm run build
+npm run verify
 npm run cli:help
 npm run cli:dashboard
 npm run cli:console
@@ -20,6 +21,16 @@ Generic CLI pattern:
 ```bash
 npm run cli -- <command> [flags]
 ```
+
+### Verification
+
+Use this command before opening a PR to ensure type safety and Brand DNA template schema compliance:
+
+```bash
+npm run verify
+```
+
+GitHub Actions also runs this same verification flow on pushes to `main` and on pull requests.
 
 ### Command Groups
 

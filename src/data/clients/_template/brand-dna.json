@@ -3,6 +3,19 @@
   "voice": "clear, direct, strategic",
   "tone": "confident, practical, sharp",
   "audience": "founders, operators, entrepreneurs",
+  "audienceSegments": [
+    {
+      "segment": "founder-operators",
+      "pains": [
+        "content creation is inconsistent",
+        "offer positioning feels generic"
+      ],
+      "outcomes": [
+        "clear market positioning",
+        "repeatable authority content system"
+      ]
+    }
+  ],
   "category": "AI consulting and media systems",
   "positioning": "Builds scalable authority and operational systems using AI and media",
   "differentiators": [
@@ -10,8 +23,26 @@
     "polymath operator perspective",
     "AI + media integration"
   ],
+  "proofPoints": [
+    "documented before/after operating improvements",
+    "measurable output consistency gains"
+  ],
+  "messagePillars": [
+    "authority systems",
+    "AI workflow implementation",
+    "operator playbooks"
+  ],
   "corePromise": "turn expertise into scalable authority",
   "philosophy": "bullshit input, bullshit output",
+  "objectionHandling": [
+    "starts with a lightweight implementation sprint, not a full overhaul",
+    "designed to fit existing team workflows"
+  ],
+  "contentAngles": [
+    "before and after operations",
+    "framework breakdowns",
+    "common execution mistakes"
+  ],
   "writingRules": [
     "write clearly",
     "lead with strategic utility",
