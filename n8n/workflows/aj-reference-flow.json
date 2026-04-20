@@ -1,0 +1,49 @@
+[
+  {
+    "id": "d45716e6-cf43-4be0-96b6-83fc3b524391",
+    "name": "AJ Reference - Manual Health Snapshot",
+    "active": false,
+    "nodes": [
+      {
+        "parameters": {},
+        "id": "f8c9d2c5-0f30-4e34-9d2f-d3f16e8d7f29",
+        "name": "Manual Trigger",
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          240,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{json: {stack: 'AJ Digital OS', checked_at: new Date().toISOString(), services: ['ollama','open-webui','postgres','redis','qdrant','n8n','prometheus','grafana','loki']}}];"
+        },
+        "id": "1c75f7ec-4730-4f5b-860f-84f59ca9163f",
+        "name": "Build Snapshot",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          520,
+          300
+        ]
+      }
+    ],
+    "connections": {
+      "Manual Trigger": {
+        "main": [
+          [
+            {
+              "node": "Build Snapshot",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1"
+    }
+  }
+]

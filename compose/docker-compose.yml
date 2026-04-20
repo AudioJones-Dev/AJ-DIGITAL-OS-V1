@@ -124,6 +124,18 @@ services:
     volumes:
       - "F:/CACHE/prometheus:/prometheus"
       - "../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+      - "../monitoring/alerts:/etc/prometheus/alerts:ro"
+    restart: unless-stopped
+    networks:
+      - aj-digital-net
+
+  blackbox-exporter:
+    image: quay.io/prometheus/blackbox-exporter:latest
+    container_name: aj-blackbox-exporter
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yml
+    volumes:
+      - "../monitoring/blackbox.yml:/etc/blackbox_exporter/config.yml:ro"
     restart: unless-stopped
     networks:
       - aj-digital-net
@@ -151,6 +163,8 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - "F:/CACHE/grafana:/var/lib/grafana"
+      - "../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro"
+      - "../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro"
     depends_on:
       - prometheus
       - loki

@@ -36,3 +36,9 @@
 - Alert: Redis memory > 85%
 - Alert: n8n failures spike > baseline
 - Alert: Ollama error rate > 5%
+
+## Provisioned Baseline (Implemented)
+- Datasources: Prometheus (`uid=prometheus`), Loki (`uid=loki`)
+- Dashboard provider folder: `AJ Digital OS`
+- Starter dashboard file: `monitoring/grafana/dashboards/aj-core-health.json`
+- Prometheus rules file: `monitoring/alerts/core-services.yml`
