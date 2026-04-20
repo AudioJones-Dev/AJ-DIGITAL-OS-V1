@@ -149,3 +149,27 @@ npm run coverage
 ```
 
 Coverage thresholds are enforced in `vitest.config.ts` for core lifecycle and webhook modules.
+
+## Webhook Security Contract
+
+Approval and execution webhook handlers require signed requests and reject unsigned traffic by default.
+
+Required headers:
+
+- `x-aj-signature`
+- `x-aj-timestamp`
+- `x-aj-nonce`
+- `x-aj-webhook-id`
+
+Canonical signing input:
+
+```text
+${timestamp}.${nonce}.${rawBody}
+```
+
+Behavior:
+
+- HMAC SHA-256 verification using `AJ_WEBHOOK_SECRET`
+- freshness enforcement via `AJ_WEBHOOK_MAX_SKEW_SECONDS` (default `300`)
+- replay rejection using nonce + webhook id with `AJ_WEBHOOK_REPLAY_TTL_SECONDS` (default `600`)
+- fail-closed behavior if verification cannot be completed or secret is missing
