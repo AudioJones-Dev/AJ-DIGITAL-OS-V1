@@ -78,6 +78,28 @@ Cadence recommendation:
 
 **Deliverable:** `docs/30-day-brand-content-plan.md`
 
+## What To Do Next (Practical Plan)
+
+### Next 48 Hours
+1. Pick 2 primary audience segments (example: founder-operator, agency owner).
+2. Draft one-page pain/outcome notes per segment.
+3. Gather at least 3 proof artifacts (screenshots, metrics, process docs).
+
+### Next 7 Days
+1. Complete `docs/brand-messaging-matrix.md` with segment-specific messaging.
+2. Complete `docs/brand-proof-library.md` with clear evidence snippets.
+3. Draft one LinkedIn post and one email using the new messaging.
+
+### Next 14 Days
+1. Extend `src/schemas/brand-dna.schema.ts` with proof and segment fields.
+2. Update `src/data/clients/_template/brand-dna.json` to match the expanded schema.
+3. Publish the 30-day calendar in `docs/30-day-brand-content-plan.md`.
+
+### First Content Sprint KPI Targets
+- 2–3 qualified inbound conversations per week.
+- 10%+ save rate on short-form authority posts.
+- 2–5% click-through rate on offer-oriented CTA posts.
+
 ## Success Criteria
 Track brand progress with:
 - Content engagement quality (comments/saves/replies, not only impressions)
