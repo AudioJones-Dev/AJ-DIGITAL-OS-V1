@@ -28,9 +28,9 @@
     "cli:execute": "npm run cli -- execute-run",
     "cli:resume": "npm run cli -- resume-run",
     "link:local": "npm run build && npm link",
-    "test": "npx vitest run",
-    "test:watch": "npx vitest",
-    "coverage": "npx vitest run --coverage"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "axios": "^1.11.0",
@@ -38,6 +38,8 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^2.1.8",
+    "@vitest/coverage-v8": "^2.1.8"
   }
 }
