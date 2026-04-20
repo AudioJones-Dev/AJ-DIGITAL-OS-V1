@@ -140,6 +140,34 @@ services:
     networks:
       - aj-digital-net
 
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: aj-cadvisor
+    command:
+      - --housekeeping_interval=30s
+      - --docker_only=true
+    volumes:
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run:ro"
+      - "/sys:/sys:ro"
+      - "/var/lib/docker/:/var/lib/docker:ro"
+      - "/dev/disk/:/dev/disk:ro"
+    restart: unless-stopped
+    networks:
+      - aj-digital-net
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: aj-node-exporter
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($|/)
+    volumes:
+      - "/:/host:ro"
+    restart: unless-stopped
+    networks:
+      - aj-digital-net
+
   loki:
     image: grafana/loki:latest
     container_name: aj-loki

@@ -33,6 +33,12 @@ Invoke-RestMethod http://localhost:9090/api/v1/rules
 Invoke-RestMethod http://localhost:3001/api/health
 ```
 
+Expected scrape jobs:
+- `prometheus`
+- `blackbox`, `blackbox-http`, `blackbox-tcp`
+- `cadvisor`
+- `node-exporter`
+
 ## 3) Model Baseline
 ```powershell
 powershell -ExecutionPolicy Bypass -File C:\dev\infra\scripts\ollama-bootstrap-models.ps1

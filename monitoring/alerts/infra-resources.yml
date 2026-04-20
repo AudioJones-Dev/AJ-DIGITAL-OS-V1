@@ -1,0 +1,32 @@
+groups:
+  - name: aj-digital-infra-resources
+    rules:
+      - alert: AJHighContainerMemoryUsage
+        expr: (sum by (name) (container_memory_working_set_bytes{name!=""}) / sum by (name) (container_spec_memory_limit_bytes{name!=""} > 0)) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Container memory usage > 85% ({{ $labels.name }})"
+          description: "Container {{ $labels.name }} is over 85% of configured memory limit for 10 minutes."
+
+      - alert: AJHostMemoryPressure
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.90
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Host memory pressure > 90%"
+          description: "Host memory usage is above 90% for 10 minutes."
+
+      - alert: AJHostFilesystemLowSpace
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) < 0.10
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Low disk free space on {{ $labels.mountpoint }}"
+          description: "Filesystem {{ $labels.mountpoint }} has less than 10% free space for 15 minutes."

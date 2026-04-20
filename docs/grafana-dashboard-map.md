@@ -12,6 +12,13 @@
 - Panel: Error rate
 - Panel: Active model inventory
 
+## 2a) Infra Resources
+- Panel: Host memory usage %
+- Panel: Host root disk usage %
+- Panel: Container CPU cores used
+- Panel: Container memory working set
+- Panel: Container network I/O
+
 ## 3) Queue and Workflow (n8n + Redis)
 - Panel: n8n executions total
 - Panel: n8n failed executions
@@ -41,4 +48,6 @@
 - Datasources: Prometheus (`uid=prometheus`), Loki (`uid=loki`)
 - Dashboard provider folder: `AJ Digital OS`
 - Starter dashboard file: `monitoring/grafana/dashboards/aj-core-health.json`
+- Resource dashboard file: `monitoring/grafana/dashboards/aj-infra-resources.json`
 - Prometheus rules file: `monitoring/alerts/core-services.yml`
+- Prometheus infra rules file: `monitoring/alerts/infra-resources.yml`
