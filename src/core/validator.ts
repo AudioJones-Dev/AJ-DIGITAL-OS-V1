@@ -72,6 +72,30 @@ export const validateContext = (input: unknown): ValidationReport => {
     checks.push({ name: "brand_identity_presence", status: "pass" });
   }
 
+  const hasMessagePillars = getStringArray(context.brandDNA, "messagePillars").length > 0;
+  if (!hasMessagePillars) {
+    warnings.push("Brand DNA has no messagePillars; messaging consistency may suffer.");
+    checks.push({
+      name: "message_pillars_presence",
+      status: "warning",
+      notes: "Add at least one message pillar to improve content direction.",
+    });
+  } else {
+    checks.push({ name: "message_pillars_presence", status: "pass" });
+  }
+
+  const hasProofPoints = getStringArray(context.brandDNA, "proofPoints").length > 0;
+  if (!hasProofPoints) {
+    warnings.push("Brand DNA has no proofPoints; credibility signals are limited.");
+    checks.push({
+      name: "proof_points_presence",
+      status: "warning",
+      notes: "Add proof points to improve trust and conversion quality.",
+    });
+  } else {
+    checks.push({ name: "proof_points_presence", status: "pass" });
+  }
+
   return { ok: errors.length === 0, errors, warnings, checks };
 };
 
@@ -138,4 +162,13 @@ const formatZodIssues = (error: ZodError): string[] =>
 const getString = (record: WorkflowContext["brandDNA"], key: string): string | undefined => {
   const value = record[key];
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+};
+
+const getStringArray = (record: WorkflowContext["brandDNA"], key: string): string[] => {
+  const value = record[key];
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
 };
