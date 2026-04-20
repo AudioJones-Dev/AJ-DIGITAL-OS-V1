@@ -28,6 +28,7 @@ $dirs = @(
   "F:\CACHE\n8n",
   "F:\CACHE\grafana",
   "F:\CACHE\prometheus",
+  "F:\CACHE\alertmanager",
   "F:\CACHE\loki",
   "F:\CACHE\backups",
   "F:\CACHE\logs"

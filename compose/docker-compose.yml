@@ -129,6 +129,21 @@ services:
     networks:
       - aj-digital-net
 
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: aj-alertmanager
+    ports:
+      - "${ALERTMANAGER_PORT:-9093}:9093"
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - "F:/CACHE/alertmanager:/alertmanager"
+      - "../monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro"
+    restart: unless-stopped
+    networks:
+      - aj-digital-net
+
   blackbox-exporter:
     image: quay.io/prometheus/blackbox-exporter:latest
     container_name: aj-blackbox-exporter

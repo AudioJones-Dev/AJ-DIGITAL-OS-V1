@@ -29,6 +29,7 @@ powershell -ExecutionPolicy Bypass -File C:\dev\infra\scripts\provision-monitori
 Validation:
 ```powershell
 Invoke-WebRequest http://localhost:9090/-/healthy
+Invoke-WebRequest http://localhost:9093/-/healthy
 Invoke-RestMethod http://localhost:9090/api/v1/rules
 Invoke-RestMethod http://localhost:3001/api/health
 ```
@@ -38,6 +39,9 @@ Expected scrape jobs:
 - `blackbox`, `blackbox-http`, `blackbox-tcp`
 - `cadvisor`
 - `node-exporter`
+
+Alert delivery path:
+- Prometheus -> Alertmanager -> n8n webhook workflow `AJ Infra - Prometheus Alert Webhook`
 
 ## 3) Model Baseline
 ```powershell

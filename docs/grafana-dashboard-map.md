@@ -43,6 +43,7 @@
 - Alert: Redis memory > 85%
 - Alert: n8n failures spike > baseline
 - Alert: Ollama error rate > 5%
+- Delivery route: Prometheus -> Alertmanager -> n8n webhook
 
 ## Provisioned Baseline (Implemented)
 - Datasources: Prometheus (`uid=prometheus`), Loki (`uid=loki`)

@@ -1,6 +1,11 @@
 global:
   scrape_interval: 15s
 
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
 rule_files:
   - /etc/prometheus/alerts/*.yml
 
@@ -32,6 +37,7 @@ scrape_configs:
           - http://qdrant:6333/healthz
           - http://grafana:3000/api/health
           - http://ollama:11434/api/version
+          - http://alertmanager:9093/-/ready
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
