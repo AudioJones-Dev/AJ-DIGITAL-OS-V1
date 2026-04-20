@@ -56,4 +56,5 @@ aj-digital-os help
 - `docs/recovery-playbook.md`
 - `docs/system-architecture.md`
 - `docs/publish-preparation-checklist.md`
+- `docs/production-go-live-checklist.md`
 - `docs/versioning-policy.md`
