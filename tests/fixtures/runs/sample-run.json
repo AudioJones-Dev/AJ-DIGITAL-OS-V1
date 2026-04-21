@@ -1,0 +1,14 @@
+{
+  "runId": "run_fixture_001",
+  "workflowId": "blog-authority",
+  "taskType": "blog_post",
+  "clientId": "client_demo",
+  "status": "pending_approval",
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "revisionCount": 0,
+  "approvalRequired": true,
+  "approvalStatus": "pending",
+  "warnings": [],
+  "errors": []
+}

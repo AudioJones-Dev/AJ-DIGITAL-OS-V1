@@ -1,0 +1,80 @@
+[
+  {
+    "id": "f7a6c123-b7d2-4a24-a959-4720c5a8fbbe",
+    "name": "AJ Infra - Prometheus Alert Webhook",
+    "active": true,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "prometheus-alerts",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "6f2292ad-f95a-45db-9305-3ea0f313d5f3",
+        "name": "alert-webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          260,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const payload = $json.body ?? $json;\nconst alerts = Array.isArray(payload.alerts) ? payload.alerts : [];\nconst firing = alerts.filter((a) => a.status === 'firing').length;\nconst resolved = alerts.filter((a) => a.status === 'resolved').length;\nreturn [{\n  json: {\n    ok: true,\n    receiver: payload.receiver || 'unknown',\n    alert_count: alerts.length,\n    firing_count: firing,\n    resolved_count: resolved,\n    received_at: new Date().toISOString()\n  }\n}];"
+        },
+        "id": "b53e0562-855b-462a-b80a-b7930079ce6d",
+        "name": "Summarize Alert",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          520,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{$json}}",
+          "options": {}
+        },
+        "id": "97789e8a-b46e-4f4a-81be-10bc416f25e6",
+        "name": "Respond OK",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          760,
+          300
+        ]
+      }
+    ],
+    "connections": {
+      "alert-webhook": {
+        "main": [
+          [
+            {
+              "node": "Summarize Alert",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Summarize Alert": {
+        "main": [
+          [
+            {
+              "node": "Respond OK",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1"
+    }
+  }
+]

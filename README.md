@@ -441,3 +441,28 @@ During local development, the supported fallback remains:
 ```bash
 npm run cli -- help
 ```
+
+## Local preflight (mirrors CI)
+
+Before opening a PR (or before pushing to `main`), run the same quality gates executed in GitHub Actions:
+
+```bash
+npm ci
+npm run typecheck
+npm run build
+npm run test
+npm run coverage
+npm audit --audit-level=high
+```
+
+## Testing
+
+Run automated tests and coverage checks:
+
+```bash
+npm run test
+npm run test:watch
+npm run coverage
+```
+
+Coverage thresholds are enforced in `vitest.config.ts` for core lifecycle and webhook modules.

@@ -60,7 +60,10 @@
     "validate:production": "npm run build && node --import ./dist/env.js dist/scripts/validate-production-ready.js",
     "start:production-local": "npm run validate:production && node dist/server.js",
     "link:local": "npm run build && npm link",
-    "start:full": "npm run build && node dist/server.js"
+    "start:full": "npm run build && node dist/server.js",
+    "test": "npx vitest run",
+    "test:watch": "npx vitest",
+    "coverage": "npx vitest run --coverage"
   },
   "dependencies": {
     "axios": "^1.11.0",

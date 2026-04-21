@@ -64,6 +64,21 @@ interface ParsedArgs {
 export function parseArgs(argv: string[]): ParsedArgs {
   const flags: Record<string, string | boolean | undefined> = {};
   let command: string | undefined;
+  const booleanFlags = new Set([
+    "json",
+    "reverse",
+    "watch",
+    "autoSubmitForApproval",
+    "rebuild",
+    "use-config-webhook",
+    "validate-only",
+    "post-agent",
+    "modelAttempted",
+    "modelSucceeded",
+    "repairedSuccess",
+    "modelFailed",
+    "fallbackUsed",
+  ]);
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
@@ -78,23 +93,31 @@ export function parseArgs(argv: string[]): ParsedArgs {
       continue;
     }
 
-    const key = token.slice(2);
-    if (
-      key === "json"
-      || key === "reverse"
-      || key === "watch"
-      || key === "autoSubmitForApproval"
-      || key === "rebuild"
-      || key === "use-config-webhook"
-      || key === "validate-only"
-      || key === "post-agent"
-      || key === "modelAttempted"
-      || key === "modelSucceeded"
-      || key === "repairedSuccess"
-      || key === "modelFailed"
-      || key === "fallbackUsed"
-    ) {
+    const rawFlag = token.slice(2);
+    const separatorIndex = rawFlag.indexOf("=");
+    const key = separatorIndex >= 0 ? rawFlag.slice(0, separatorIndex) : rawFlag;
+    const inlineValue = separatorIndex >= 0 ? rawFlag.slice(separatorIndex + 1) : undefined;
+    if (booleanFlags.has(key)) {
+      if (inlineValue !== undefined) {
+        const parsedInlineBoolean = parseBooleanFlagValue(inlineValue);
+        flags[key] = parsedInlineBoolean ?? true;
+        continue;
+      }
+
+      const nextToken = argv[index + 1];
+      const parsedBoolean = parseBooleanFlagValue(nextToken);
+      if (parsedBoolean !== undefined) {
+        flags[key] = parsedBoolean;
+        index += 1;
+        continue;
+      }
+
       flags[key] = true;
+      continue;
+    }
+
+    if (inlineValue !== undefined) {
+      flags[key] = inlineValue;
       continue;
     }
 
@@ -578,6 +601,22 @@ function getStringFlag(
 
 function hasFlag(flags: Record<string, string | boolean | undefined>, key: string): boolean {
   return flags[key] === true;
+}
+
+function parseBooleanFlagValue(value: string | undefined): boolean | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
+  return undefined;
 }
 
 function getOptionalLimit(flags: Record<string, string | boolean | undefined>): number | undefined {
