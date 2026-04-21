@@ -61,7 +61,7 @@ export interface InterventionPlan {
   expected_outcomes: string[];
 }
 
-export interface PredictionModel {
+export interface ExpectedOutcomeModel {
   metrics: Record<string, number>;
   horizon_days: number;
   assumptions: string[];
@@ -124,6 +124,23 @@ export interface DiagnoseSystemRequest {
     objective: string;
     constraints: string[];
   };
+  business_context?: {
+    niche?: string;
+    micro_niche?: string;
+    offer_type?: string;
+    monthly_leads?: number;
+    avg_customer_value?: number;
+    sales_process_present?: boolean;
+    crm_present?: boolean;
+    tracking_present?: boolean;
+    database_size?: number;
+  };
+  baseline_metrics?: {
+    lead_volume?: number;
+    close_rate?: number;
+    response_time?: number;
+    revenue?: number;
+  };
   problem: {
     description: string;
     symptoms: string[];
@@ -149,12 +166,17 @@ export interface DiagnoseSystemResponse {
   archetype_classification: ArchetypeClassification;
   analogical_output?: AnalogicalOutput;
   intervention_plan: InterventionPlan;
-  prediction_model: PredictionModel;
+  expected_outcome_model: ExpectedOutcomeModel;
   validation: ValidationResult;
   token_telemetry: TokenTelemetry[];
   storage: {
     compact_case_object: CompactCaseObject;
     schema_reference_ids: string[];
+    routing_hints: {
+      requires_qualification: boolean;
+      requires_attribution: boolean;
+      requires_template_mapping: boolean;
+    };
   };
 }
 

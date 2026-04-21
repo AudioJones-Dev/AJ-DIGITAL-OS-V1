@@ -36,11 +36,12 @@ These can be moved to standalone packages with minimal API breakage if import pa
 ### Diagnose System
 - Contract: `DiagnoseSystemRequest` -> `DiagnoseSystemResponse`
 - Entrypoint: `diagnoseSystem(input)`
+- Request supports optional `business_context` and `baseline_metrics` for future qualification and attribution layers.
 - Includes:
   - structural abstraction output
   - archetype classification
   - intervention plan
-  - prediction model
+  - expected outcome model (deterministic in v1)
   - validation shape
   - compact case object
   - token telemetry
@@ -108,8 +109,19 @@ Fixtures:
 ## Known Limitations / Deferred Work
 
 - Analogical reasoning and deeper causal validation engines are intentionally deferred.
-- Prediction model is deterministic placeholder logic, not learned.
+- `expected_outcome_model` is deterministic placeholder logic in v1; learned prediction is deferred.
+- Qualification scoring is deferred.
+- Attribution / ROI analysis is deferred.
+- Vertical template routing is deferred.
+- Deployment planning is deferred.
 - API route wiring (`POST /diagnose-system`, `POST /update-outcome`) is deferred; internal handlers already match contracts.
+
+## Next Planned Layers
+
+- Qualification engine
+- Attribution / ROI engine
+- Template router
+- Deployment planner
 
 ## Recommended Next Milestone
 

@@ -30,6 +30,13 @@ describe("AIS foundation routing", () => {
     const response = diagnoseSystem(loadFixture("signal-degradation.json"));
 
     expect(response.status).toBe("diagnosed");
+    expect(response.expected_outcome_model).toBeDefined();
+    expect(response.storage.routing_hints).toEqual({
+      requires_qualification: true,
+      requires_attribution: true,
+      requires_template_mapping: true,
+    });
+
     expect(response.validation).toMatchObject({
       archetype_validity: expect.any(Number),
       analogy_validity: expect.any(Number),

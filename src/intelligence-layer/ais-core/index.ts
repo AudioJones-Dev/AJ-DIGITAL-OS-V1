@@ -44,7 +44,7 @@ export function classifyArchetype(input: DiagnoseSystemRequest): ArchetypeClassi
   };
 
   if (secondary) {
-    result.secondary_archetype = secondary[0] as ArchetypeClassification["secondary_archetype"];
+    result.secondary_archetype = secondary[0] as ArchetypeClassification["primary_archetype"];
   }
 
   return result;
@@ -92,7 +92,7 @@ export function diagnoseSystem(input: DiagnoseSystemRequest): DiagnoseSystemResp
   const classification = classifyArchetype(input);
   const interventionPlan = generateInterventionPlan(classification.primary_archetype);
 
-  const prediction_model = {
+  const expected_outcome_model = {
     metrics: {
       cycle_time: 0.2,
       error_rate: 0.15,
@@ -118,7 +118,7 @@ export function diagnoseSystem(input: DiagnoseSystemRequest): DiagnoseSystemResp
     archetype: classification.primary_archetype,
     intervention: interventionPlan,
     constraints: structural.constraints,
-    predicted_outcome: prediction_model.metrics,
+    predicted_outcome: expected_outcome_model.metrics,
   });
 
   return {
@@ -128,7 +128,7 @@ export function diagnoseSystem(input: DiagnoseSystemRequest): DiagnoseSystemResp
     structural_abstraction: structural,
     archetype_classification: classification,
     intervention_plan: interventionPlan,
-    prediction_model,
+    expected_outcome_model,
     validation: {
       archetype_validity: classification.confidence,
       analogy_validity: 0,
@@ -142,6 +142,11 @@ export function diagnoseSystem(input: DiagnoseSystemRequest): DiagnoseSystemResp
     storage: {
       compact_case_object: compactCase,
       schema_reference_ids: [`schema:${classification.primary_archetype}:v1`],
+      routing_hints: {
+        requires_qualification: true,
+        requires_attribution: true,
+        requires_template_mapping: true,
+      },
     },
   };
 }

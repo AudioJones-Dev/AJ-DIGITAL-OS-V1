@@ -4,6 +4,8 @@ const CONSTRAINT_KEYWORDS = ["budget", "time", "capacity", "compliance", "headco
 const UNCERTAINTY_KEYWORDS = ["unknown", "unclear", "assumption", "missing", "incomplete", "unverified"];
 const FEEDBACK_KEYWORDS = ["feedback", "review", "loop", "retrospective", "monitoring", "escalation"];
 
+// TODO(AIS-v2): Replace this keyword/rule reducer with a structured signal extraction engine.
+
 export function reduceToStructuralAbstraction(input: DiagnoseSystemRequest): StructuralAbstraction {
   const description = input.problem.description.toLowerCase();
   const symptomBlob = input.problem.symptoms.join(" ").toLowerCase();
