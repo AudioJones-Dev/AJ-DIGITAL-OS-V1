@@ -27,6 +27,7 @@
     "cli:approve": "npm run cli -- approve-run",
     "cli:execute": "npm run cli -- execute-run",
     "cli:resume": "npm run cli -- resume-run",
+    "control-plane:start": "node --import ./dist/env.js dist/control-plane/index.js",
     "link:local": "npm run build && npm link",
     "test": "vitest run",
     "test:watch": "vitest",
