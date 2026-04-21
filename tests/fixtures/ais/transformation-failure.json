@@ -1,0 +1,19 @@
+{
+  "case_id": "case-transform-001",
+  "source": { "type": "retrospective", "origin": "delivery" },
+  "context": {
+    "company": "AJ Digital",
+    "industry": "digital operations",
+    "business_model": "services",
+    "objective": "convert briefs into deployable assets",
+    "constraints": ["time constraint", "headcount capacity"]
+  },
+  "problem": {
+    "description": "Input briefs are available but conversion fails repeatedly with defect-heavy output.",
+    "symptoms": ["rework cycle each sprint", "high defect rate"],
+    "observed_failures": ["failed processing at QA gate", "conversion drop-off"],
+    "desired_outcome": "predictable first-pass quality"
+  },
+  "data": { "metrics": [{ "name": "cycle_time", "value": 0.6 }], "events": ["qa rejection"] },
+  "options": { "run_analogical_engine": false, "max_token_budget": 1500, "confidence_threshold": 0.5 }
+}

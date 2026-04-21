@@ -1,0 +1,63 @@
+{
+  "case_id": "case-signal-001",
+  "source": {
+    "type": "incident_review",
+    "origin": "ops"
+  },
+  "context": {
+    "company": "AJ Digital",
+    "industry": "digital operations",
+    "business_model": "services",
+    "objective": "maintain reliable execution",
+    "constraints": [
+      "latency in reporting",
+      "budget limit"
+    ]
+  },
+  "problem": {
+    "description": "Critical status updates are inconsistent and stale across handoffs.",
+    "symptoms": [
+      "signal noise between teams",
+      "stale data",
+      "slow feedback loop"
+    ],
+    "observed_failures": [
+      "miscommunication during handoff",
+      "incomplete monitoring signal"
+    ],
+    "desired_outcome": "consistent high-fidelity operational signal"
+  },
+  "data": {
+    "metrics": [
+      {
+        "name": "error_rate",
+        "value": 0.34
+      }
+    ],
+    "events": [
+      "handoff failure"
+    ]
+  },
+  "options": {
+    "run_analogical_engine": false,
+    "max_token_budget": 1500,
+    "confidence_threshold": 0.5
+  },
+  "business_context": {
+    "niche": "agency services",
+    "micro_niche": "operations enablement",
+    "offer_type": "retainer",
+    "monthly_leads": 90,
+    "avg_customer_value": 8000,
+    "sales_process_present": true,
+    "crm_present": true,
+    "tracking_present": true,
+    "database_size": 1200
+  },
+  "baseline_metrics": {
+    "lead_volume": 88,
+    "close_rate": 0.22,
+    "response_time": 6,
+    "revenue": 120000
+  }
+}

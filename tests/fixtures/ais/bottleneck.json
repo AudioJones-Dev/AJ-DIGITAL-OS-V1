@@ -1,0 +1,19 @@
+{
+  "case_id": "case-bottleneck-001",
+  "source": { "type": "weekly-review", "origin": "operations" },
+  "context": {
+    "company": "AJ Digital",
+    "industry": "digital operations",
+    "business_model": "services",
+    "objective": "increase delivery throughput",
+    "constraints": ["capacity ceiling", "approval queue backlog"]
+  },
+  "problem": {
+    "description": "Throughput is blocked by a single approval queue with persistent waiting.",
+    "symptoms": ["backlog growth", "waiting on approvals", "queue congestion"],
+    "observed_failures": ["blocked deployment due to queue", "overloaded approver"],
+    "desired_outcome": "stable flow without queue accumulation"
+  },
+  "data": { "metrics": [{ "name": "throughput", "value": 0.4 }], "events": ["approval delay"] },
+  "options": { "run_analogical_engine": false, "max_token_budget": 1600, "confidence_threshold": 0.5 }
+}

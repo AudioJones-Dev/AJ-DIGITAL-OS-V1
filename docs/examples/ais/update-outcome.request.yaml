@@ -1,0 +1,13 @@
+case_id: case-signal-001
+actual_outcomes:
+  cycle_time: 0.24
+  error_rate: 0.11
+  throughput: 0.82
+predicted_outcomes:
+  cycle_time: 0.2
+  error_rate: 0.15
+  throughput: 0.8
+intervention_status: completed
+notes: |
+  After two review loops, signal handoff templates reduced noise.
+prior_error: 0.18
