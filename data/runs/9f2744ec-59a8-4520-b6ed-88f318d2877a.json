@@ -1,0 +1,14 @@
+{
+  "runId": "9f2744ec-59a8-4520-b6ed-88f318d2877a",
+  "workflowId": "workflow.transcript_to_content.v1",
+  "taskType": "transcript_to_content",
+  "clientId": "_template",
+  "status": "queued",
+  "createdAt": "2026-04-07T07:10:44.483Z",
+  "updatedAt": "2026-04-07T07:10:44.483Z",
+  "revisionCount": 0,
+  "approvalRequired": false,
+  "approvalStatus": "not_required",
+  "warnings": [],
+  "errors": []
+}

@@ -1,0 +1,18 @@
+{
+  "turnId": "b719419b-72c7-465d-941e-b0683cd4a200",
+  "threadId": "6d0b0073-df5f-42da-9d12-b34671f6f911",
+  "createdAt": "2026-04-09T05:02:36.965Z",
+  "role": "assistant",
+  "sourceCommand": "assistant-ui",
+  "mode": "orchestrated",
+  "clientId": "_template",
+  "sessionId": "e465b3ad-a681-4d1c-80ba-c2351716bcc3",
+  "model": "llama3.1:8b",
+  "provider": "ollama",
+  "agentProfileId": "local-advisor",
+  "status": "error",
+  "content": "Agent profile \"Local Advisor\" does not allow orchestrated execution.",
+  "metadata": {
+    "routeReason": "Local model is sufficient for low-risk structured tasks."
+  }
+}

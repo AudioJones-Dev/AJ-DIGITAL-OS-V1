@@ -1,0 +1,14 @@
+{
+  "runId": "71c276eb-21b2-4766-8f8b-cb446cb4f09b",
+  "workflowId": "blog-authority",
+  "taskType": "blog_post",
+  "clientId": "client-acme",
+  "status": "pending_approval",
+  "createdAt": "2026-04-07T07:04:30.421Z",
+  "updatedAt": "2026-04-07T07:04:30.498Z",
+  "revisionCount": 0,
+  "approvalRequired": true,
+  "approvalStatus": "pending",
+  "warnings": [],
+  "errors": []
+}

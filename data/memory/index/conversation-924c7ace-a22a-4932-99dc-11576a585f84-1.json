@@ -1,0 +1,23 @@
+{
+  "memoryId": "conversation-924c7ace-a22a-4932-99dc-11576a585f84",
+  "chunkId": "conversation-924c7ace-a22a-4932-99dc-11576a585f84-1",
+  "kind": "conversation_memory",
+  "sourceType": "conversation_turn",
+  "label": "Conversation assistant 782c839f-ed17-430a-a256-e464c3de8ee2",
+  "chunkPath": "C:\\dev\\AJ-DIGITAL-OS\\data\\memory\\chunks\\conversation-924c7ace-a22a-4932-99dc-11576a585f84-1.json",
+  "embeddingPath": "C:\\dev\\AJ-DIGITAL-OS\\data\\memory\\embeddings\\conversation-924c7ace-a22a-4932-99dc-11576a585f84-1.json",
+  "textPreview": "No governed workflow could be resolved for orchestrated mode.",
+  "tokenCount": 9,
+  "createdAt": "2026-04-09T05:42:05.247Z",
+  "updatedAt": "2026-04-09T05:42:05.247Z",
+  "clientId": "_template",
+  "threadId": "782c839f-ed17-430a-a256-e464c3de8ee2",
+  "turnId": "924c7ace-a22a-4932-99dc-11576a585f84",
+  "metadata": {
+    "role": "assistant",
+    "status": "error",
+    "sourceCommand": "assistant",
+    "chunkIndex": 1,
+    "chunkCount": 1
+  }
+}

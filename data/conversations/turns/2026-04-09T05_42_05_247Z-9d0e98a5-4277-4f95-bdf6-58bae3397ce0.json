@@ -1,0 +1,14 @@
+{
+  "turnId": "9d0e98a5-4277-4f95-bdf6-58bae3397ce0",
+  "threadId": "782c839f-ed17-430a-a256-e464c3de8ee2",
+  "createdAt": "2026-04-09T05:42:05.247Z",
+  "role": "user",
+  "sourceCommand": "assistant",
+  "mode": "orchestrated",
+  "clientId": "_template",
+  "sessionId": "5039beb7-42a0-4571-b741-8dc967cdf0a3",
+  "agentProfileId": "runtime-default",
+  "status": "recorded",
+  "content": "What do you know about Smoke Draft?",
+  "metadata": {}
+}

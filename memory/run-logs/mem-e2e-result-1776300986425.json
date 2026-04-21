@@ -1,0 +1,14 @@
+{
+  "id": "mem-e2e-result-1776300986425",
+  "type": "shared_memory",
+  "workflow": "test-e2e-workflow",
+  "timestamp": "2026-04-16T00:56:26.425Z",
+  "content": "file validated successfully",
+  "tags": [
+    "e2e",
+    "test"
+  ],
+  "metadata": {
+    "key": "e2e-result"
+  }
+}

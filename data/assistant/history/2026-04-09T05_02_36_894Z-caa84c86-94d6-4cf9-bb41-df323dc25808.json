@@ -1,0 +1,27 @@
+{
+  "sessionId": "caa84c86-94d6-4cf9-bb41-df323dc25808",
+  "timestamp": "2026-04-09T05:02:36.894Z",
+  "sourceCommand": "assistant-ui",
+  "launched": true,
+  "mode": "orchestrated",
+  "execution": "orchestrated",
+  "task": "Resume this operator thread.",
+  "clientId": "_template",
+  "conversationThreadId": "6d0b0073-df5f-42da-9d12-b34671f6f911",
+  "agentProfileId": "local-advisor",
+  "agentProfileName": "Local Advisor",
+  "route": {
+    "provider": "ollama",
+    "model": "llama3.1:8b",
+    "reason": "Local model is sufficient for low-risk structured tasks."
+  },
+  "ok": false,
+  "status": "failed",
+  "warnings": [
+    "No brand manifest was resolved. Proceeding without brand context.",
+    "Agent profile \"Local Advisor\" is active for this run."
+  ],
+  "errors": [
+    "Agent profile \"Local Advisor\" does not allow orchestrated execution."
+  ]
+}

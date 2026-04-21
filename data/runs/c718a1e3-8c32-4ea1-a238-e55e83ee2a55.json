@@ -1,0 +1,16 @@
+{
+  "runId": "c718a1e3-8c32-4ea1-a238-e55e83ee2a55",
+  "workflowId": "transcript-to-content",
+  "taskType": "content_repurpose",
+  "clientId": "client-beta",
+  "status": "approved",
+  "createdAt": "2026-04-07T07:10:46.512Z",
+  "updatedAt": "2026-04-07T07:10:46.583Z",
+  "revisionCount": 0,
+  "approvalRequired": true,
+  "approvalStatus": "approved",
+  "approvedAt": "2026-04-07T07:10:46.582Z",
+  "approvedBy": "demo-operator",
+  "warnings": [],
+  "errors": []
+}

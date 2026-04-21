@@ -1,0 +1,17 @@
+{
+  "mission_id": "mission_20260416_001_build_and_review",
+  "mission_type": "build_and_review",
+  "status": "failed",
+  "ok": false,
+  "summary": "Cannot read properties of undefined (reading 'systemPrompt')",
+  "artifacts": [],
+  "metrics": {
+    "durationMs": 2,
+    "steps": 0,
+    "rolesUsed": [],
+    "escalations": 0
+  },
+  "deliverable_path": "C:\\dev\\AJ-DIGITAL-OS\\data\\smoke-runs\\mission_20260416_001_build_and_review.md",
+  "created_at": "2026-04-16T01:28:54.080Z",
+  "trigger": "smoke-e2e"
+}

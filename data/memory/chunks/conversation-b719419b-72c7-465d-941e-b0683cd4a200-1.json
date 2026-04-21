@@ -1,0 +1,23 @@
+{
+  "memoryId": "conversation-b719419b-72c7-465d-941e-b0683cd4a200",
+  "chunkId": "conversation-b719419b-72c7-465d-941e-b0683cd4a200-1",
+  "kind": "conversation_memory",
+  "sourceType": "conversation_turn",
+  "label": "Conversation assistant 6d0b0073-df5f-42da-9d12-b34671f6f911",
+  "text": "Agent profile \"Local Advisor\" does not allow orchestrated execution.",
+  "textPreview": "Agent profile \"Local Advisor\" does not allow orchestrated execution.",
+  "tokenCount": 9,
+  "checksum": "7b0982e518779c0314762362ae265b2cd167aead",
+  "createdAt": "2026-04-09T05:02:36.965Z",
+  "updatedAt": "2026-04-09T05:02:36.965Z",
+  "clientId": "_template",
+  "threadId": "6d0b0073-df5f-42da-9d12-b34671f6f911",
+  "turnId": "b719419b-72c7-465d-941e-b0683cd4a200",
+  "metadata": {
+    "role": "assistant",
+    "status": "error",
+    "sourceCommand": "assistant-ui",
+    "chunkIndex": 1,
+    "chunkCount": 1
+  }
+}

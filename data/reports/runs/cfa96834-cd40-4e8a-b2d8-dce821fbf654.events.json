@@ -1,0 +1,49 @@
+[
+  {
+    "eventId": "ac55b1f7-5d5e-4da0-8549-ac0d0ce751f5",
+    "runId": "cfa96834-cd40-4e8a-b2d8-dce821fbf654",
+    "type": "run_created",
+    "timestamp": "2026-04-07T07:10:46.528Z",
+    "message": "Demo run created."
+  },
+  {
+    "eventId": "18c8c6a3-54c2-4b8a-946c-dd56b9158620",
+    "runId": "cfa96834-cd40-4e8a-b2d8-dce821fbf654",
+    "type": "context_loaded",
+    "timestamp": "2026-04-07T07:10:46.540Z",
+    "message": "Context loaded from brand DNA and source materials."
+  },
+  {
+    "eventId": "e182e4ea-6a7b-4ef6-9a44-7d44c5089778",
+    "runId": "cfa96834-cd40-4e8a-b2d8-dce821fbf654",
+    "type": "workflow_started",
+    "timestamp": "2026-04-07T07:10:46.554Z",
+    "message": "Workflow started: transcript-to-content."
+  },
+  {
+    "eventId": "8e23a960-688a-49be-8caa-c8fb487d2541",
+    "runId": "cfa96834-cd40-4e8a-b2d8-dce821fbf654",
+    "type": "workflow_completed",
+    "timestamp": "2026-04-07T07:10:46.562Z",
+    "message": "Draft complete."
+  },
+  {
+    "eventId": "58b84af7-b9a8-4740-bfef-baa3d6e7b025",
+    "runId": "cfa96834-cd40-4e8a-b2d8-dce821fbf654",
+    "type": "validation_failed",
+    "timestamp": "2026-04-07T07:10:46.571Z",
+    "message": "Validation failed. Quality threshold not met."
+  },
+  {
+    "eventId": "f97c1837-686d-4099-b709-0459c8aba1fa",
+    "runId": "cfa96834-cd40-4e8a-b2d8-dce821fbf654",
+    "type": "error",
+    "timestamp": "2026-04-07T07:10:46.576Z",
+    "message": "Content quality score below threshold — minimum 80 required, got 62.",
+    "metadata": {
+      "workflowId": "transcript-to-content",
+      "score": 62,
+      "threshold": 80
+    }
+  }
+]

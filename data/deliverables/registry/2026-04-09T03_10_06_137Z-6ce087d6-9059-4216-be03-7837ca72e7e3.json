@@ -1,0 +1,48 @@
+{
+  "deliverableId": "6ce087d6-9059-4216-be03-7837ca72e7e3",
+  "clientId": "_template",
+  "workflowId": "assistant.advisory.v1",
+  "taskType": "classification",
+  "deliverableType": "ops_brief",
+  "status": "published",
+  "categoryId": "ops",
+  "title": "Smoke Draft",
+  "summary": "This is a deterministic deliverable recorder smoke test.",
+  "outputPolicy": {
+    "draftsPath": "C:\\dev\\AJ-DIGITAL-OS\\data\\outputs\\_template\\drafts",
+    "approvedPath": "C:\\dev\\AJ-DIGITAL-OS\\data\\outputs\\_template\\approved",
+    "publishedPath": "C:\\dev\\AJ-DIGITAL-OS\\data\\outputs\\_template\\published",
+    "publishTarget": "local"
+  },
+  "outputPath": "C:\\dev\\AJ-DIGITAL-OS\\data\\outputs\\_template\\published\\6ce087d6-9059-4216-be03-7837ca72e7e3.md",
+  "outputFiles": [
+    "C:\\dev\\AJ-DIGITAL-OS\\data\\outputs\\_template\\published\\6ce087d6-9059-4216-be03-7837ca72e7e3.md"
+  ],
+  "approvalRequired": true,
+  "approvalPolicy": {
+    "approvalRequired": false,
+    "approvalMode": "not_required",
+    "approverRoles": [],
+    "approverChannels": []
+  },
+  "approvedBy": "operator",
+  "approvedAt": "2026-04-09T05:23:17.894Z",
+  "createdAt": "2026-04-09T03:10:06.137Z",
+  "updatedAt": "2026-04-09T05:23:46.790Z",
+  "publishedAt": "2026-04-09T05:23:46.790Z",
+  "metadata": {
+    "assistantMode": "advisory",
+    "route": {
+      "provider": "ollama",
+      "model": "llama3.1:8b",
+      "reason": "smoke"
+    },
+    "warnings": [],
+    "errors": [],
+    "sourceCommand": "assistant",
+    "promptMetadata": {
+      "systemLength": 1,
+      "userLength": 1
+    }
+  }
+}

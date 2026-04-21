@@ -1,0 +1,26 @@
+{
+  "sessionId": "2f625970-3958-4c0d-bdac-ceabaa128eb4",
+  "timestamp": "2026-04-09T04:37:57.838Z",
+  "sourceCommand": "assistant-ui",
+  "launched": true,
+  "mode": "orchestrated",
+  "execution": "orchestrated",
+  "task": "Create a governed content workflow plan.",
+  "clientId": "_template",
+  "agentProfileId": "local-advisor",
+  "agentProfileName": "Local Advisor",
+  "route": {
+    "provider": "ollama",
+    "model": "llama3.1:8b",
+    "reason": "Local model is sufficient for low-risk structured tasks."
+  },
+  "ok": false,
+  "status": "failed",
+  "warnings": [
+    "No brand manifest was resolved. Proceeding without brand context.",
+    "Agent profile \"Local Advisor\" is active for this run."
+  ],
+  "errors": [
+    "Agent profile \"Local Advisor\" does not allow orchestrated execution."
+  ]
+}

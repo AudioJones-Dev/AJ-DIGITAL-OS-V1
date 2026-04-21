@@ -1,0 +1,14 @@
+{
+  "threadId": "6097cbc1-bb8b-4598-b6b9-5b862d4490a4",
+  "title": "Map this task to a governed workflow.",
+  "sourceCommand": "assistant",
+  "status": "active",
+  "clientId": "_template",
+  "createdAt": "2026-04-09T05:01:54.746Z",
+  "updatedAt": "2026-04-09T05:01:54.767Z",
+  "lastTurnAt": "2026-04-09T05:01:54.767Z",
+  "turnCount": 2,
+  "latestSessionId": "56dfd520-3c89-460f-bc44-eef0f688b519",
+  "latestUserTask": "Map this task to a governed workflow.",
+  "metadata": {}
+}
