@@ -46,6 +46,20 @@ export interface AJOSCommandResult {
   error?: string;
 }
 
+export interface OllamaHealthStatus {
+  enabled: boolean;
+  healthy: boolean;
+  baseUrl: string;
+  model: string;
+  error?: string;
+}
+
+export interface OllamaAskResult {
+  ok: boolean;
+  answer?: string;
+  error?: string;
+}
+
 export interface ControlPlaneConfig {
   botToken: string;
   allowedUserIds: number[];

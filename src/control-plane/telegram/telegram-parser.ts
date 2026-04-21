@@ -5,6 +5,7 @@
  * Supports:
  * - /help - Lists available commands
  * - /status - Shows system status
+ * - /ask <prompt> - Ask local Ollama model
  * - /ops dashboard - Shows dashboard
  * - /ops pending - Lists pending approvals
  * - /ops track <runId> - Tracks a specific run
@@ -51,6 +52,7 @@ Available Commands:
 
 \`/help\` - Show this message
 \`/status\` - Show system status (CLI available, F drive mounted, etc.)
+\`/ask <prompt>\` - Ask local Ollama model (concise answer)
 \`/ops dashboard\` - Show control panel dashboard
 \`/ops pending\` - List pending approvals
 \`/ops track <runId>\` - Track a specific run execution
@@ -59,15 +61,26 @@ _Local Telegram interface for AJ OS operations_
 `.trim();
   }
 
-  generateStatusMessage(systemStatus: { cliAvailable: boolean; fDriveMounted: boolean }): string {
+  generateStatusMessage(systemStatus: {
+    cliAvailable: boolean;
+    fDriveMounted: boolean;
+    ollamaEnabled: boolean;
+    ollamaHealthy: boolean;
+    ollamaModel: string;
+  }): string {
     const cliStatus = systemStatus.cliAvailable ? "✅" : "❌";
     const fDriveStatus = systemStatus.fDriveMounted ? "✅" : "❌";
+    const ollamaEnabled = systemStatus.ollamaEnabled ? "✅" : "❌";
+    const ollamaHealth = systemStatus.ollamaHealthy ? "✅" : "❌";
 
     return `
 *System Status*
 
 CLI Available: ${cliStatus}
 F: Drive Mounted: ${fDriveStatus}
+Ollama Enabled: ${ollamaEnabled}
+Ollama Healthy: ${ollamaHealth}
+Ollama Model: ${systemStatus.ollamaModel}
 
 _Last updated: ${new Date().toISOString()}_
 `.trim();
