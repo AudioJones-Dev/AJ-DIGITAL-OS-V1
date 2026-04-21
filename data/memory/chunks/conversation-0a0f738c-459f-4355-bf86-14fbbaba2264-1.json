@@ -1,0 +1,23 @@
+{
+  "memoryId": "conversation-0a0f738c-459f-4355-bf86-14fbbaba2264",
+  "chunkId": "conversation-0a0f738c-459f-4355-bf86-14fbbaba2264-1",
+  "kind": "conversation_memory",
+  "sourceType": "conversation_turn",
+  "label": "Conversation assistant 6097cbc1-bb8b-4598-b6b9-5b862d4490a4",
+  "text": "No governed workflow could be resolved for orchestrated mode.",
+  "textPreview": "No governed workflow could be resolved for orchestrated mode.",
+  "tokenCount": 9,
+  "checksum": "3a7a97125f7227f4d80d6262c05b3efa271859ad",
+  "createdAt": "2026-04-09T05:01:54.767Z",
+  "updatedAt": "2026-04-09T05:01:54.767Z",
+  "clientId": "_template",
+  "threadId": "6097cbc1-bb8b-4598-b6b9-5b862d4490a4",
+  "turnId": "0a0f738c-459f-4355-bf86-14fbbaba2264",
+  "metadata": {
+    "role": "assistant",
+    "status": "error",
+    "sourceCommand": "assistant",
+    "chunkIndex": 1,
+    "chunkCount": 1
+  }
+}

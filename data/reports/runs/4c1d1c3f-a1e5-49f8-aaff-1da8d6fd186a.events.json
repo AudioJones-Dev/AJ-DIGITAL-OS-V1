@@ -1,0 +1,61 @@
+[
+  {
+    "eventId": "5cb6e89c-c1cf-442e-8795-ef671e81841f",
+    "runId": "4c1d1c3f-a1e5-49f8-aaff-1da8d6fd186a",
+    "type": "model_route_selected",
+    "timestamp": "2026-04-07T08:24:09.656Z",
+    "message": "Model route selected.",
+    "metadata": {
+      "taskType": "transcript_to_content",
+      "provider": "ollama",
+      "model": "llama3",
+      "reason": "Local model is the default starting point for transcript repurposing tasks.",
+      "promptMetadata": {
+        "clientId": "_template",
+        "workflowId": "workflow.transcript_to_content.v1"
+      },
+      "promptPreview": {
+        "systemLength": 435,
+        "userLength": 782
+      }
+    }
+  },
+  {
+    "eventId": "25de7a37-7656-4c9c-8ffe-1556509bc61b",
+    "runId": "4c1d1c3f-a1e5-49f8-aaff-1da8d6fd186a",
+    "type": "model_execution_attempted",
+    "timestamp": "2026-04-07T08:24:09.663Z",
+    "message": "Model execution attempted.",
+    "metadata": {
+      "provider": "ollama",
+      "model": "llama3",
+      "workflowId": "workflow.transcript_to_content.v1"
+    }
+  },
+  {
+    "eventId": "3d72f3d3-8286-40c6-aea5-1b23041f1d88",
+    "runId": "4c1d1c3f-a1e5-49f8-aaff-1da8d6fd186a",
+    "type": "model_execution_failed",
+    "timestamp": "2026-04-07T08:24:09.705Z",
+    "message": "Unable to reach Ollama. Connection was refused or the network was unreachable.",
+    "metadata": {
+      "provider": "ollama",
+      "model": "llama3",
+      "workflowId": "workflow.transcript_to_content.v1",
+      "reason": "Unable to reach Ollama. Connection was refused or the network was unreachable."
+    }
+  },
+  {
+    "eventId": "8b449da0-f0a5-4449-bfce-a98ac4c3540d",
+    "runId": "4c1d1c3f-a1e5-49f8-aaff-1da8d6fd186a",
+    "type": "model_execution_fallback_used",
+    "timestamp": "2026-04-07T08:24:09.708Z",
+    "message": "Deterministic fallback content was used after model execution failure.",
+    "metadata": {
+      "provider": "ollama",
+      "model": "llama3",
+      "workflowId": "workflow.transcript_to_content.v1",
+      "reason": "Unable to reach Ollama. Connection was refused or the network was unreachable."
+    }
+  }
+]

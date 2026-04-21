@@ -34,7 +34,7 @@ export interface ApprovalWebhookResponse {
 }
 
 const approvalResolver = new ApprovalResolver();
-const replayStore = new InMemoryReplayStore(getReplayTtlSeconds());
+export const approvalWebhookReplayStore = new InMemoryReplayStore(getReplayTtlSeconds());
 
 /**
  * Handles a signed approval callback payload and resolves the associated run.
@@ -45,7 +45,7 @@ export const handleApprovalWebhook = async (
   const verification = await verifyWebhookRequest({
     rawBody: request.rawBody,
     headers: request.headers,
-    replayStore,
+    replayStore: approvalWebhookReplayStore,
   });
 
   if (!verification.ok) {

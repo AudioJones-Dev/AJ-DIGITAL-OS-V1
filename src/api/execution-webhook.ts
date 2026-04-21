@@ -39,7 +39,7 @@ export interface ExecutionWebhookResponse {
 }
 
 const executionAgent = new ExecutionAgent();
-const replayStore = new InMemoryReplayStore(getReplayTtlSeconds());
+export const executionWebhookReplayStore = new InMemoryReplayStore(getReplayTtlSeconds());
 
 /**
  * Handles a signed execution callback payload and delegates to the execution agent.
@@ -54,7 +54,7 @@ export const handleExecutionWebhook = async (
   const verification = await verifyWebhookRequest({
     rawBody: request.rawBody,
     headers: request.headers,
-    replayStore,
+    replayStore: executionWebhookReplayStore,
   });
 
   if (!verification.ok) {

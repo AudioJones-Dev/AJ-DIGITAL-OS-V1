@@ -1,0 +1,99 @@
+[
+  {
+    "eventId": "d828b4bb-d869-47b8-9298-bc122d15d2d4",
+    "runId": "0af2d0cc-5d43-4e03-9aed-050bec43a2e4",
+    "type": "run_created",
+    "timestamp": "2026-04-07T07:04:30.437Z",
+    "message": "Demo run created."
+  },
+  {
+    "eventId": "378a8251-39b4-4de2-8e17-898992c9a0d7",
+    "runId": "0af2d0cc-5d43-4e03-9aed-050bec43a2e4",
+    "type": "context_loaded",
+    "timestamp": "2026-04-07T07:04:30.459Z",
+    "message": "Context loaded from brand DNA and source materials."
+  },
+  {
+    "eventId": "0804f53f-b07d-40fe-8ded-a6d4fe4e84c3",
+    "runId": "0af2d0cc-5d43-4e03-9aed-050bec43a2e4",
+    "type": "workflow_started",
+    "timestamp": "2026-04-07T07:04:30.473Z",
+    "message": "Workflow started: blog-authority."
+  },
+  {
+    "eventId": "e020cafb-20de-48dd-a208-f8e871125919",
+    "runId": "0af2d0cc-5d43-4e03-9aed-050bec43a2e4",
+    "type": "workflow_completed",
+    "timestamp": "2026-04-07T07:04:30.483Z",
+    "message": "Draft complete. All assets generated."
+  },
+  {
+    "eventId": "2441c964-a439-4f10-beb7-8fcc74a7c990",
+    "runId": "0af2d0cc-5d43-4e03-9aed-050bec43a2e4",
+    "type": "validation_passed",
+    "timestamp": "2026-04-07T07:04:30.492Z",
+    "message": "Validation passed. Quality threshold met."
+  },
+  {
+    "eventId": "122336eb-039d-4600-a96b-501060919f6f",
+    "runId": "0af2d0cc-5d43-4e03-9aed-050bec43a2e4",
+    "type": "approval_requested",
+    "timestamp": "2026-04-07T07:04:30.505Z",
+    "message": "Approval requested.",
+    "metadata": {
+      "workflowId": "blog-authority",
+      "clientId": "client-acme"
+    }
+  },
+  {
+    "eventId": "fe12a8d8-6be3-4aec-b406-0f2c62ff0e45",
+    "runId": "0af2d0cc-5d43-4e03-9aed-050bec43a2e4",
+    "type": "approval_approved",
+    "timestamp": "2026-04-07T07:04:30.512Z",
+    "message": "Run approved by demo-operator.",
+    "metadata": {
+      "actor": "demo-operator"
+    }
+  },
+  {
+    "eventId": "52091da5-985b-4676-b4e1-7300cb117f9b",
+    "runId": "0af2d0cc-5d43-4e03-9aed-050bec43a2e4",
+    "type": "execution_requested",
+    "timestamp": "2026-04-07T07:04:30.516Z",
+    "message": "Execution requested by demo-operator.",
+    "metadata": {
+      "actor": "demo-operator"
+    }
+  },
+  {
+    "eventId": "5b910d13-556c-46cf-a009-6a028d4cfb76",
+    "runId": "0af2d0cc-5d43-4e03-9aed-050bec43a2e4",
+    "type": "execution_started",
+    "timestamp": "2026-04-07T07:04:30.519Z",
+    "message": "Execution started.",
+    "metadata": {
+      "target": "local"
+    }
+  },
+  {
+    "eventId": "ffb9a001-9a65-4289-a7de-0355c28df0c4",
+    "runId": "0af2d0cc-5d43-4e03-9aed-050bec43a2e4",
+    "type": "execution_completed",
+    "timestamp": "2026-04-07T07:04:30.526Z",
+    "message": "Execution completed.",
+    "metadata": {
+      "target": "local",
+      "publishedPath": "src/data/outputs/demo/0af2d0cc-5d43-4e03-9aed-050bec43a2e4/output.md"
+    }
+  },
+  {
+    "eventId": "2d6f223c-9799-4b71-a93c-4cd0b21c862f",
+    "runId": "0af2d0cc-5d43-4e03-9aed-050bec43a2e4",
+    "type": "artifact_written",
+    "timestamp": "2026-04-07T07:04:30.529Z",
+    "message": "Output artifact written.",
+    "metadata": {
+      "publishedPath": "src/data/outputs/demo/0af2d0cc-5d43-4e03-9aed-050bec43a2e4/output.md"
+    }
+  }
+]

@@ -1,8 +1,8 @@
 import { createHmac } from "node:crypto";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
-import { handleApprovalWebhook } from "../../src/api/approval-webhook.js";
+import { approvalWebhookReplayStore, handleApprovalWebhook } from "../../src/api/approval-webhook.js";
 
 const buildSignedRequest = (
   rawBody: string,
@@ -27,6 +27,10 @@ const buildSignedRequest = (
 };
 
 describe("approval webhook", () => {
+  afterEach(() => {
+    approvalWebhookReplayStore.clear();
+  });
+
   it("rejects missing auth headers", async () => {
     const response = await handleApprovalWebhook({
       rawBody: JSON.stringify({ runId: "run_1", decision: "approve" }),

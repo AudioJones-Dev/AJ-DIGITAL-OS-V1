@@ -1,0 +1,61 @@
+[
+  {
+    "eventId": "a4476f25-f1d2-4fcb-b7ac-588233ee000c",
+    "runId": "64a9ab5f-0ecf-4812-b638-391513f18400",
+    "type": "model_route_selected",
+    "timestamp": "2026-04-07T08:14:29.036Z",
+    "message": "Model route selected.",
+    "metadata": {
+      "taskType": "transcript_to_content",
+      "provider": "ollama",
+      "model": "llama3",
+      "reason": "Local model is the default starting point for transcript repurposing tasks.",
+      "promptMetadata": {
+        "clientId": "_template",
+        "workflowId": "workflow.transcript_to_content.v1"
+      },
+      "promptPreview": {
+        "systemLength": 435,
+        "userLength": 782
+      }
+    }
+  },
+  {
+    "eventId": "a807dd1b-d091-4e2e-9689-47294b209361",
+    "runId": "64a9ab5f-0ecf-4812-b638-391513f18400",
+    "type": "model_execution_attempted",
+    "timestamp": "2026-04-07T08:14:29.047Z",
+    "message": "Model execution attempted.",
+    "metadata": {
+      "provider": "ollama",
+      "model": "llama3",
+      "workflowId": "workflow.transcript_to_content.v1"
+    }
+  },
+  {
+    "eventId": "217ba33a-aa0e-48cc-8352-09dd4a51e253",
+    "runId": "64a9ab5f-0ecf-4812-b638-391513f18400",
+    "type": "model_execution_failed",
+    "timestamp": "2026-04-07T08:14:29.890Z",
+    "message": "Unknown provider error.",
+    "metadata": {
+      "provider": "ollama",
+      "model": "llama3",
+      "workflowId": "workflow.transcript_to_content.v1",
+      "reason": "Unknown provider error."
+    }
+  },
+  {
+    "eventId": "787742c5-7f01-427d-8114-2b250871bf5f",
+    "runId": "64a9ab5f-0ecf-4812-b638-391513f18400",
+    "type": "model_execution_fallback_used",
+    "timestamp": "2026-04-07T08:14:29.894Z",
+    "message": "Deterministic fallback content was used after model execution failure.",
+    "metadata": {
+      "provider": "ollama",
+      "model": "llama3",
+      "workflowId": "workflow.transcript_to_content.v1",
+      "reason": "Unknown provider error."
+    }
+  }
+]

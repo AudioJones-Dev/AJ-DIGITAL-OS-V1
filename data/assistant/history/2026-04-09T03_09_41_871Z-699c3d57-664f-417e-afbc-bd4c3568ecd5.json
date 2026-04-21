@@ -1,0 +1,23 @@
+{
+  "sessionId": "699c3d57-664f-417e-afbc-bd4c3568ecd5",
+  "timestamp": "2026-04-09T03:09:41.871Z",
+  "sourceCommand": "assistant-start",
+  "launched": true,
+  "mode": "advisory",
+  "task": "Return a one sentence operator brief.",
+  "clientId": "_template",
+  "route": {
+    "provider": "ollama",
+    "model": "llama3.1:8b",
+    "reason": "Local model is sufficient for low-risk structured tasks."
+  },
+  "ok": false,
+  "status": "failed",
+  "warnings": [
+    "Ollama server is reachable, but the executable is not discoverable on PATH. Local restart instructions will require setting OLLAMA_EXECUTABLE or updating PATH.",
+    "No brand manifest was resolved. Proceeding without brand context."
+  ],
+  "errors": [
+    "Ollama request timed out before a response was received."
+  ]
+}

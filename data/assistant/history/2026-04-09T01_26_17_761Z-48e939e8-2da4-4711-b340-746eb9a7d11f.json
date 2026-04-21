@@ -1,0 +1,14 @@
+{
+  "sessionId": "48e939e8-2da4-4711-b340-746eb9a7d11f",
+  "timestamp": "2026-04-09T01:26:17.761Z",
+  "sourceCommand": "assistant",
+  "launched": false,
+  "mode": "advisory",
+  "task": "",
+  "ok": false,
+  "status": "blocked",
+  "warnings": [],
+  "errors": [
+    "Assistant command requires `--task <text>`."
+  ]
+}

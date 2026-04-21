@@ -1,0 +1,23 @@
+{
+  "memoryId": "deliverable-c9cdbce3-3c12-442e-8c9d-0127ce75e144",
+  "chunkId": "deliverable-c9cdbce3-3c12-442e-8c9d-0127ce75e144-1",
+  "kind": "deliverable_memory",
+  "sourceType": "deliverable",
+  "label": "Deliverable Lifecycle Smoke",
+  "chunkPath": "C:\\dev\\AJ-DIGITAL-OS\\data\\memory\\chunks\\deliverable-c9cdbce3-3c12-442e-8c9d-0127ce75e144-1.json",
+  "embeddingPath": "C:\\dev\\AJ-DIGITAL-OS\\data\\memory\\embeddings\\deliverable-c9cdbce3-3c12-442e-8c9d-0127ce75e144-1.json",
+  "textPreview": "Title: Lifecycle Smoke\n\nStatus: published\n\nWorkflow: assistant.advisory.v1\n\nType: ops_brief\n\nSummary: Fresh lifecycle smoke test.\n\n# Fresh lifecycle smoke",
+  "tokenCount": 18,
+  "createdAt": "2026-04-09T05:27:09.216Z",
+  "updatedAt": "2026-04-09T05:29:23.632Z",
+  "clientId": "_template",
+  "deliverableId": "c9cdbce3-3c12-442e-8c9d-0127ce75e144",
+  "sourceUri": "C:\\dev\\AJ-DIGITAL-OS\\data\\outputs\\_template\\published\\c9cdbce3-3c12-442e-8c9d-0127ce75e144.md",
+  "metadata": {
+    "status": "published",
+    "workflowId": "assistant.advisory.v1",
+    "deliverableType": "ops_brief",
+    "chunkIndex": 1,
+    "chunkCount": 1
+  }
+}

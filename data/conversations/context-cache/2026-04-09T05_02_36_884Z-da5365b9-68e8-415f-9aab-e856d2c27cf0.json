@@ -1,0 +1,47 @@
+{
+  "bundleId": "da5365b9-68e8-415f-9aab-e856d2c27cf0",
+  "createdAt": "2026-04-09T05:02:36.884Z",
+  "threadId": "6d0b0073-df5f-42da-9d12-b34671f6f911",
+  "maxRecentTurns": 6,
+  "maxCharacters": 6000,
+  "totalCharacters": 245,
+  "truncated": false,
+  "sources": [
+    {
+      "sourceId": "a1ef3f27-ad65-488f-ab13-8ca36fe3a1e0",
+      "kind": "current_task",
+      "label": "conversation:current-task",
+      "threadId": "6d0b0073-df5f-42da-9d12-b34671f6f911",
+      "characterCount": 109,
+      "included": true,
+      "truncated": false,
+      "metadata": {
+        "mode": "orchestrated"
+      }
+    },
+    {
+      "sourceId": "a959b7fc-5de9-4330-a439-5726f686cc76",
+      "kind": "deliverable_metadata",
+      "label": "conversation:deliverable:6ce087d6-9059-4216-be03-7837ca72e7e3",
+      "createdAt": "2026-04-09T03:10:06.137Z",
+      "threadId": "6d0b0073-df5f-42da-9d12-b34671f6f911",
+      "deliverableId": "6ce087d6-9059-4216-be03-7837ca72e7e3",
+      "characterCount": 136,
+      "included": true,
+      "truncated": false,
+      "metadata": {
+        "deliverableType": "ops_brief"
+      }
+    }
+  ],
+  "sourceMaterials": [
+    {
+      "title": "conversation:current-task",
+      "text": "Current Task: Resume this operator thread.\nMode: orchestrated\nThread ID: 6d0b0073-df5f-42da-9d12-b34671f6f911"
+    },
+    {
+      "title": "conversation:deliverable:6ce087d6-9059-4216-be03-7837ca72e7e3",
+      "text": "Deliverable: Smoke Draft\nStatus: draft\nWorkflow: assistant.advisory.v1\nSummary: This is a deterministic deliverable recorder smoke test."
+    }
+  ]
+}

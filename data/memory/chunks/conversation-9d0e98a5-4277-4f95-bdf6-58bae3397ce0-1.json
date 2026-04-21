@@ -1,0 +1,23 @@
+{
+  "memoryId": "conversation-9d0e98a5-4277-4f95-bdf6-58bae3397ce0",
+  "chunkId": "conversation-9d0e98a5-4277-4f95-bdf6-58bae3397ce0-1",
+  "kind": "conversation_memory",
+  "sourceType": "conversation_turn",
+  "label": "Conversation user 782c839f-ed17-430a-a256-e464c3de8ee2",
+  "text": "What do you know about Smoke Draft?",
+  "textPreview": "What do you know about Smoke Draft?",
+  "tokenCount": 7,
+  "checksum": "1aad116cf49b971fc593a24c91fd35f1fa98e43d",
+  "createdAt": "2026-04-09T05:42:05.247Z",
+  "updatedAt": "2026-04-09T05:42:05.247Z",
+  "clientId": "_template",
+  "threadId": "782c839f-ed17-430a-a256-e464c3de8ee2",
+  "turnId": "9d0e98a5-4277-4f95-bdf6-58bae3397ce0",
+  "metadata": {
+    "role": "user",
+    "status": "recorded",
+    "sourceCommand": "assistant",
+    "chunkIndex": 1,
+    "chunkCount": 1
+  }
+}

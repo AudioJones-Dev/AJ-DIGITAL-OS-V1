@@ -1,9 +1,9 @@
 import { createHmac } from "node:crypto";
 
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ExecutionAgent } from "../../src/agents/execution.agent.js";
-import { handleExecutionWebhook } from "../../src/api/execution-webhook.js";
+import { executionWebhookReplayStore, handleExecutionWebhook } from "../../src/api/execution-webhook.js";
 
 const buildSignedRequest = (
   rawBody: string,
@@ -28,6 +28,10 @@ const buildSignedRequest = (
 };
 
 describe("execution webhook", () => {
+  afterEach(() => {
+    executionWebhookReplayStore.clear();
+  });
+
   it("rejects bad signatures", async () => {
     const response = await handleExecutionWebhook(
       buildSignedRequest(JSON.stringify({ runId: "run_123", target: "local" }), {

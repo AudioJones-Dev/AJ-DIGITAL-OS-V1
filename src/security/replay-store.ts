@@ -40,6 +40,12 @@ export class InMemoryReplayStore implements ReplayStore {
     return { replay: false };
   }
 
+  // For testing - clear all entries
+  clear(): void {
+    this.nonceEntries.clear();
+    this.webhookIdEntries.clear();
+  }
+
   private cleanupExpired(nowMs: number): void {
     for (const [nonce, entry] of this.nonceEntries.entries()) {
       if (entry.expiresAtMs <= nowMs) {

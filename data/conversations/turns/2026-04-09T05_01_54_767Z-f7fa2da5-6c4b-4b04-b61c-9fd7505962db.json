@@ -1,0 +1,14 @@
+{
+  "turnId": "f7fa2da5-6c4b-4b04-b61c-9fd7505962db",
+  "threadId": "6097cbc1-bb8b-4598-b6b9-5b862d4490a4",
+  "createdAt": "2026-04-09T05:01:54.767Z",
+  "role": "user",
+  "sourceCommand": "assistant",
+  "mode": "orchestrated",
+  "clientId": "_template",
+  "sessionId": "56dfd520-3c89-460f-bc44-eef0f688b519",
+  "agentProfileId": "runtime-default",
+  "status": "recorded",
+  "content": "Map this task to a governed workflow.",
+  "metadata": {}
+}

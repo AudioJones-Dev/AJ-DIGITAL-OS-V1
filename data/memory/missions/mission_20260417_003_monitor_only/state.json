@@ -1,0 +1,24 @@
+{
+  "missionId": "mission_20260417_003_monitor_only",
+  "status": "failed",
+  "plan": null,
+  "executionOutput": null,
+  "validationResult": null,
+  "alerts": [],
+  "escalations": [],
+  "memoryRefs": [],
+  "sharedData": {
+    "check_targets": [
+      "supabase",
+      "neon",
+      "r2"
+    ],
+    "requested_by": "hermes:schedule:system-health-6h",
+    "priority": "normal",
+    "schedule_context": {
+      "trigger_type": "cron",
+      "trigger_time": "2026-04-17T23:04:14.739Z",
+      "recurrence": "every 6h"
+    }
+  }
+}

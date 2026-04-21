@@ -1,0 +1,21 @@
+{
+  "sessionId": "b007ba6d-c0ea-4a45-b3d7-70106e85481a",
+  "timestamp": "2026-04-09T01:57:14.563Z",
+  "sourceCommand": "assistant-shell",
+  "launched": true,
+  "mode": "advisory",
+  "task": "Reply with a one-word hello.",
+  "clientId": "_template",
+  "shellSessionId": "a4531078-a279-4889-83a0-11a04b2a6b45",
+  "shellSessionLabel": "smoke-shell",
+  "turnIndex": 1,
+  "route": {
+    "provider": "ollama",
+    "model": "llama3.1:8b",
+    "reason": "Local model is sufficient for low-risk structured tasks."
+  },
+  "ok": true,
+  "status": "succeeded",
+  "warnings": [],
+  "errors": []
+}
