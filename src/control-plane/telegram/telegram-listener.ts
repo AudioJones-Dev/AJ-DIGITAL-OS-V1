@@ -72,7 +72,11 @@ export class TelegramListener {
   }
 
   private async poll(): Promise<void> {
-    this.pollInterval = setInterval(async () => {
+    const tick = async (): Promise<void> => {
+      if (!this.isRunning) {
+        return;
+      }
+
       try {
         const updates = await this.getUpdates();
 
@@ -96,7 +100,15 @@ export class TelegramListener {
           error: error instanceof Error ? error.message : String(error),
         });
       }
-    }, this.pollIntervalMs);
+
+      if (this.isRunning) {
+        this.pollInterval = setTimeout(() => {
+          void tick();
+        }, this.pollIntervalMs);
+      }
+    };
+
+    await tick();
   }
 
   private async getUpdates(): Promise<TelegramUpdate[]> {

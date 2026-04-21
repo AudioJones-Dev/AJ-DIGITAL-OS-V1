@@ -84,7 +84,7 @@ export class AJOSCliAdapter {
         };
       }
 
-      const result = execSync(`node --import ./dist/env.js ${this.cliScriptPath} pending`, {
+      const result = execSync(`node --import ./dist/env.js ${this.cliScriptPath} list-pending-approvals`, {
         encoding: "utf-8",
         timeout: 5000,
       });
@@ -122,7 +122,7 @@ export class AJOSCliAdapter {
         };
       }
 
-      const result = execSync(`node --import ./dist/env.js ${this.cliScriptPath} track ${runId}`, {
+      const result = execSync(`node --import ./dist/env.js ${this.cliScriptPath} track-run --runId ${runId}`, {
         encoding: "utf-8",
         timeout: 10000,
       });
