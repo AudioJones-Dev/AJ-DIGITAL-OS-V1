@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { logger } from "../core/logger.js";
 import { RunManager } from "../core/run-manager.js";
+import { DeliverableRecorder } from "../services/runtime/deliverable-recorder.js";
+import { OutputPathResolver } from "../services/runtime/output-path-resolver.js";
 import type { RunRecord } from "../types/run.types.js";
 import type { WorkflowAsset, WorkflowExecutionResult } from "../types/workflow.types.js";
 
@@ -27,7 +29,11 @@ export interface PublisherResult {
  * Final local execution agent that writes approved workflow outputs to disk.
  */
 export class PublisherAgent {
-  constructor(private readonly runManager = new RunManager()) {}
+  constructor(
+    private readonly runManager = new RunManager(),
+    private readonly deliverableRecorder = new DeliverableRecorder(),
+    private readonly outputPathResolver = new OutputPathResolver(),
+  ) {}
 
   /**
    * Publishes the approved run outputs to deterministic local storage.
@@ -57,7 +63,7 @@ export class PublisherAgent {
         workflowId: run.workflowId,
       });
 
-      const outputDirectory = this.resolveOutputDirectory(run);
+      const outputDirectory = await this.resolveOutputDirectory(run);
       await mkdir(outputDirectory, { recursive: true });
 
       const filesWritten = await this.writeArtifacts(outputDirectory, run.taskType, run.workflowResult);
@@ -79,6 +85,18 @@ export class PublisherAgent {
         runId: executedRun.runId,
         publishedPath: outputDirectory,
       });
+      try {
+        await this.deliverableRecorder.recordPublishedRun({
+          run: executedRun,
+          publishedPath: outputDirectory,
+          filesWritten,
+        });
+      } catch (error) {
+        logger.warn("Deliverable registry persistence failed after publish.", {
+          runId: executedRun.runId,
+          error: error instanceof Error ? error.message : "Unknown deliverable registry error.",
+        });
+      }
 
       return {
         ok: true,
@@ -130,14 +148,12 @@ export class PublisherAgent {
     }
   }
 
-  private resolveOutputDirectory(run: RunRecord): string {
-    return path.resolve(
-      "src",
-      "data",
-      "approved",
-      this.sanitizeSegment(run.clientId),
-      this.sanitizeSegment(run.runId),
-    );
+  private async resolveOutputDirectory(run: RunRecord): Promise<string> {
+    const outputPaths = await this.outputPathResolver.resolve({
+      clientId: run.clientId,
+    });
+    await this.outputPathResolver.ensureDirectories(outputPaths);
+    return path.join(outputPaths.published, this.sanitizeSegment(run.runId));
   }
 
   private async writeArtifacts(

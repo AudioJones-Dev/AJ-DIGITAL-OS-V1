@@ -1,0 +1,633 @@
+/**
+ * Hermes Status API — lightweight HTTP endpoint for runtime state.
+ *
+ * Exposes Hermes runtime state (scheduler, watcher, notifications) over HTTP
+ * so the dashboard (or any consumer) can poll for live status.
+ *
+ * Default port: 7420 (overridable via HERMES_STATUS_PORT env var).
+ * Only binds to localhost — not exposed externally.
+ */
+
+import { createServer, type Server } from "node:http";
+import { getSchedulerStatus } from "./hermes-scheduler.js";
+import { isWatcherRunning, getLastCheckAt } from "./hermes-failure-watcher.js";
+import { getRecentNotifications } from "./hermes-notifications.js";
+import { getEnabledSchedules, DEFAULT_SCHEDULES } from "./hermes-schedule-config.js";
+import { getFullRunData, getRecentRepairEvents, getPatterns } from "../db/neon-client.js";
+import { getRecentRepairs } from "./hermes-repair-engine.js";
+import {
+  createCheckoutSession,
+  verifyWebhookSignature,
+  handleStripeWebhook,
+  type StripeWebhookEvent,
+} from "../api/stripe.js";
+import { createStripeWebhookHandlers } from "../api/stripe-handlers.js";
+import { resolveConfig, isConfigured, supabaseGet, supabasePatch, type SupabaseConfig } from "../db/supabase-client.js";
+import type { DbDistributionAsset } from "../db/db-types.js";
+import { recordDistributionMetrics } from "../services/distribution-metrics.js";
+import { getDistributionPerformance } from "../services/distribution-metrics.js";
+
+const TAG = "[HERMES-API]";
+const DEFAULT_PORT = 7420;
+
+let server: Server | null = null;
+
+export interface HermesRuntimeStatus {
+  scheduler: {
+    running: boolean;
+    activeSchedules: number;
+    failuresSinceStart: number;
+  };
+  watcher: {
+    running: boolean;
+    lastCheck: string | null;
+  };
+  schedules: {
+    enabled: number;
+    total: number;
+  };
+  notifications: {
+    recent: number;
+    lastAlert: {
+      severity: string;
+      title: string;
+      message: string;
+      timestamp: string;
+    } | null;
+    lastRetry: {
+      title: string;
+      message: string;
+      timestamp: string;
+    } | null;
+  };
+  timestamp: string;
+}
+
+function buildStatus(): HermesRuntimeStatus {
+  const status = getSchedulerStatus();
+  const notifications = getRecentNotifications();
+  const enabled = getEnabledSchedules(DEFAULT_SCHEDULES);
+
+  const lastAlert =
+    [...notifications].reverse().find((n) => n.severity === "critical" || n.severity === "warning") ?? null;
+
+  const lastRetry =
+    [...notifications].reverse().find((n) => n.title.toLowerCase().includes("retry")) ?? null;
+
+  return {
+    scheduler: {
+      running: status.running,
+      activeSchedules: status.activeSchedules,
+      failuresSinceStart: status.failuresSinceStart,
+    },
+    watcher: {
+      running: isWatcherRunning(),
+      lastCheck: getLastCheckAt(),
+    },
+    schedules: {
+      enabled: enabled.length,
+      total: DEFAULT_SCHEDULES.length,
+    },
+    notifications: {
+      recent: notifications.length,
+      lastAlert: lastAlert
+        ? { severity: lastAlert.severity, title: lastAlert.title, message: lastAlert.message, timestamp: lastAlert.timestamp }
+        : null,
+      lastRetry: lastRetry
+        ? { title: lastRetry.title, message: lastRetry.message, timestamp: lastRetry.timestamp }
+        : null,
+    },
+    timestamp: new Date().toISOString(),
+  };
+}
+
+// ── Proof Helpers ──────────────────────────────────────────────────
+
+async function supabaseCount(cfg: SupabaseConfig, table: string): Promise<number> {
+  const res = await fetch(`${cfg.url}/rest/v1/${table}?select=id&limit=0`, {
+    method: "HEAD",
+    headers: {
+      apikey: cfg.serviceRoleKey,
+      Authorization: `Bearer ${cfg.serviceRoleKey}`,
+      Prefer: "count=exact",
+    },
+  });
+  const range = res.headers.get("content-range"); // e.g. "*/42"
+  if (!range) return 0;
+  const total = range.split("/")[1];
+  return total ? parseInt(total, 10) || 0 : 0;
+}
+
+async function supabaseAvg(cfg: SupabaseConfig, table: string, column: string): Promise<number | null> {
+  const dataRes = await fetch(
+    `${cfg.url}/rest/v1/${table}?select=${encodeURIComponent(column)}&${encodeURIComponent(column)}=not.is.null`,
+    {
+      headers: {
+        apikey: cfg.serviceRoleKey,
+        Authorization: `Bearer ${cfg.serviceRoleKey}`,
+      },
+    },
+  );
+
+  if (!dataRes.ok) return null;
+  const rows = (await dataRes.json()) as Record<string, unknown>[];
+  if (rows.length === 0) return null;
+
+  const sum = rows.reduce((acc, row) => acc + (Number(row[column]) || 0), 0);
+  return Math.round((sum / rows.length) * 10) / 10;
+}
+
+async function buildProofPayload(): Promise<Record<string, unknown>> {
+  const cfg = resolveConfig();
+
+  if (!isConfigured(cfg)) {
+    return {
+      total_missions: 0,
+      total_clients: 0,
+      avg_quality: null,
+      note: "Supabase not configured",
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  const [totalMissions, totalClients, avgQuality, totalDeliverables, avgImprovement] = await Promise.all([
+    supabaseCount(cfg, "mission_runs"),
+    supabaseCount(cfg, "clients"),
+    supabaseAvg(cfg, "mission_runs", "output_quality_score"),
+    supabaseCount(cfg, "deliverables"),
+    supabaseAvg(cfg, "execution_intelligence", "improvement_pct"),
+  ]);
+
+  // Total patterns from Neon
+  let totalPatterns = 0;
+  const patternsResult = await getPatterns();
+  if (patternsResult.ok && patternsResult.data) {
+    totalPatterns = patternsResult.data.length;
+  }
+
+  // Uptime: days since earliest mission_run
+  let uptimeDays: number | null = null;
+  const earliestResult = await supabaseGet<{ created_at: string }>(
+    cfg,
+    "mission_runs",
+    "select=created_at&order=created_at.asc&limit=1",
+  );
+  if (earliestResult.ok && earliestResult.data?.[0]) {
+    const firstRun = new Date(earliestResult.data[0].created_at);
+    uptimeDays = Math.floor((Date.now() - firstRun.getTime()) / (24 * 60 * 60 * 1000));
+  }
+
+  // Distribution metrics
+  const distPerf = await getDistributionPerformance();
+
+  console.log(`${TAG} [PROOF] updated — missions=${totalMissions} clients=${totalClients} patterns=${totalPatterns}`);
+
+  return {
+    total_missions: totalMissions,
+    total_clients: totalClients,
+    avg_quality: avgQuality,
+    total_deliverables: totalDeliverables,
+    avg_improvement_pct: avgImprovement,
+    total_patterns: totalPatterns,
+    uptime_days: uptimeDays,
+    total_distribution_assets: distPerf.total_assets,
+    total_published: distPerf.published,
+    distribution_impressions: distPerf.total_impressions,
+    distribution_engagements: distPerf.total_engagements,
+    distribution_leads: distPerf.total_leads,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+// ── Body Collector ─────────────────────────────────────────────────
+
+// UUID v4 pattern for client_id validation
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+interface ClientPerformance {
+  total_runs: number;
+  avg_quality: number | null;
+  improvement_pct: number | null;
+  patterns_learned: number;
+  distribution_assets: number;
+  published_assets: number;
+  distribution_impressions: number;
+  distribution_engagements: number;
+  distribution_leads: number;
+  timestamp: string;
+}
+
+async function buildClientPerformance(clientId: string): Promise<ClientPerformance> {
+  const cfg = resolveConfig();
+
+  if (!isConfigured(cfg)) {
+    return { total_runs: 0, avg_quality: null, improvement_pct: null, patterns_learned: 0, distribution_assets: 0, published_assets: 0, distribution_impressions: 0, distribution_engagements: 0, distribution_leads: 0, timestamp: new Date().toISOString() };
+  }
+
+  // 1. Fetch missions for this client to get mission_ids
+  const missionsResult = await supabaseGet<{ id: string }>(cfg, "missions", `client_id=eq.${encodeURIComponent(clientId)}&select=id`);
+  const missionIds = missionsResult.ok && missionsResult.data ? missionsResult.data.map((m) => m.id) : [];
+
+  let totalRuns = 0;
+  let avgQuality: number | null = null;
+
+  if (missionIds.length > 0) {
+    const inList = missionIds.map((id) => encodeURIComponent(id)).join(",");
+
+    // 2. Count runs for this client
+    const runsResult = await supabaseGet<{ id: string; output_quality_score: number | null }>(
+      cfg,
+      "mission_runs",
+      `mission_id=in.(${inList})&select=id,output_quality_score&status=eq.completed&limit=500`,
+    );
+
+    if (runsResult.ok && runsResult.data) {
+      totalRuns = runsResult.data.length;
+
+      const scores = runsResult.data
+        .map((r) => r.output_quality_score)
+        .filter((s): s is number => s != null);
+
+      if (scores.length > 0) {
+        avgQuality = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10;
+      }
+    }
+  }
+
+  // 3. Most recent improvement_pct from execution_intelligence
+  let improvementPct: number | null = null;
+  const intelResult = await supabaseGet<{ improvement_pct: number | null }>(
+    cfg,
+    "execution_intelligence",
+    `client_id=eq.${encodeURIComponent(clientId)}&select=improvement_pct&order=created_at.desc&limit=1`,
+  );
+  if (intelResult.ok && intelResult.data?.[0]?.improvement_pct != null) {
+    improvementPct = intelResult.data[0].improvement_pct;
+  }
+
+  // 4. Patterns count — global fallback (no direct client link in Neon patterns table)
+  let patternsLearned = 0;
+  const patternsResult = await getPatterns();
+  if (patternsResult.ok && patternsResult.data) {
+    patternsLearned = patternsResult.data.length;
+  }
+
+  // 5. Distribution performance for this client
+  const distPerf = await getDistributionPerformance(clientId);
+
+  return {
+    total_runs: totalRuns,
+    avg_quality: avgQuality,
+    improvement_pct: improvementPct,
+    patterns_learned: patternsLearned,
+    distribution_assets: distPerf.total_assets,
+    published_assets: distPerf.published,
+    distribution_impressions: distPerf.total_impressions,
+    distribution_engagements: distPerf.total_engagements,
+    distribution_leads: distPerf.total_leads,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function collectBody(req: import("node:http").IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let size = 0;
+    const MAX = 1_048_576; // 1 MB
+
+    req.on("data", (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > MAX) {
+        req.destroy();
+        reject(new Error("Request body too large"));
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+    req.on("error", reject);
+  });
+}
+
+/**
+ * Start the Hermes status API on localhost.
+ */
+export function startHermesApi(port?: number): void {
+  if (server) {
+    console.log(`${TAG} Already running.`);
+    return;
+  }
+
+  const p = port ?? (Number(process.env.HERMES_STATUS_PORT) || DEFAULT_PORT);
+
+  server = createServer((req, res) => {
+    // CORS headers for dashboard access
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Stripe-Signature");
+
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    if (req.url === "/status" || req.url === "/") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(buildStatus()));
+      return;
+    }
+
+    // Replay endpoint — load full run data from Neon by run_ref
+    const replayMatch = req.url?.match(/^\/replay\/(.+)$/);
+    if (replayMatch) {
+      const runRef = decodeURIComponent(replayMatch[1]!);
+      getFullRunData(runRef)
+        .then((result) => {
+          if (!result.ok || !result.data) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: result.error ?? "Run not found" }));
+            return;
+          }
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, data: result.data }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }));
+        });
+      return;
+    }
+
+    // Repairs endpoint — recent repair events from Neon + in-memory
+    if (req.url === "/repairs" || req.url?.startsWith("/repairs?")) {
+      getRecentRepairEvents(30)
+        .then((result) => {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            ok: true,
+            data: result.ok ? result.data : [],
+            inMemory: getRecentRepairs(),
+          }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            ok: true,
+            data: [],
+            inMemory: getRecentRepairs(),
+            error: err instanceof Error ? err.message : "Failed to fetch repair events",
+          }));
+        });
+      return;
+    }
+
+    // ── Stripe: Create Checkout Session ─────────────────────────────
+    if (req.url === "/api/stripe/create-checkout-session" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const clientId = body["clientId"] as string | undefined;
+          const email = body["email"] as string | undefined;
+          const tier = (body["tier"] as string | undefined) ?? "standard";
+
+          if (!email) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "email is required" }));
+            return;
+          }
+
+          return createCheckoutSession({
+            clientId: clientId ?? "",
+            email,
+            tier: tier as "standard" | "professional" | "enterprise",
+          }).then((result) => {
+            res.writeHead(result.ok ? 200 : 500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
+          });
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Stripe: Webhook ──────────────────────────────────────────────
+    if (req.url === "/api/stripe/webhook" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const sig = req.headers["stripe-signature"];
+          if (typeof sig !== "string") {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "Missing Stripe-Signature header" }));
+            return;
+          }
+
+          const verification = verifyWebhookSignature(raw, sig);
+          if (!verification.verified) {
+            res.writeHead(401, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: verification.error }));
+            return;
+          }
+
+          const event = JSON.parse(raw) as StripeWebhookEvent;
+          const handlers = createStripeWebhookHandlers();
+
+          return handleStripeWebhook(event, handlers).then((result) => {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
+          });
+        })
+        .catch((err: unknown) => {
+          console.error(`${TAG} Stripe webhook error:`, err);
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "Internal webhook error" }));
+        });
+      return;
+    }
+
+    // ── Proof endpoint ─────────────────────────────────────────────
+    if (req.url === "/proof") {
+      console.log(`${TAG} [PROOF] endpoint accessed`);
+      buildProofPayload()
+        .then((proof) => {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(proof));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: err instanceof Error ? err.message : "Internal error" }));
+        });
+      return;
+    }
+
+    // ── Client Performance endpoint ────────────────────────────────
+    const perfMatch = req.url?.match(/^\/api\/client\/([^/]+)\/performance$/);
+    if (perfMatch && req.method === "GET") {
+      const clientId = decodeURIComponent(perfMatch[1]!);
+
+      if (!UUID_RE.test(clientId)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid client_id format" }));
+        return;
+      }
+
+      console.log(`${TAG} [PERFORMANCE] client queried — client_id=${clientId}`);
+
+      buildClientPerformance(clientId)
+        .then((perf) => {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(perf));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: err instanceof Error ? err.message : "Internal error" }));
+        });
+      return;
+    }
+
+    // ── Distribution Queue endpoints ──────────────────────────────────
+    const distListMatch = req.url?.match(/^\/api\/distribution-assets(?:\?(.*))?$/);
+    if (distListMatch && req.method === "GET") {
+      const params = new URLSearchParams(distListMatch[1] ?? "");
+      const status = params.get("status");
+      const cfg = resolveConfig();
+
+      if (!isConfigured(cfg)) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, data: [], note: "Supabase not configured" }));
+        return;
+      }
+
+      let query = "select=*&order=created_at.desc&limit=100";
+      if (status) {
+        query += `&status=eq.${encodeURIComponent(status)}`;
+      }
+
+      supabaseGet<DbDistributionAsset>(cfg, "distribution_assets", query)
+        .then((result) => {
+          console.log(`${TAG} [QUEUE] listed distribution_assets — status=${status ?? "all"} count=${result.data?.length ?? 0}`);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: result.ok, data: result.data ?? [], error: result.error }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }));
+        });
+      return;
+    }
+
+    const distApproveMatch = req.url?.match(/^\/api\/distribution-assets\/([^/]+)\/approve$/);
+    if (distApproveMatch && req.method === "POST") {
+      const assetId = decodeURIComponent(distApproveMatch[1]!);
+      if (!UUID_RE.test(assetId)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid asset id format" }));
+        return;
+      }
+
+      const cfg = resolveConfig();
+      supabasePatch<DbDistributionAsset>(cfg, "distribution_assets", `id=eq.${encodeURIComponent(assetId)}&status=eq.draft`, { status: "approved" })
+        .then((result) => {
+          console.log(`${TAG} [QUEUE] approved asset — id=${assetId} ok=${result.ok}`);
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: result.ok, data: result.data, error: result.error }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }));
+        });
+      return;
+    }
+
+    const distScheduleMatch = req.url?.match(/^\/api\/distribution-assets\/([^/]+)\/schedule$/);
+    if (distScheduleMatch && req.method === "POST") {
+      const assetId = decodeURIComponent(distScheduleMatch[1]!);
+      if (!UUID_RE.test(assetId)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid asset id format" }));
+        return;
+      }
+
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const scheduledAt = body["scheduled_at"] as string | undefined;
+          if (!scheduledAt || isNaN(Date.parse(scheduledAt))) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "scheduled_at (ISO 8601) is required" }));
+            return;
+          }
+
+          const cfg = resolveConfig();
+          return supabasePatch<DbDistributionAsset>(cfg, "distribution_assets", `id=eq.${encodeURIComponent(assetId)}&status=eq.approved`, { status: "scheduled", scheduled_at: scheduledAt })
+            .then((result) => {
+              console.log(`${TAG} [QUEUE] scheduled asset — id=${assetId} at=${scheduledAt} ok=${result.ok}`);
+              res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: result.ok, data: result.data, error: result.error }));
+            });
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Distribution Metrics endpoint ────────────────────────────────
+    const distMetricsMatch = req.url?.match(/^\/api\/distribution-assets\/([^/]+)\/metrics$/);
+    if (distMetricsMatch && req.method === "POST") {
+      const assetId = decodeURIComponent(distMetricsMatch[1]!);
+      if (!UUID_RE.test(assetId)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Invalid asset id format" }));
+        return;
+      }
+
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const channel = body["channel"] as string | undefined;
+          if (!channel) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "channel is required" }));
+            return;
+          }
+
+          return recordDistributionMetrics(assetId, channel, {
+            impressions: typeof body["impressions"] === "number" ? body["impressions"] : 0,
+            clicks: typeof body["clicks"] === "number" ? body["clicks"] : 0,
+            engagements: typeof body["engagements"] === "number" ? body["engagements"] : 0,
+            leads: typeof body["leads"] === "number" ? body["leads"] : 0,
+          }).then((result) => {
+            res.writeHead(result.ok ? 200 : 500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
+          });
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Not found" }));
+  });
+
+  const host = process.env.HERMES_BIND_HOST ?? "127.0.0.1";
+  server.listen(p, host, () => {
+    console.log(`${TAG} Status API listening on http://${host}:${p}/status`);
+  });
+}
+
+/**
+ * Stop the Hermes status API.
+ */
+export function stopHermesApi(): void {
+  if (!server) return;
+  server.close();
+  server = null;
+  console.log(`${TAG} Status API stopped.`);
+}

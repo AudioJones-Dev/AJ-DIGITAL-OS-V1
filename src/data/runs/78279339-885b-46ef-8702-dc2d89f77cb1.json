@@ -1,0 +1,16 @@
+{
+  "runId": "78279339-885b-46ef-8702-dc2d89f77cb1",
+  "workflowId": "transcript-to-content",
+  "taskType": "seo_content",
+  "clientId": "client-gamma",
+  "status": "validation_failed",
+  "createdAt": "2026-04-02T22:00:48.510Z",
+  "updatedAt": "2026-04-02T22:00:48.538Z",
+  "revisionCount": 0,
+  "approvalRequired": true,
+  "approvalStatus": "not_requested",
+  "warnings": [],
+  "errors": [
+    "Content quality score below threshold — minimum 80 required, got 62."
+  ]
+}

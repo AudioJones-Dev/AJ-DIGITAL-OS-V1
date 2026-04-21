@@ -1,11 +1,13 @@
 import {
   RunDashboardService,
   type RunDashboardItem,
+  type RunModelFilter,
 } from "../services/observability/run-dashboard.js";
 
 export interface ListExecutedRunsCommandInput {
   limit?: number;
   json?: boolean;
+  modelFilter?: RunModelFilter;
 }
 
 export interface ListExecutedRunsCommandResult {
@@ -15,6 +17,7 @@ export interface ListExecutedRunsCommandResult {
   rendered: boolean;
   totalExecuted: number;
   executedRuns: RunDashboardItem[];
+  activeModelFilter?: RunModelFilter;
   warnings: string[];
   errors: string[];
 }
@@ -31,6 +34,7 @@ export class ListExecutedRunsCommand {
   async run(input: ListExecutedRunsCommandInput = {}): Promise<ListExecutedRunsCommandResult> {
     const dashboard = await this.runDashboardService.getDashboard({
       ...(input.limit !== undefined ? { limit: input.limit } : {}),
+      ...(input.modelFilter ? { modelFilter: input.modelFilter } : {}),
     });
 
     const executedRuns = input.limit === undefined
@@ -39,9 +43,13 @@ export class ListExecutedRunsCommand {
     const totalExecuted = executedRuns.length;
 
     if (input.json === true) {
-      this.printJson({ totalExecuted, executedRuns });
+      this.printJson({
+        totalExecuted,
+        executedRuns,
+        ...(dashboard.activeModelFilter ? { activeModelFilter: dashboard.activeModelFilter } : {}),
+      });
     } else {
-      this.renderHumanExecutedRuns(totalExecuted, executedRuns, dashboard.warnings, dashboard.errors);
+      this.renderHumanExecutedRuns(totalExecuted, executedRuns, dashboard.warnings, dashboard.errors, dashboard.activeModelFilter);
     }
 
     return {
@@ -51,6 +59,7 @@ export class ListExecutedRunsCommand {
       rendered: true,
       totalExecuted,
       executedRuns,
+      ...(dashboard.activeModelFilter ? { activeModelFilter: dashboard.activeModelFilter } : {}),
       warnings: dashboard.warnings,
       errors: dashboard.errors,
     };
@@ -61,12 +70,25 @@ export class ListExecutedRunsCommand {
     executedRuns: RunDashboardItem[],
     warnings: string[],
     errors: string[],
+    activeModelFilter: RunModelFilter | undefined,
   ): void {
     console.log("AJ DIGITAL OS EXECUTED RUNS");
     console.log("===========================");
 
+    if (activeModelFilter) {
+      console.log("Active Filters");
+      for (const entry of this.formatModelFilterEntries(activeModelFilter)) {
+        console.log(`- ${entry}`);
+      }
+      console.log("");
+    }
+
     if (totalExecuted === 0) {
-      console.log("No executed runs found.");
+      console.log(
+        activeModelFilter
+          ? "No executed runs matched the active model filters."
+          : "No executed runs found.",
+      );
       this.renderWarnings(warnings);
       this.renderErrors(errors);
       return;
@@ -96,8 +118,40 @@ export class ListExecutedRunsCommand {
       item.clientId ?? "-",
       item.taskType ?? item.workflowId ?? "-",
       item.status ?? "-",
+      item.modelOutcome ?? "not_attempted",
+      item.modelProvider ?? "-",
       item.updatedAt ?? "-",
     ].join(" | ");
+  }
+
+  private formatModelFilterEntries(modelFilter: RunModelFilter): string[] {
+    const entries: string[] = [];
+
+    if (modelFilter.attempted === true) {
+      entries.push("modelAttempted=true");
+    }
+
+    if (modelFilter.succeeded === true) {
+      entries.push("modelSucceeded=true");
+    }
+
+    if (modelFilter.repairedSuccess === true) {
+      entries.push("repairedSuccess=true");
+    }
+
+    if (modelFilter.failed === true) {
+      entries.push("modelFailed=true");
+    }
+
+    if (modelFilter.fallbackUsed === true) {
+      entries.push("fallbackUsed=true");
+    }
+
+    if (modelFilter.provider) {
+      entries.push(`provider=${modelFilter.provider}`);
+    }
+
+    return entries;
   }
 
   private renderWarnings(warnings: string[]): void {
@@ -124,7 +178,11 @@ export class ListExecutedRunsCommand {
     }
   }
 
-  private printJson(payload: { totalExecuted: number; executedRuns: RunDashboardItem[] }): void {
+  private printJson(payload: {
+    totalExecuted: number;
+    executedRuns: RunDashboardItem[];
+    activeModelFilter?: RunModelFilter;
+  }): void {
     console.log(JSON.stringify(payload, null, 2));
   }
 }

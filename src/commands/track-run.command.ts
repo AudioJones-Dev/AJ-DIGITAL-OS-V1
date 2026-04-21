@@ -1,4 +1,4 @@
-﻿import {
+import {
   RunSummaryService,
   type RunSummaryResult,
 } from "../services/observability/run-summary.js";
@@ -183,6 +183,9 @@ export class TrackRunCommand {
     console.log(`- Approval Status: ${summary.approvalStatus ?? "-"}`);
     console.log(`- Updated At: ${summary.updatedAt ?? "-"}`);
     console.log(`- Published Path: ${summary.publishedPath ?? "-"}`);
+    console.log(`- Model Outcome: ${summary.modelExecution?.lastOutcome ?? "not_attempted"}`);
+    console.log(`- Model Provider: ${summary.modelExecution?.provider ?? "-"}`);
+    console.log(`- Model Name: ${summary.modelExecution?.model ?? "-"}`);
 
     this.renderWarnings(summary.warnings);
     this.renderErrors(summary.errors);
@@ -227,6 +230,10 @@ export class TrackRunCommand {
     const target = this.readStringMetadata(event.metadata, ["target"]);
     const status = this.readStringMetadata(event.metadata, ["status"]);
     const messageId = this.readNumberMetadata(event.metadata, ["messageId"]);
+    const provider = this.readStringMetadata(event.metadata, ["provider"]);
+    const model = this.readStringMetadata(event.metadata, ["model"]);
+    const reason = this.readStringMetadata(event.metadata, ["reason"]);
+    const repaired = this.readBooleanMetadata(event.metadata, ["repaired"]);
 
     if (filename) {
       compactParts.push(filename);
@@ -242,6 +249,22 @@ export class TrackRunCommand {
 
     if (messageId !== undefined) {
       compactParts.push(`messageId=${messageId}`);
+    }
+
+    if (provider) {
+      compactParts.push(`provider=${provider}`);
+    }
+
+    if (model) {
+      compactParts.push(`model=${model}`);
+    }
+
+    if (repaired === true) {
+      compactParts.push("repaired=true");
+    }
+
+    if (reason) {
+      compactParts.push(`reason=${reason}`);
     }
 
     return compactParts.length > 0 ? compactParts.join(" | ") : undefined;
@@ -262,6 +285,17 @@ export class TrackRunCommand {
     for (const key of keys) {
       const value = metadata[key];
       if (typeof value === "number") {
+        return value;
+      }
+    }
+
+    return undefined;
+  }
+
+  private readBooleanMetadata(metadata: Record<string, unknown>, keys: string[]): boolean | undefined {
+    for (const key of keys) {
+      const value = metadata[key];
+      if (typeof value === "boolean") {
         return value;
       }
     }

@@ -1,22 +1,55 @@
 #!/usr/bin/env node
+import "./env.js";
 import { fileURLToPath } from "node:url";
 
 import {
+  AssistantCommand,
+  AssistantDoctorCommand,
+  AssistantHistoryCommand,
+  AssistantShellCommand,
+  AssistantSetupCommand,
+  AssistantStartCommand,
+  ApproveDeliverableCommand,
   ApproveRunCommand,
+  ConversationHistoryCommand,
+  ConversationThreadCommand,
   DashboardCommand,
+  DeliverablesCommand,
   ExecuteRunCommand,
+  HealthcheckCommand,
   HelpCommand,
+  IntegrationProfilesCommand,
+  MemoryIndexCommand,
+  MemorySearchCommand,
+  MemoryStatsCommand,
   ListApprovedRunsCommand,
   ListExecutedRunsCommand,
   ListFailedRunsCommand,
+  ListPendingDeliverablesCommand,
   ListPendingApprovalsCommand,
+  ModelProfilesCommand,
+  OllamaProbeCommand,
   OperatorConsoleCommand,
+  PublishDeliverableCommand,
   ResumeRunCommand,
   RunEventsCommand,
   RunSummaryCommand,
+  N8nHealthcheckCommand,
+  N8nTriggerTestCommand,
+  BrowserAgentCommand,
+  MissionRunCommand,
+  HermesStartCommand,
+  HermesStopCommand,
+  HermesStatusCommand,
+  SeedDemoCommand,
+  SubmitForApprovalCommand,
+  ToolRegistryCommand,
   TrackRunCommand,
+  UiStartCommand,
+  normalizeAssistantMode,
   type TrackRunViewMode,
 } from "./commands/index.js";
+import type { RunModelFilter } from "./services/observability/run-dashboard.js";
 import type { ApprovalDecision } from "./types/run.types.js";
 import type { ExecutionMode, ExecutionTarget } from "./services/execution/execution-policy.js";
 
@@ -31,7 +64,21 @@ interface ParsedArgs {
 export function parseArgs(argv: string[]): ParsedArgs {
   const flags: Record<string, string | boolean | undefined> = {};
   let command: string | undefined;
-  const booleanFlags = new Set(["json", "reverse"]);
+  const booleanFlags = new Set([
+    "json",
+    "reverse",
+    "watch",
+    "autoSubmitForApproval",
+    "rebuild",
+    "use-config-webhook",
+    "validate-only",
+    "post-agent",
+    "modelAttempted",
+    "modelSucceeded",
+    "repairedSuccess",
+    "modelFailed",
+    "fallbackUsed",
+  ]);
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
@@ -102,27 +149,272 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
   const source = getStringFlag(parsed.flags, "source");
   const target = normalizeExecutionTarget(getStringFlag(parsed.flags, "target"));
   const mode = normalizeExecutionMode(getStringFlag(parsed.flags, "mode"));
+  const assistantMode = normalizeAssistantMode(getStringFlag(parsed.flags, "mode"));
+  const assistantTask = getStringFlag(parsed.flags, "task") ?? "";
+  const assistantClientId = getStringFlag(parsed.flags, "clientId");
+  const assistantBrandId = getStringFlag(parsed.flags, "brand");
+  const assistantThreadId = getStringFlag(parsed.flags, "threadId");
+  const assistantSkill = getStringFlag(parsed.flags, "skill");
+  const assistantTaskType = getStringFlag(parsed.flags, "taskType");
+  const assistantLabel = getStringFlag(parsed.flags, "label");
+  const autoSubmitForApproval = hasFlag(parsed.flags, "autoSubmitForApproval");
+  const deliverableStatus = getStringFlag(parsed.flags, "status");
+  const deliverableId = getStringFlag(parsed.flags, "deliverableId") ?? "";
+  const notes = getStringFlag(parsed.flags, "notes");
+  const query = getStringFlag(parsed.flags, "query") ?? "";
+  const memoryText = getStringFlag(parsed.flags, "text");
+  const memoryFilePath = getStringFlag(parsed.flags, "file");
+  const memoryUrl = getStringFlag(parsed.flags, "url");
+  const memoryKind = getStringFlag(parsed.flags, "kind");
+  const host = getStringFlag(parsed.flags, "host");
+  const port = getOptionalPort(parsed.flags);
   const view = normalizeTrackRunView(getStringFlag(parsed.flags, "view"));
   const decision = normalizeApprovalDecision(getStringFlag(parsed.flags, "decision"));
   const approvalSource = normalizeApprovalSource(source);
+  const modelFilter = getModelFilter(parsed.flags);
 
   try {
     switch (command) {
+      case "assistant":
+        {
+          const result = await new AssistantCommand().run({
+            task: assistantTask,
+            ...(assistantClientId ? { clientId: assistantClientId } : {}),
+            ...(assistantBrandId ? { brandId: assistantBrandId } : {}),
+            ...(assistantSkill ? { skillName: assistantSkill } : {}),
+            ...(assistantMode ? { mode: assistantMode } : {}),
+            ...(assistantTaskType ? { taskType: assistantTaskType } : {}),
+            ...(assistantThreadId ? { conversationThreadId: assistantThreadId } : {}),
+            ...(source ? { sourceText: source } : {}),
+            ...(autoSubmitForApproval ? { autoSubmitForApproval } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "assistant-start":
+        {
+          const result = await new AssistantStartCommand().run({
+            task: assistantTask,
+            ...(assistantClientId ? { clientId: assistantClientId } : {}),
+            ...(assistantBrandId ? { brandId: assistantBrandId } : {}),
+            ...(assistantSkill ? { skillName: assistantSkill } : {}),
+            ...(assistantMode ? { mode: assistantMode } : {}),
+            ...(assistantTaskType ? { taskType: assistantTaskType } : {}),
+            ...(assistantThreadId ? { conversationThreadId: assistantThreadId } : {}),
+            ...(source ? { sourceText: source } : {}),
+            ...(autoSubmitForApproval ? { autoSubmitForApproval } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "assistant-setup":
+        {
+          const result = await new AssistantSetupCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "assistant-history":
+        {
+          const result = await new AssistantHistoryCommand().run({
+            ...(limit !== undefined ? { limit } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "conversation-history":
+        {
+          const result = await new ConversationHistoryCommand().run({
+            ...(limit !== undefined ? { limit } : {}),
+            ...(assistantBrandId ? { brandId: assistantBrandId } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "conversation-thread":
+        {
+          const result = await new ConversationThreadCommand().run({
+            threadId: assistantThreadId ?? "",
+            ...(limit !== undefined ? { limit } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "list-deliverables":
+      case "deliverables":
+        {
+          const result = await new DeliverablesCommand().run({
+            ...(limit !== undefined ? { limit } : {}),
+            ...(assistantBrandId ? { brandId: assistantBrandId } : {}),
+            ...(isDeliverableStatus(deliverableStatus) ? { status: deliverableStatus } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "list-pending-deliverables":
+        {
+          const result = await new ListPendingDeliverablesCommand().run({
+            ...(limit !== undefined ? { limit } : {}),
+            ...(assistantBrandId ? { brandId: assistantBrandId } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "submit-for-approval":
+        {
+          const result = await new SubmitForApprovalCommand().run({
+            deliverableId,
+            ...(actor ? { actor } : {}),
+            ...(notes ? { notes } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "approve-deliverable":
+        {
+          const result = await new ApproveDeliverableCommand().run({
+            deliverableId,
+            ...(actor ? { actor } : {}),
+            ...(notes ? { notes } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "publish-deliverable":
+        {
+          const result = await new PublishDeliverableCommand().run({
+            deliverableId,
+            ...(actor ? { actor } : {}),
+            ...(notes ? { notes } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "tools":
+      case "tool-registry":
+        {
+          const result = await new ToolRegistryCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "integration-profiles":
+        {
+          const result = await new IntegrationProfilesCommand().run({
+            ...(assistantBrandId ? { brandId: assistantBrandId } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "model-profiles":
+        {
+          const result = await new ModelProfilesCommand().run({
+            ...(assistantBrandId ? { brandId: assistantBrandId } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "memory-index":
+        {
+          const result = await new MemoryIndexCommand().run({
+            rebuild: hasFlag(parsed.flags, "rebuild"),
+            ...(memoryText ? { text: memoryText } : {}),
+            ...(memoryFilePath ? { filePath: memoryFilePath } : {}),
+            ...(memoryUrl ? { url: memoryUrl } : {}),
+            ...(memoryKind ? { kind: memoryKind } : {}),
+            ...(assistantLabel ? { label: assistantLabel } : {}),
+            ...(assistantBrandId ? { brandId: assistantBrandId } : {}),
+            ...(assistantClientId ? { clientId: assistantClientId } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "memory-search":
+        {
+          const result = await new MemorySearchCommand().run({
+            query,
+            ...(limit !== undefined ? { limit } : {}),
+            ...(assistantBrandId ? { brandId: assistantBrandId } : {}),
+            ...(assistantClientId ? { clientId: assistantClientId } : {}),
+            ...(assistantThreadId ? { threadId: assistantThreadId } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "memory-stats":
+        {
+          const result = await new MemoryStatsCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "assistant-chat":
+      case "assistant-shell":
+        {
+          const result = await new AssistantShellCommand().run({
+            ...(assistantClientId ? { clientId: assistantClientId } : {}),
+            ...(assistantBrandId ? { brandId: assistantBrandId } : {}),
+            ...(assistantSkill ? { skillName: assistantSkill } : {}),
+            ...(assistantMode ? { mode: assistantMode } : {}),
+            ...(assistantTaskType ? { taskType: assistantTaskType } : {}),
+            ...(assistantLabel ? { label: assistantLabel } : {}),
+            ...(assistantThreadId ? { threadId: assistantThreadId } : {}),
+            ...(source ? { sourceText: source } : {}),
+            ...(autoSubmitForApproval ? { autoSubmitForApproval } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "assistant-doctor":
+        {
+          const result = await new AssistantDoctorCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "ui-start":
+        {
+          const result = await new UiStartCommand().run({
+            ...(host ? { host } : {}),
+            ...(port !== undefined ? { port } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
       case "help":
         await new HelpCommand().run({
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;
+      case "doctor":
+      case "healthcheck":
+        {
+          const result = await new HealthcheckCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "dash":
       case "dashboard":
         await new DashboardCommand().run({
           ...(limit !== undefined ? { limit } : {}),
+          ...(modelFilter ? { modelFilter } : {}),
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;
+      case "ollama-probe":
+        {
+          const result = await new OllamaProbeCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "console":
       case "operator-console":
         await new OperatorConsoleCommand().run({
           ...(limit !== undefined ? { limit } : {}),
           json: hasFlag(parsed.flags, "json"),
+          watch: hasFlag(parsed.flags, "watch"),
         });
         return 0;
       case "run-summary":
@@ -169,9 +461,11 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       case "list-executed-runs":
         await new ListExecutedRunsCommand().run({
           ...(limit !== undefined ? { limit } : {}),
+          ...(modelFilter ? { modelFilter } : {}),
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;
+      case "approve":
       case "approve-run":
         await new ApproveRunCommand().run({
           runId,
@@ -181,6 +475,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;
+      case "exec":
       case "execute-run":
         await new ExecuteRunCommand().run({
           runId,
@@ -191,6 +486,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;
+      case "resume":
       case "resume-run":
         await new ResumeRunCommand().run({
           runId,
@@ -201,6 +497,89 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           json: hasFlag(parsed.flags, "json"),
         });
         return 0;
+      case "seed-demo":
+        await new SeedDemoCommand().run({
+          json: hasFlag(parsed.flags, "json"),
+        });
+        return 0;
+      case "n8n:healthcheck":
+      case "n8n-healthcheck":
+        {
+          const result = await new N8nHealthcheckCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "n8n:trigger-test":
+      case "n8n-trigger-test":
+        {
+          const result = await new N8nTriggerTestCommand().run({
+            path: getStringFlag(parsed.flags, "path"),
+            useConfigWebhook: hasFlag(parsed.flags, "use-config-webhook"),
+            payload: getStringFlag(parsed.flags, "payload"),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "browser-agent":
+      case "browser:agent":
+        {
+          const result = await new BrowserAgentCommand().run({
+            workflow: getStringFlag(parsed.flags, "workflow"),
+            mode: getStringFlag(parsed.flags, "mode"),
+            startUrl: getStringFlag(parsed.flags, "start-url"),
+            loginUrl: getStringFlag(parsed.flags, "login-url"),
+            configUrl: getStringFlag(parsed.flags, "config-url"),
+            allowedDomains: getStringFlag(parsed.flags, "allowed-domains"),
+            targetFields: getStringFlag(parsed.flags, "target-fields"),
+            sessionFile: getStringFlag(parsed.flags, "session-file"),
+            outputPrefix: getStringFlag(parsed.flags, "output-prefix"),
+            maxSteps: getStringFlag(parsed.flags, "max-steps"),
+            maxRetries: getStringFlag(parsed.flags, "max-retries"),
+            authSelector: getStringFlag(parsed.flags, "auth-selector"),
+            loginTimeout: getStringFlag(parsed.flags, "login-timeout"),
+            validateOnly: hasFlag(parsed.flags, "validate-only"),
+            postAgent: hasFlag(parsed.flags, "post-agent"),
+            postAgentTarget: getStringFlag(parsed.flags, "post-agent-target"),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "mission":
+      case "mission:run":
+      case "mission-run":
+        {
+          const result = await new MissionRunCommand().run({
+            file: getStringFlag(parsed.flags, "file"),
+            envelope: getStringFlag(parsed.flags, "envelope"),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "hermes:start":
+      case "hermes-start":
+        {
+          const result = await new HermesStartCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "hermes:stop":
+      case "hermes-stop":
+        {
+          const result = await new HermesStopCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "hermes:status":
+      case "hermes-status":
+        {
+          const result = await new HermesStatusCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
       default:
         printUnknownCommand(command);
         return 1;
@@ -258,6 +637,39 @@ function getOptionalLimit(flags: Record<string, string | boolean | undefined>): 
   return parsed;
 }
 
+function getOptionalPort(flags: Record<string, string | boolean | undefined>): number | undefined {
+  const raw = flags.port;
+  if (raw === undefined) {
+    return undefined;
+  }
+
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    throw new Error("--port requires a numeric value.");
+  }
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`Invalid --port value: ${raw}`);
+  }
+
+  return Math.floor(parsed);
+}
+
+function getModelFilter(flags: Record<string, string | boolean | undefined>): RunModelFilter | undefined {
+  const modelFilter: RunModelFilter = {
+    ...(hasFlag(flags, "modelAttempted") ? { attempted: true } : {}),
+    ...(hasFlag(flags, "modelSucceeded") ? { succeeded: true } : {}),
+    ...(hasFlag(flags, "repairedSuccess") ? { repairedSuccess: true } : {}),
+    ...(hasFlag(flags, "modelFailed") ? { failed: true } : {}),
+    ...(hasFlag(flags, "fallbackUsed") ? { fallbackUsed: true } : {}),
+    ...(typeof flags.provider === "string" && flags.provider.trim().length > 0
+      ? { provider: flags.provider.trim() }
+      : {}),
+  };
+
+  return Object.keys(modelFilter).length > 0 ? modelFilter : undefined;
+}
+
 function normalizeApprovalDecision(value: string | undefined): ApprovalDecision | undefined {
   switch (value) {
     case "approve":
@@ -309,6 +721,20 @@ function normalizeTrackRunView(value: string | undefined): TrackRunViewMode | un
       return value;
     default:
       return undefined;
+  }
+}
+
+function isDeliverableStatus(value: string | undefined): value is "draft" | "pending_approval" | "approved" | "published" | "failed" | "archived" {
+  switch (value) {
+    case "draft":
+    case "pending_approval":
+    case "approved":
+    case "published":
+    case "failed":
+    case "archived":
+      return true;
+    default:
+      return false;
   }
 }
 

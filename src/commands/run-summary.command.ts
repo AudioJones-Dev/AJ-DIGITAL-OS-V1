@@ -1,5 +1,6 @@
-﻿import {
+import {
   RunSummaryService,
+  type ModelExecutionSummary,
   type RunSummaryResult,
 } from "../services/observability/run-summary.js";
 
@@ -103,6 +104,27 @@ export class RunSummaryCommand {
     console.log(`Revision Count: ${summary.revisionCount ?? 0}`);
     console.log(`Event Count: ${summary.eventCount}`);
     console.log(`Last Event Type: ${summary.lastEventType ?? "-"}`);
+    this.renderModelExecution(summary.modelExecution);
+  }
+
+  private renderModelExecution(modelExecution: ModelExecutionSummary | undefined): void {
+    console.log("");
+    console.log("Model Execution");
+
+    if (!modelExecution) {
+      console.log("- Not attempted");
+      return;
+    }
+
+    console.log(`- Attempted: ${modelExecution.attempted ? "yes" : "no"}`);
+    console.log(`- Succeeded: ${modelExecution.succeeded ? "yes" : "no"}`);
+    console.log(`- Repaired Success: ${modelExecution.repaired ? "yes" : "no"}`);
+    console.log(`- Failed: ${modelExecution.failed ? "yes" : "no"}`);
+    console.log(`- Fallback Used: ${modelExecution.fallbackUsed ? "yes" : "no"}`);
+    console.log(`- Last Outcome: ${modelExecution.lastOutcome}`);
+    console.log(`- Provider: ${modelExecution.provider ?? "-"}`);
+    console.log(`- Model: ${modelExecution.model ?? "-"}`);
+    console.log(`- Reason: ${modelExecution.lastReason ?? "-"}`);
   }
 
   private renderPublishedOutput(summary: RunSummaryResult): void {

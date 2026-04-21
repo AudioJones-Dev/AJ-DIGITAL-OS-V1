@@ -1,5 +1,6 @@
 ﻿import { ApprovalPacketSchema, type ApprovalPacket } from "../schemas/approval-packet.schema.js";
 import { TelegramTool } from "../tools/telegram.tool.js";
+import { config } from "../core/config.js";
 
 export interface ApprovalResult {
   status: "pending" | "approved" | "rejected";
@@ -32,7 +33,7 @@ export class ApprovalAgent {
     }
 
     const message = this.formatMessage(parsedPacket.data);
-    const chatId = process.env.TELEGRAM_CHAT_ID ?? "";
+    const chatId = config.telegramChatId;
 
     const response = await this.telegram.sendMessage({
       chatId,
