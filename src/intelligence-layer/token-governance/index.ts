@@ -55,8 +55,9 @@ export function computeErrorReductionPer1kTokens(
 export function enforceTokenBudgetPolicy(
   tokenEvents: TokenTelemetry[],
   policy: TokenBudgetPolicy,
-): { allowed: boolean; reasons: string[] } {
+ ): { allowed: boolean; reasons: string[]; warnings: string[] } {
   const reasons: string[] = [];
+  const warnings: string[] = [];
   const summary = summarizeTokenUsageByCase(tokenEvents);
 
   if (summary.total_tokens > policy.max_tokens_per_case) {
@@ -70,11 +71,12 @@ export function enforceTokenBudgetPolicy(
   }
 
   if (summary.total_tokens > policy.max_tokens_per_case * policy.soft_limit_ratio) {
-    reasons.push("Case token usage exceeded soft budget threshold.");
+    warnings.push("Case token usage exceeded soft budget threshold.");
   }
 
   return {
     allowed: reasons.length === 0,
     reasons,
+    warnings,
   };
 }

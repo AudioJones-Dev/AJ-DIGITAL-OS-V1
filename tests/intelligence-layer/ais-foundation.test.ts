@@ -5,7 +5,11 @@ import { describe, expect, it } from "vitest";
 
 import { classifyArchetype, compressCase, diagnoseSystem } from "../../src/intelligence-layer/ais-core/index.js";
 import { computePredictionError } from "../../src/intelligence-layer/prediction-error/index.js";
-import { computeErrorReductionPer1kTokens, recordTokenUsage } from "../../src/intelligence-layer/token-governance/index.js";
+import {
+  computeErrorReductionPer1kTokens,
+  enforceTokenBudgetPolicy,
+  recordTokenUsage,
+} from "../../src/intelligence-layer/token-governance/index.js";
 import type { DiagnoseSystemRequest, InterventionPlan } from "../../src/intelligence-layer/shared-types/index.js";
 
 function loadFixture(name: string): DiagnoseSystemRequest {
@@ -24,6 +28,10 @@ describe("AIS foundation routing", () => {
 
     expect(classification.primary_archetype).toBe(expectedArchetype);
     expect(classification.confidence).toBeGreaterThan(0.2);
+    if (classification.secondary_archetype !== undefined) {
+      expect(typeof classification.secondary_archetype).toBe("string");
+    }
+
   });
 
   it("returns diagnose system response with validation shape", () => {
@@ -99,4 +107,50 @@ describe("Prediction error and compact case", () => {
     const efficiency = computeErrorReductionPer1kTokens(0.4, 0.2, usage);
     expect(efficiency).toBeCloseTo(0.4);
   });
+
+  it("treats soft-threshold budget breaches as non-blocking warnings", () => {
+    const usage = [
+      recordTokenUsage({
+        case_id: "case-soft",
+        stage: "diagnose",
+        agent: "ais-core",
+        model: "deterministic-v1",
+        prompt_tokens: 500,
+        completion_tokens: 350,
+      }),
+    ];
+
+    const check = enforceTokenBudgetPolicy(usage, {
+      max_tokens_per_case: 1000,
+      max_tokens_per_stage: 1000,
+      soft_limit_ratio: 0.8,
+    });
+
+    expect(check.allowed).toBe(true);
+    expect(check.reasons).toHaveLength(0);
+    expect(check.warnings).toContain("Case token usage exceeded soft budget threshold.");
+  });
+
+  it("blocks hard budget violations", () => {
+    const usage = [
+      recordTokenUsage({
+        case_id: "case-hard",
+        stage: "diagnose",
+        agent: "ais-core",
+        model: "deterministic-v1",
+        prompt_tokens: 900,
+        completion_tokens: 500,
+      }),
+    ];
+
+    const check = enforceTokenBudgetPolicy(usage, {
+      max_tokens_per_case: 1000,
+      max_tokens_per_stage: 1000,
+      soft_limit_ratio: 0.8,
+    });
+
+    expect(check.allowed).toBe(false);
+    expect(check.reasons).toContain("Case token usage exceeded hard case budget.");
+  });
+
 });

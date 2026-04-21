@@ -8,6 +8,7 @@ import {
 } from "../token-governance/index.js";
 import type {
   ArchetypeClassification,
+  ArchetypeId,
   CompactCaseObject,
   DiagnoseSystemRequest,
   DiagnoseSystemResponse,
@@ -43,8 +44,8 @@ export function classifyArchetype(input: DiagnoseSystemRequest): ArchetypeClassi
     score_breakdown: scores,
   };
 
-  if (secondary) {
-    result.secondary_archetype = secondary[0] as ArchetypeClassification["primary_archetype"];
+  if (secondary && typeof secondary[0] === "string") {
+    result.secondary_archetype = secondary[0] as ArchetypeId;
   }
 
   return result;
