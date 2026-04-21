@@ -121,14 +121,19 @@ export class TelegramListener {
     const from = msg.from!;
     const chat = msg.chat!;
 
-    return {
+    const result: TelegramMessage = {
       messageId: msg.message_id,
       chatId: chat.id,
       userId: from.id,
-      userName: from.username,
-      firstName: from.first_name,
+      firstName: from.first_name || "",
       text: msg.text || "",
-      timestamp: msg.date,
+      timestamp: msg.date * 1000,
     };
+
+    if (from.username !== undefined) {
+      result.userName = from.username;
+    }
+
+    return result;
   }
 }

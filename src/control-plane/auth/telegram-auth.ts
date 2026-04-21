@@ -41,9 +41,11 @@ export class TelegramAuthService {
     const context: AuthContext = {
       userId: message.userId,
       chatId: message.chatId,
-      userName: message.userName,
       isAuthorized,
     };
+    if (message.userName !== undefined) {
+      context.userName = message.userName;
+    }
 
     if (!isAuthorized) {
       logger.warn("Unauthorized Telegram message rejected", {

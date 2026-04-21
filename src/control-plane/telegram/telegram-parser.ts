@@ -26,7 +26,8 @@ export class TelegramParser {
     }
 
     const parts = text.split(/\s+/);
-    const command = parts[0]?.substring(1).toLowerCase() ?? "unknown";
+    const firstPart = parts[0];
+    const command = firstPart ? firstPart.substring(1).toLowerCase() : "unknown";
     const args = parts.slice(1);
 
     logger.info("Telegram command parsed", {
