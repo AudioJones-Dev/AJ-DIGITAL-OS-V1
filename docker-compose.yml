@@ -1,27 +1,50 @@
-# AJ Digital OS — Docker Compose (production + ops stack)
+name: aj-digital-os
+
 services:
   aj-digital-os:
     build: .
+    container_name: aj-digital-os
     restart: unless-stopped
     ports:
       - "7420:7420"
     env_file:
       - .env
     environment:
-      - NODE_ENV=production
-      - HERMES_BIND_HOST=0.0.0.0
+      NODE_ENV: production
+      HERMES_BIND_HOST: 0.0.0.0
+      REDIS_URL: redis://redis:6379
+      POSTGRES_URL: postgres://${POSTGRES_USER:-aj}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-ajdigital}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      AIS_CASE_MEMORY_ENABLED: "true"
+      AIS_PREDICTION_ERROR_TRACKING_ENABLED: "true"
+      AIS_TOKEN_GOVERNANCE_ENABLED: "true"
+      AIS_DETERMINISTIC_MODE: "true"
+      AIS_SCHEMA_STRICT_MODE: "true"
+      AIS_FORWARD_COMPAT_ROUTING_HINTS: "true"
+      APP_DATA_DIR: /app/data
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-America/New_York}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    volumes:
+      - aj-os-data:/app/data
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:7420/status').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 10s
-
-  # ── Ops Stack ───────────────────────────────────────────────────
+      start_period: 15s
+    networks:
+      - aj-os-net
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: open-webui
+    restart: unless-stopped
     ports:
       - "${OPENWEBUI_PORT:-3001}:8080"
     environment:
@@ -40,21 +63,129 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - openwebui-data:/app/backend/data
+    depends_on:
+      otel-collector:
+        condition: service_started
+    networks:
+      - aj-os-net
+    profiles:
+      - ai-ui
+      - full
+
+  postgres:
+    image: postgres:16
+    container_name: aj-postgres
     restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-aj}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-change-me}"
+      POSTGRES_DB: "${POSTGRES_DB:-ajdigital}"
+      TZ: "${GENERIC_TIMEZONE:-America/New_York}"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aj} -d ${POSTGRES_DB:-ajdigital}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    networks:
+      - aj-os-net
+    profiles:
+      - workflow
+      - full
+
+  redis:
+    image: redis:7
+    container_name: aj-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+    networks:
+      - aj-os-net
+    profiles:
+      - workflow
+      - full
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      N8N_RUNNERS_ENABLED: "true"
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: "${N8N_BASIC_AUTH_USER:-admin}"
+      N8N_BASIC_AUTH_PASSWORD: "${N8N_BASIC_AUTH_PASSWORD:-change-me}"
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: "${POSTGRES_DB:-ajdigital}"
+      DB_POSTGRESDB_USER: "${POSTGRES_USER:-aj}"
+      DB_POSTGRESDB_PASSWORD: "${POSTGRES_PASSWORD:-change-me}"
+      QUEUE_BULL_REDIS_HOST: redis
+      QUEUE_BULL_REDIS_PORT: 6379
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      GENERIC_TIMEZONE: "${GENERIC_TIMEZONE:-America/New_York}"
+    volumes:
+      - n8n-data:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider --quiet http://localhost:5678 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    networks:
+      - aj-os-net
+    profiles:
+      - workflow
+      - full
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    restart: unless-stopped
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    networks:
+      - aj-os-net
+    profiles:
+      - ops
+      - full
 
   grafana:
     image: grafana/grafana-enterprise
     container_name: grafana
+    restart: unless-stopped
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     environment:
@@ -65,19 +196,40 @@ services:
       - grafana-data:/var/lib/grafana
       - ./ops/grafana/provisioning:/etc/grafana/provisioning
       - ./ops/grafana/dashboards:/var/lib/grafana/dashboards
-    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_started
+    networks:
+      - aj-os-net
+    profiles:
+      - ops
+      - full
 
   otel-collector:
     image: otel/opentelemetry-collector:latest
     container_name: otel-collector
+    restart: unless-stopped
     command: ["--config=/etc/otelcol/config.yaml"]
     ports:
       - "${OTEL_PORT:-4317}:4317"
     volumes:
       - ./ops/otel/config.yaml:/etc/otelcol/config.yaml:ro
-    restart: unless-stopped
+    networks:
+      - aj-os-net
+    profiles:
+      - workflow
+      - ops
+      - full
+
+networks:
+  aj-os-net:
+    driver: bridge
 
 volumes:
+  aj-os-data:
   openwebui-data:
   grafana-data:
   prometheus-data:
+  postgres-data:
+  redis-data:
+  n8n-data:
