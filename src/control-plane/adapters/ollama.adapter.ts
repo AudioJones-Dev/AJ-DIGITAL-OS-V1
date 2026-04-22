@@ -5,6 +5,7 @@
  */
 
 import { logger } from "../../core/logger.js";
+import { recordAgentRun } from "../../observability/metrics.js";
 import type { OllamaAskResult, OllamaHealthStatus } from "../types/control-plane.types.js";
 
 export interface OllamaAdapter {
@@ -95,6 +96,8 @@ class LocalOllamaAdapter implements OllamaAdapter {
       baseUrl: this.baseUrl,
     });
 
+    const startMs = Date.now();
+
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), this.timeoutMs);
@@ -120,6 +123,7 @@ class LocalOllamaAdapter implements OllamaAdapter {
           error: errorText,
           model: this.defaultModel,
         });
+        recordAgentRun("ollama", Date.now() - startMs, false);
         return {
           ok: false,
           error: errorText,
@@ -135,6 +139,7 @@ class LocalOllamaAdapter implements OllamaAdapter {
         answerLength: conciseAnswer.length,
       });
 
+      recordAgentRun("ollama", Date.now() - startMs, true);
       return {
         ok: true,
         answer: conciseAnswer.length > 0 ? conciseAnswer : "No response from model.",
@@ -146,6 +151,7 @@ class LocalOllamaAdapter implements OllamaAdapter {
         model: this.defaultModel,
       });
 
+      recordAgentRun("ollama", Date.now() - startMs, false);
       return {
         ok: false,
         error: errorMessage.includes("abort") ? "Request timed out." : errorMessage,

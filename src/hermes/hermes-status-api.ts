@@ -9,6 +9,7 @@
  */
 
 import { createServer, type Server } from "node:http";
+import { registry } from "../observability/metrics.js";
 import { getSchedulerStatus } from "./hermes-scheduler.js";
 import { isWatcherRunning, getLastCheckAt } from "./hermes-failure-watcher.js";
 import { getRecentNotifications } from "./hermes-notifications.js";
@@ -609,6 +610,18 @@ export function startHermesApi(port?: number): void {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
         });
+      return;
+    }
+
+    // ── Prometheus metrics ──────────────────────────────────────────────────
+    if (req.url === "/metrics" && req.method === "GET") {
+      registry.metrics().then((metrics) => {
+        res.writeHead(200, { "Content-Type": registry.contentType });
+        res.end(metrics);
+      }).catch((err: unknown) => {
+        res.writeHead(500, { "Content-Type": "text/plain" });
+        res.end("Error collecting metrics");
+      });
       return;
     }
 
