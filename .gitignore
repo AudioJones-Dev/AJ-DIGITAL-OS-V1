@@ -62,8 +62,7 @@ sessions/
 skills/
 skills-lock.json
 
-# Ops scripts (local operator only)
-ops/
+# Ops scaffold is tracked as infrastructure code
 
 # Notes (local only)
 notes/
