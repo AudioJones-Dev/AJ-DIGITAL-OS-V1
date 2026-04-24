@@ -25,6 +25,7 @@ export interface BrowserParams {
   url?: string;
   selector?: string;
   text?: string;
+  sessionName?: string;
 }
 
 export interface BrowserResult {
@@ -43,6 +44,11 @@ function isAllowedUrl(url: string): boolean {
 function isBlockedInput(text: string): boolean {
   const lower = text.toLowerCase();
   return ["password", "secret", "token", "api_key", "credential"].some((t) => lower.includes(t));
+}
+
+function withSession(args: string[], sessionName?: string): string[] {
+  if (!sessionName) return args;
+  return [...args, "--session", sessionName];
 }
 
 async function runBrowserUseCli(args: string[]): Promise<{ stdout: string; stderr: string }> {
@@ -65,7 +71,7 @@ export async function runBrowserTool(params: BrowserParams): Promise<BrowserResu
         return { ok: false, error: "Invalid or blocked URL." };
       }
       console.log(`${TAG} open_url ${params.url}`);
-      const { stdout } = await runBrowserUseCli(["open", params.url, "--format", "json"]);
+      const { stdout } = await runBrowserUseCli(withSession(["open", params.url, "--format", "json"], params.sessionName));
       return { ok: true, output: safeJson(stdout) ?? stdout.trim() };
     }
 
@@ -75,7 +81,7 @@ export async function runBrowserTool(params: BrowserParams): Promise<BrowserResu
       }
       if (!params.selector) return { ok: false, error: "selector is required for click." };
       console.log(`${TAG} click ${params.selector} on ${params.url}`);
-      const { stdout } = await runBrowserUseCli(["click", params.url, "--selector", params.selector, "--format", "json"]);
+      const { stdout } = await runBrowserUseCli(withSession(["click", params.url, "--selector", params.selector, "--format", "json"], params.sessionName));
       return { ok: true, output: safeJson(stdout) ?? stdout.trim() };
     }
 
@@ -87,16 +93,9 @@ export async function runBrowserTool(params: BrowserParams): Promise<BrowserResu
       if (!params.text) return { ok: false, error: "text is required for input." };
       if (isBlockedInput(params.text)) return { ok: false, error: "Input text contains blocked content." };
       console.log(`${TAG} input selector=${params.selector} on ${params.url}`);
-      const { stdout } = await runBrowserUseCli([
-        "input",
-        params.url,
-        "--selector",
-        params.selector,
-        "--text",
-        params.text,
-        "--format",
-        "json",
-      ]);
+      const { stdout } = await runBrowserUseCli(
+        withSession(["input", params.url, "--selector", params.selector, "--text", params.text, "--format", "json"], params.sessionName),
+      );
       return { ok: true, output: safeJson(stdout) ?? stdout.trim() };
     }
 
@@ -105,7 +104,7 @@ export async function runBrowserTool(params: BrowserParams): Promise<BrowserResu
         return { ok: false, error: "Invalid or blocked URL." };
       }
       console.log(`${TAG} screenshot ${params.url}`);
-      const { stdout } = await runBrowserUseCli(["screenshot", params.url, "--format", "base64"]);
+      const { stdout } = await runBrowserUseCli(withSession(["screenshot", params.url, "--format", "base64"], params.sessionName));
       return { ok: true, output: { base64: stdout.trim() } };
     }
 

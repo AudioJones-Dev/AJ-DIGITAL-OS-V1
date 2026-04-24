@@ -33,6 +33,9 @@ import { evaluateMcpPolicy } from "../mcp/mcp-policy.js";
 import { executeMcpTask } from "../mcp/mcp-execution-adapter.js";
 import { handleBelRequest } from "../bel/bel-controller.js";
 import type { BelToolName as BelControllerTool } from "../bel/bel-types.js";
+import { getCapabilities } from "../bel/bel-capabilities.js";
+import { listSessions } from "../bel/bel-session-manager.js";
+import { getRecentLogs } from "../mcp/mcp-logger.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -756,6 +759,29 @@ export function startHermesApi(port?: number): void {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
         });
+      return;
+    }
+
+    // ── BEL Capabilities ───────────────────────────────────────────────────
+    if (req.url === "/bel/capabilities" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(getCapabilities()));
+      return;
+    }
+
+    // ── BEL Sessions ───────────────────────────────────────────────────────
+    if (req.url === "/bel/sessions" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(listSessions()));
+      return;
+    }
+
+    // ── BEL Logs ───────────────────────────────────────────────────────────
+    if ((req.url === "/bel/logs" || req.url?.startsWith("/bel/logs?")) && req.method === "GET") {
+      const urlObj = new URL(req.url ?? "/bel/logs", "http://localhost");
+      const limit = Number(urlObj.searchParams.get("limit")) || 50;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(getRecentLogs(limit)));
       return;
     }
 
