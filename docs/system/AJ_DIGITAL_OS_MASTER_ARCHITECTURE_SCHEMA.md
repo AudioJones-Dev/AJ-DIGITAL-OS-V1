@@ -56,6 +56,8 @@ structured agents to execute at the speed of software.
         ↓
 [FEEDBACK LOOP LAYER]       ← Memory runtime, pattern extraction, scoring iteration
         ↓
+[SECURITY / TRUST LAYER]    ← Trust boundaries, permissions, secrets, audit, incident response
+        ↓
 [GUARDRAILS LAYER]          ← Security, policy gates, brand voice, compliance checks
         ↓
 [OFFER ENGINE LAYER]        ← AI readiness scoring, offer routing, Stripe billing
@@ -119,6 +121,8 @@ structured agents to execute at the speed of software.
 **What "Experimental" means:** The engine is real and technically sound. The security layer is production-grade.
 The gap is business-logic completeness — the intelligence scoring, attribution, and domain agent layers are defined
 but not fully executing. You can run internal workflows. You cannot confidently deploy to clients yet.
+
+**Required core layer reference:** Security / Trust Layer requirements are defined in `docs/system/AJ_DIGITAL_OS_SECURITY_TRUST_LAYER_SPEC.md`.
 
 **Path to Early Production (70%):** Close the Attribution layer (+15% impact), complete BEL v3 (+5%), scaffold the
 Next.js dashboard (+5%), and wire the AEO scoring engine (+5%). That's the fastest 20% gain.
