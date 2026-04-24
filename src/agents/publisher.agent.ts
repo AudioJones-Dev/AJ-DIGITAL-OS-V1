@@ -1,6 +1,8 @@
 ﻿import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { emitEvent } from "../attribution/attribution-tracker.js";
+import type { AttributionChannel } from "../attribution/attribution-types.js";
 import { logger } from "../core/logger.js";
 import { RunManager } from "../core/run-manager.js";
 import { DeliverableRecorder } from "../services/runtime/deliverable-recorder.js";
@@ -85,12 +87,14 @@ export class PublisherAgent {
         runId: executedRun.runId,
         publishedPath: outputDirectory,
       });
+      void emitEvent({ eventType: "content_published", runId: executedRun.runId, agentId: "publisher", channel: inferChannel(run.taskType), clientId: executedRun.clientId, contentType: run.taskType, contentId: executedRun.runId, metadata: { publishedPath: outputDirectory, filesCount: filesWritten.length } });
       try {
         await this.deliverableRecorder.recordPublishedRun({
           run: executedRun,
           publishedPath: outputDirectory,
           filesWritten,
         });
+        void emitEvent({ eventType: "content_distributed", runId: executedRun.runId, agentId: "publisher", channel: inferChannel(run.taskType), clientId: executedRun.clientId, contentType: run.taskType, contentId: executedRun.runId });
       } catch (error) {
         logger.warn("Deliverable registry persistence failed after publish.", {
           runId: executedRun.runId,
@@ -115,6 +119,7 @@ export class PublisherAgent {
         runId: input.runId,
         error: message,
       });
+      void emitEvent({ eventType: "run_failed", runId: input.runId, agentId: "publisher", channel: "unknown" });
 
       return {
         ok: false,
@@ -243,3 +248,9 @@ export class PublisherAgent {
     return value.replace(/[^a-zA-Z0-9-_]/g, "_");
   }
 }
+
+const inferChannel = (taskType: string): AttributionChannel => {
+  if (taskType === "transcript_to_content") return "social";
+  if (taskType === "blog_generation" || taskType === "authority_blog") return "blog";
+  return "unknown";
+};

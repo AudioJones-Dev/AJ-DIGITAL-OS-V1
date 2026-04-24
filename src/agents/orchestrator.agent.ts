@@ -1,6 +1,8 @@
 ﻿import { z } from "zod";
 
 import { ApprovalAgent } from "./approval.agent.js";
+import { emitEvent } from "../attribution/attribution-tracker.js";
+import type { AttributionChannel } from "../attribution/attribution-types.js";
 import { logger } from "../core/logger.js";
 import { RunManager } from "../core/run-manager.js";
 import { validateContext, validateWorkflowResult, type ValidationReport } from "../core/validator.js";
@@ -76,6 +78,8 @@ export const orchestrateTask = async (
       approvalRequired,
     });
 
+    void emitEvent({ eventType: "run_created", runId: run.runId, agentId: "orchestrator", channel: inferChannel(parsedInput.data.taskType), clientId: parsedInput.data.clientId });
+
     const contextResponse = await loadContextBundle({
       runId: run.runId,
       taskType: parsedInput.data.taskType,
@@ -90,6 +94,7 @@ export const orchestrateTask = async (
     });
 
     if (!contextResponse.ok || !contextResponse.output) {
+      void emitEvent({ eventType: "run_failed", runId: run.runId, agentId: "orchestrator", channel: inferChannel(parsedInput.data.taskType), clientId: parsedInput.data.clientId });
       return {
         ok: false,
         agent: "orchestrator",
@@ -227,6 +232,7 @@ export const orchestrateTask = async (
     const mergedWarnings = [...orchestrationWarnings, ...validation.warnings];
 
     if (!validation.ok) {
+      void emitEvent({ eventType: "run_failed", runId: validatedRun.runId, agentId: "orchestrator", channel: inferChannel(parsedInput.data.taskType), clientId: validatedRun.clientId });
       return {
         ok: false,
         agent: "orchestrator",
@@ -273,6 +279,8 @@ export const orchestrateTask = async (
         messageId: pendingRun.approvalMessageId,
       });
 
+      void emitEvent({ eventType: "run_completed", runId: pendingRun.runId, agentId: "orchestrator", channel: inferChannel(parsedInput.data.taskType), clientId: pendingRun.clientId });
+
       return {
         ok: approvalResponse.errors.length === 0,
         agent: "orchestrator",
@@ -294,6 +302,8 @@ export const orchestrateTask = async (
         },
       };
     }
+
+    void emitEvent({ eventType: "run_completed", runId: validatedRun.runId, agentId: "orchestrator", channel: inferChannel(parsedInput.data.taskType), clientId: validatedRun.clientId });
 
     return {
       ok: true,
@@ -371,6 +381,12 @@ const buildApprovalPacket = (
   });
 
   return packet;
+};
+
+const inferChannel = (taskType: string): AttributionChannel => {
+  if (taskType === "transcript_to_content") return "social";
+  if (taskType === "blog_generation" || taskType === "authority_blog") return "blog";
+  return "unknown";
 };
 
 const selectArtifactPreview = (workflowResult: WorkflowExecutionResult): string => {
