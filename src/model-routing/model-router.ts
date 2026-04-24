@@ -35,6 +35,20 @@ export interface DispatchOptions<TContext = unknown, TOutput = unknown> {
   deterministic?: DeterministicExecutor<TContext, TOutput> | undefined;
 }
 
+function isHeavyTask(task: string): boolean {
+  const normalized = task.toLowerCase();
+  return (
+    task.length > 200 ||
+    normalized.includes("production-ready") ||
+    normalized.includes("full api") ||
+    normalized.includes("postgresql")
+  );
+}
+
+function classifyProviderFamily(provider: ProviderRoute): "local" | "cloud" {
+  return provider === "openai" || provider === "perplexity" ? "cloud" : "local";
+}
+
 /**
  * Central model router entry point.
  *
@@ -59,9 +73,30 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
   dispatch: DispatchOptions<TContext, TOutput>,
 ): Promise<ModelRoutingResult<TOutput>> {
   const { taskType, task, context, constraints, preferredProvider, allowEscalation, retrievedContext } = request;
+  const routeStartMs = Date.now();
+
+  let effectivePreferredProvider = preferredProvider;
+  let decisionReason = preferredProvider ? "preferred-provider" : "policy-default";
+
+  if (constraints?.mustBeLocal) {
+    decisionReason = "mustBeLocal-override";
+  } else if (isHeavyTask(task)) {
+    if (constraints?.offline) {
+      decisionReason = "offline-mode";
+    } else {
+      effectivePreferredProvider = "openai";
+      decisionReason = "heavy-task-detected";
+    }
+  } else if (constraints?.offline) {
+    decisionReason = "offline-mode";
+  }
 
   // Step 1: Resolve route via policy
-  const route = resolveRoute(taskType, constraints, preferredProvider);
+  const route = resolveRoute(taskType, constraints, effectivePreferredProvider);
+
+  console.error(
+    `[MODEL-ROUTER] DECISION → provider=${classifyProviderFamily(route.provider)} reason=${decisionReason} taskType=${taskType} route=${route.provider}`,
+  );
 
   logRouting(taskType, route.provider, route.blocked, route.blockedReason);
 
@@ -70,6 +105,7 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
       taskType,
       ok: false,
       provider: null,
+      decisionReason,
       error: route.blockedReason ?? "Route blocked by policy.",
     });
   }
@@ -96,6 +132,9 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
         result.warnings.push("Escalation to OpenAI blocked by mustBeLocal constraint.");
       } else {
         logRouting(taskType, escalationTarget, false, null, true);
+        if (escalationTarget === "openai" || escalationTarget === "perplexity") {
+          console.error(`[MODEL-ROUTER] ESCALATION → cloud taskType=${taskType} target=${escalationTarget}`);
+        }
 
         const escalated = await dispatchToProvider<TContext, TOutput>(
           escalationTarget,
@@ -108,8 +147,12 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
 
         if (escalated.ok) {
           escalated.escalated = true;
+          escalated.decisionReason = "escalation";
           escalated.warnings.push(
             `Primary provider (${route.provider}) failed; escalated to ${escalationTarget}.`,
+          );
+          console.error(
+            `[MODEL-ROUTER] COMPLETED taskType=${taskType} provider=${escalated.provider ?? "none"} model=${escalated.model ?? "n/a"} ok=true escalated=true latencyMs=${Date.now() - routeStartMs}`,
           );
           return escalated;
         }
@@ -122,6 +165,14 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
     }
   }
 
+  result = {
+    ...result,
+    decisionReason,
+  };
+
+  console.error(
+    `[MODEL-ROUTER] COMPLETED taskType=${taskType} provider=${result.provider ?? "none"} model=${result.model ?? "n/a"} ok=${result.ok} escalated=${result.escalated} latencyMs=${Date.now() - routeStartMs}`,
+  );
   return result;
 }
 
@@ -133,6 +184,7 @@ async function dispatchToProvider<TContext, TOutput>(
   dispatch: DispatchOptions<TContext, TOutput>,
   retrievedContext?: RetrievedContext,
 ): Promise<ModelRoutingResult<TOutput>> {
+  const dispatchStartMs = Date.now();
   switch (provider) {
     case "openai": {
       if (!dispatch.openai) {
@@ -150,7 +202,11 @@ async function dispatchToProvider<TContext, TOutput>(
       if (temperature !== undefined) opts.temperature = temperature;
       if (maxTokens !== undefined) opts.maxTokens = maxTokens;
       if (responseFormat !== undefined) opts.responseFormat = responseFormat;
-      return callOpenAi<TContext, TOutput>(
+      const selectedModel = opts.model ?? "gpt-default";
+      console.error(
+        `[MODEL-ROUTER] DISPATCH taskType=${taskType} provider=openai model=${selectedModel} requestType=${taskType}`,
+      );
+      const openAiResult = await callOpenAi<TContext, TOutput>(
         taskType,
         task,
         context,
@@ -158,10 +214,23 @@ async function dispatchToProvider<TContext, TOutput>(
         userMessage,
         opts,
       );
+      console.error(
+        `[MODEL-ROUTER] RESULT taskType=${taskType} provider=openai model=${openAiResult.model ?? selectedModel} ok=${openAiResult.ok} latencyMs=${Date.now() - dispatchStartMs}`,
+      );
+      return openAiResult;
     }
 
-    case "local":
-      return callLocal<TOutput>(taskType, task, context, retrievedContext);
+    case "local": {
+      const selectedModel = process.env.LOCAL_MODEL?.trim() || "gemma3:1b";
+      console.error(
+        `[MODEL-ROUTER] DISPATCH taskType=${taskType} provider=local model=${selectedModel} requestType=${taskType}`,
+      );
+      const localResult = await callLocal<TOutput>(taskType, task, context, retrievedContext);
+      console.error(
+        `[MODEL-ROUTER] RESULT taskType=${taskType} provider=local model=${localResult.model ?? selectedModel} ok=${localResult.ok} latencyMs=${Date.now() - dispatchStartMs}`,
+      );
+      return localResult;
+    }
 
     case "deterministic": {
       if (!dispatch.deterministic) {
@@ -172,12 +241,19 @@ async function dispatchToProvider<TContext, TOutput>(
           error: "Deterministic executor function not provided for this task.",
         });
       }
-      return callDeterministic<TContext, TOutput>(
+      console.error(
+        `[MODEL-ROUTER] DISPATCH taskType=${taskType} provider=deterministic model=n/a requestType=${taskType}`,
+      );
+      const deterministicResult = await callDeterministic<TContext, TOutput>(
         taskType,
         task,
         context,
         dispatch.deterministic,
       );
+      console.error(
+        `[MODEL-ROUTER] RESULT taskType=${taskType} provider=deterministic model=n/a ok=${deterministicResult.ok} latencyMs=${Date.now() - dispatchStartMs}`,
+      );
+      return deterministicResult;
     }
 
     case "perplexity": {
@@ -185,7 +261,14 @@ async function dispatchToProvider<TContext, TOutput>(
         // Auto-build dispatch from openai options if available
         const opts = dispatch.openai;
         if (opts) {
-          return callPerplexity<TOutput>(taskType, task, context, opts);
+          console.error(
+            `[MODEL-ROUTER] DISPATCH taskType=${taskType} provider=perplexity model=${opts.model ?? "sonar-default"} requestType=${taskType}`,
+          );
+          const perplexityResult = await callPerplexity<TOutput>(taskType, task, context, opts);
+          console.error(
+            `[MODEL-ROUTER] RESULT taskType=${taskType} provider=perplexity model=${perplexityResult.model ?? opts.model ?? "sonar-default"} ok=${perplexityResult.ok} latencyMs=${Date.now() - dispatchStartMs}`,
+          );
+          return perplexityResult;
         }
         return createResult<TOutput>({
           taskType: taskType as ModelRoutingResult["taskType"],
@@ -194,7 +277,15 @@ async function dispatchToProvider<TContext, TOutput>(
           error: "Perplexity dispatch options not provided for this task.",
         });
       }
-      return callPerplexity<TOutput>(taskType, task, context, dispatch.perplexity);
+      const selectedModel = dispatch.perplexity.model ?? "sonar-default";
+      console.error(
+        `[MODEL-ROUTER] DISPATCH taskType=${taskType} provider=perplexity model=${selectedModel} requestType=${taskType}`,
+      );
+      const perplexityResult = await callPerplexity<TOutput>(taskType, task, context, dispatch.perplexity);
+      console.error(
+        `[MODEL-ROUTER] RESULT taskType=${taskType} provider=perplexity model=${perplexityResult.model ?? selectedModel} ok=${perplexityResult.ok} latencyMs=${Date.now() - dispatchStartMs}`,
+      );
+      return perplexityResult;
     }
   }
 }

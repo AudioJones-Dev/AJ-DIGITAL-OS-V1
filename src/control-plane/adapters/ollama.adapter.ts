@@ -5,6 +5,7 @@
  */
 
 import { logger } from "../../core/logger.js";
+import { recordAgentExecution } from "../../intelligence/intelligence-engine.js";
 import { recordAgentRun } from "../../observability/metrics.js";
 import type { OllamaAskResult, OllamaHealthStatus } from "../types/control-plane.types.js";
 
@@ -91,6 +92,8 @@ class LocalOllamaAdapter implements OllamaAdapter {
     }
 
     logger.info("Ollama /ask request", {
+      provider: "local",
+      requestType: "ask",
       promptLength: trimmedPrompt.length,
       model: this.defaultModel,
       baseUrl: this.baseUrl,
@@ -120,10 +123,21 @@ class LocalOllamaAdapter implements OllamaAdapter {
       if (!response.ok) {
         const errorText = `Ollama HTTP ${response.status}`;
         logger.error("Ollama /ask failed", {
+          provider: "local",
+          requestType: "ask",
           error: errorText,
           model: this.defaultModel,
+          latencyMs: Date.now() - startMs,
         });
-        recordAgentRun("ollama", Date.now() - startMs, false);
+        const durationMs = Date.now() - startMs;
+        recordAgentRun("ollama", durationMs, false);
+        recordAgentExecution({
+          agent: "ollama",
+          durationMs,
+          success: false,
+          outputSize: 0,
+          confidenceProxy: 0,
+        });
         return {
           ok: false,
           error: errorText,
@@ -135,11 +149,22 @@ class LocalOllamaAdapter implements OllamaAdapter {
       const conciseAnswer = rawAnswer.length > 700 ? `${rawAnswer.substring(0, 700)}...` : rawAnswer;
 
       logger.info("Ollama /ask success", {
+        provider: "local",
+        requestType: "ask",
         model: this.defaultModel,
         answerLength: conciseAnswer.length,
+        latencyMs: Date.now() - startMs,
       });
 
-      recordAgentRun("ollama", Date.now() - startMs, true);
+      const durationMs = Date.now() - startMs;
+      recordAgentRun("ollama", durationMs, true);
+      recordAgentExecution({
+        agent: "ollama",
+        durationMs,
+        success: true,
+        outputSize: conciseAnswer.length,
+        confidenceProxy: conciseAnswer.length / Math.max(trimmedPrompt.length, 1),
+      });
       return {
         ok: true,
         answer: conciseAnswer.length > 0 ? conciseAnswer : "No response from model.",
@@ -147,11 +172,22 @@ class LocalOllamaAdapter implements OllamaAdapter {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error("Ollama /ask exception", {
+        provider: "local",
+        requestType: "ask",
         error: errorMessage,
         model: this.defaultModel,
+        latencyMs: Date.now() - startMs,
       });
 
-      recordAgentRun("ollama", Date.now() - startMs, false);
+      const durationMs = Date.now() - startMs;
+      recordAgentRun("ollama", durationMs, false);
+      recordAgentExecution({
+        agent: "ollama",
+        durationMs,
+        success: false,
+        outputSize: 0,
+        confidenceProxy: 0,
+      });
       return {
         ok: false,
         error: errorMessage.includes("abort") ? "Request timed out." : errorMessage,

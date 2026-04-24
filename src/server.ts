@@ -1,4 +1,5 @@
 import "./env.js";
+import { preloadLocalModel } from "./bootstrap/preload-local-model.js";
 import { startHermes } from "./hermes/index.js";
 
 // ── Production Config Guards ───────────────────────────────────────
@@ -39,6 +40,7 @@ function validateEnv(): void {
 async function main() {
   validateEnv();
   console.log("[Server] Starting...");
+  await preloadLocalModel();
   await startHermes({ statusApi: true });
   console.log("[Server] Hermes started");
   const port = process.env.HERMES_STATUS_PORT || "7420";

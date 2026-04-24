@@ -9,6 +9,7 @@
  */
 
 import { createServer, type Server } from "node:http";
+import { getIntelligenceSnapshot } from "../intelligence/intelligence-engine.js";
 import { registry } from "../observability/metrics.js";
 import { getSchedulerStatus } from "./hermes-scheduler.js";
 import { isWatcherRunning, getLastCheckAt } from "./hermes-failure-watcher.js";
@@ -27,6 +28,11 @@ import { resolveConfig, isConfigured, supabaseGet, supabasePatch, type SupabaseC
 import type { DbDistributionAsset } from "../db/db-types.js";
 import { recordDistributionMetrics } from "../services/distribution-metrics.js";
 import { getDistributionPerformance } from "../services/distribution-metrics.js";
+import { classifyMcpTask } from "../mcp/mcp-task-classifier.js";
+import { evaluateMcpPolicy } from "../mcp/mcp-policy.js";
+import { executeMcpTask } from "../mcp/mcp-execution-adapter.js";
+import { handleBelRequest } from "../bel/bel-controller.js";
+import type { BelToolName as BelControllerTool } from "../bel/bel-types.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -336,6 +342,146 @@ export function startHermesApi(port?: number): void {
     if (req.url === "/status" || req.url === "/") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(buildStatus()));
+      return;
+    }
+
+    if (req.url === "/intelligence" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(getIntelligenceSnapshot()));
+      return;
+    }
+
+    if (req.url === "/mcp/execute" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const task = String(body["task"] ?? "").trim();
+          const dryRun = body["dryRun"] === false ? false : true;
+
+          if (!task) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "task is required" }));
+            return;
+          }
+
+          const classification = classifyMcpTask(task);
+          const policy = evaluateMcpPolicy({ task, classification });
+
+          if (!policy.approved) {
+            res.writeHead(403, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                ok: false,
+                classification,
+                approved: false,
+                dryRun: true,
+                plannedAction: policy.plannedAction,
+                result: null,
+                error: policy.reason,
+              }),
+            );
+            return;
+          }
+
+          if (dryRun) {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                ok: true,
+                classification,
+                approved: true,
+                dryRun: true,
+                plannedAction: policy.plannedAction,
+                result: null,
+              }),
+            );
+            return;
+          }
+
+          if (!policy.taskType) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                ok: false,
+                classification,
+                approved: false,
+                dryRun,
+                plannedAction: policy.plannedAction,
+                result: null,
+                error: "No executable MCP task type resolved.",
+              }),
+            );
+            return;
+          }
+
+          const adapterRequest = {
+            taskType: policy.taskType,
+            task,
+            dryRun,
+            ...(policy.targetPath !== undefined ? { targetPath: policy.targetPath } : {}),
+            ...(policy.command !== undefined ? { command: policy.command } : {}),
+          };
+
+          return executeMcpTask(adapterRequest).then((result) => {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                ok: result.ok,
+                classification,
+                approved: true,
+                dryRun,
+                plannedAction: policy.plannedAction,
+                result,
+              }),
+            );
+          });
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── BEL Execute ────────────────────────────────────────────────
+    if (req.url === "/bel/execute" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const agentId = String(body["agentId"] ?? "").trim();
+          const task = String(body["task"] ?? "").trim();
+          const dryRun = body["dryRun"] === false ? false : true;
+          const tool = body["tool"] as BelControllerTool | undefined;
+          const params = body["params"] as Record<string, unknown> | undefined;
+          const sessionName = body["sessionName"] ? String(body["sessionName"]) : undefined;
+
+          if (!task) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "task is required" }));
+            return;
+          }
+
+          if (!agentId) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "agentId is required" }));
+            return;
+          }
+
+          return handleBelRequest({
+            agentId, task, dryRun,
+            ...(tool !== undefined ? { tool } : {}),
+            ...(params !== undefined ? { params } : {}),
+            ...(sessionName !== undefined ? { sessionName } : {}),
+          }).then((result) => {
+            const status = result.approved ? 200 : 403;
+            res.writeHead(status, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(result));
+          });
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
       return;
     }
 

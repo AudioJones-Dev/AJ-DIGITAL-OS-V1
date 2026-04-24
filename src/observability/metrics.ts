@@ -79,6 +79,34 @@ export const sessionsError = new Gauge({
   registers: [registry],
 });
 
+export const predictionErrorGauge = new Gauge({
+  name: "aj_os_prediction_error",
+  help: "Latest prediction error per agent",
+  labelNames: ["agent"] as const,
+  registers: [registry],
+});
+
+export const signalScoreGauge = new Gauge({
+  name: "aj_os_signal_score",
+  help: "Latest signal score per agent",
+  labelNames: ["agent"] as const,
+  registers: [registry],
+});
+
+export const agentSuccessRate = new Gauge({
+  name: "aj_os_agent_success_rate",
+  help: "Current success rate per agent",
+  labelNames: ["agent"] as const,
+  registers: [registry],
+});
+
+export const agentFailureRate = new Gauge({
+  name: "aj_os_agent_failure_rate",
+  help: "Current failure rate per agent",
+  labelNames: ["agent"] as const,
+  registers: [registry],
+});
+
 // ── Histograms ────────────────────────────────────────────────────────────────
 
 export const taskDurationMs = new Histogram({

@@ -6,6 +6,7 @@ export interface ModelRoutingResult<T = unknown> {
   ok: boolean;
   provider: string | null;
   model: string | null;
+  decisionReason?: string;
   taskType: TaskType;
   output: T | null;
   escalated: boolean;
@@ -50,6 +51,7 @@ export function createResult<T>(
     ok: partial.ok ?? false,
     provider: partial.provider ?? null,
     model: partial.model ?? null,
+    ...(partial.decisionReason !== undefined ? { decisionReason: partial.decisionReason } : {}),
     taskType: partial.taskType,
     output: partial.output ?? null,
     escalated: partial.escalated ?? false,
