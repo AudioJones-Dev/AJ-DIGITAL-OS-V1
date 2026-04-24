@@ -41,6 +41,7 @@ import {
   HermesStartCommand,
   HermesStopCommand,
   HermesStatusCommand,
+  ScoreOpportunitiesCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -580,6 +581,18 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           });
           return result.ok ? 0 : 1;
         }
+      case "score-opportunities":
+        {
+          const topRaw = getStringFlag(parsed.flags, "top");
+          const topN = topRaw !== undefined ? parseInt(topRaw, 10) : undefined;
+          const tierRaw = getStringFlag(parsed.flags, "tier");
+          const result = await new ScoreOpportunitiesCommand().run({
+            ...(topN !== undefined && !isNaN(topN) ? { top: topN } : {}),
+            ...(isOpportunityTier(tierRaw) ? { tier: tierRaw } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
       default:
         printUnknownCommand(command);
         return 1;
@@ -722,6 +735,10 @@ function normalizeTrackRunView(value: string | undefined): TrackRunViewMode | un
     default:
       return undefined;
   }
+}
+
+function isOpportunityTier(value: string | undefined): value is "high" | "medium" | "low" {
+  return value === "high" || value === "medium" || value === "low";
 }
 
 function isDeliverableStatus(value: string | undefined): value is "draft" | "pending_approval" | "approved" | "published" | "failed" | "archived" {

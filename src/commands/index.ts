@@ -262,3 +262,9 @@ export type {
   HermesStatusCommandInput,
   HermesStatusCommandResult,
 } from "./hermes-status.command.js";
+
+export { ScoreOpportunitiesCommand } from "./score-opportunities.js";
+export type {
+  ScoreOpportunitiesCommandInput,
+  ScoreOpportunitiesCommandResult,
+} from "./score-opportunities.js";

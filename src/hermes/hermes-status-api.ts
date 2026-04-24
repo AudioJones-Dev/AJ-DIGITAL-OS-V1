@@ -33,6 +33,10 @@ import { evaluateMcpPolicy } from "../mcp/mcp-policy.js";
 import { executeMcpTask } from "../mcp/mcp-execution-adapter.js";
 import { handleBelRequest } from "../bel/bel-controller.js";
 import type { BelToolName as BelControllerTool } from "../bel/bel-types.js";
+import {
+  getOpportunityById,
+  getTopOpportunities as getStoreTopOpportunities,
+} from "../intelligence/opportunity-store.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -768,6 +772,45 @@ export function startHermesApi(port?: number): void {
         res.writeHead(500, { "Content-Type": "text/plain" });
         res.end("Error collecting metrics");
       });
+      return;
+    }
+
+    // ── Intelligence: opportunity by scoreId ────────────────────────
+    const oppByIdMatch = req.url?.match(/^\/intelligence\/opportunities\/(.+)$/);
+    if (oppByIdMatch && req.method === "GET") {
+      const scoreId = decodeURIComponent(oppByIdMatch[1]!);
+      getOpportunityById(scoreId)
+        .then((opp) => {
+          if (!opp) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "Opportunity not found" }));
+            return;
+          }
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, data: opp }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }));
+        });
+      return;
+    }
+
+    // ── Intelligence: top opportunities list ────────────────────────
+    const oppListMatch = req.url?.match(/^\/intelligence\/opportunities(?:\?(.*))?$/);
+    if (oppListMatch && req.method === "GET") {
+      const params = new URLSearchParams(oppListMatch[1] ?? "");
+      const rawLimit = parseInt(params.get("limit") ?? "10", 10);
+      const limit = isNaN(rawLimit) || rawLimit <= 0 ? 10 : rawLimit;
+      getStoreTopOpportunities(limit)
+        .then((opps) => {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, data: opps, total: opps.length }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }));
+        });
       return;
     }
 
