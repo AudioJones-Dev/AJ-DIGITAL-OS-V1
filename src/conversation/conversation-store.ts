@@ -9,6 +9,11 @@ import type {
   ConversationTurnRecord,
   StitchedContextBundle,
 } from "./conversation-types.js";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../security/agents/agent-registry.js";
 
 export interface ListConversationThreadsInput {
   limit?: number;
@@ -37,34 +42,31 @@ export class ConversationStore {
 
   async saveThread(thread: ConversationThreadRecord): Promise<ConversationThreadRecord> {
     const parsed = ConversationThreadSchema.parse(thread);
-    await mkdir(this.threadsDirectory, { recursive: true });
-    await writeFile(
-      this.getThreadPath(parsed.threadId),
-      `${JSON.stringify(parsed, null, 2)}\n`,
-      "utf-8",
-    );
+    const outputPath = this.getThreadPath(parsed.threadId);
+    await this.enforcedWrite(outputPath, `${JSON.stringify(parsed, null, 2)}\n`, async () => {
+      await mkdir(this.threadsDirectory, { recursive: true });
+      await writeFile(outputPath, `${JSON.stringify(parsed, null, 2)}\n`, "utf-8");
+    });
     return parsed;
   }
 
   async saveTurn(turn: ConversationTurnRecord): Promise<ConversationTurnRecord> {
     const parsed = ConversationTurnSchema.parse(turn);
-    await mkdir(this.turnsDirectory, { recursive: true });
-    await writeFile(
-      this.getTurnPath(parsed.createdAt, parsed.turnId),
-      `${JSON.stringify(parsed, null, 2)}\n`,
-      "utf-8",
-    );
+    const outputPath = this.getTurnPath(parsed.createdAt, parsed.turnId);
+    await this.enforcedWrite(outputPath, `${JSON.stringify(parsed, null, 2)}\n`, async () => {
+      await mkdir(this.turnsDirectory, { recursive: true });
+      await writeFile(outputPath, `${JSON.stringify(parsed, null, 2)}\n`, "utf-8");
+    });
     return parsed;
   }
 
   async saveContextBundle(bundle: StitchedContextBundle): Promise<StitchedContextBundle> {
     const parsed = StitchedContextBundleSchema.parse(bundle);
-    await mkdir(this.contextCacheDirectory, { recursive: true });
-    await writeFile(
-      this.getContextBundlePath(parsed.createdAt, parsed.bundleId),
-      `${JSON.stringify(parsed, null, 2)}\n`,
-      "utf-8",
-    );
+    const outputPath = this.getContextBundlePath(parsed.createdAt, parsed.bundleId);
+    await this.enforcedWrite(outputPath, `${JSON.stringify(parsed, null, 2)}\n`, async () => {
+      await mkdir(this.contextCacheDirectory, { recursive: true });
+      await writeFile(outputPath, `${JSON.stringify(parsed, null, 2)}\n`, "utf-8");
+    });
     return parsed;
   }
 
@@ -157,6 +159,40 @@ export class ConversationStore {
 
   private getContextBundlePath(createdAt: string, bundleId: string): string {
     return path.join(this.contextCacheDirectory, `${sanitizeTimestamp(createdAt)}-${sanitizeId(bundleId)}.json`);
+  }
+
+  private async enforcedWrite(
+    target: string,
+    content: string,
+    writer: () => Promise<void>,
+  ): Promise<void> {
+    const agentContext = resolveAgentContext("conversation-store");
+    try {
+      const enforced = await executeWithEnforcement(
+        {
+          agentId: agentContext.agentId,
+          actionType: "write_file",
+          target,
+        },
+        {
+          permissionLevel: agentContext.permissionLevel,
+          environment: agentContext.environment,
+        },
+        async () => {
+          await writer();
+          return { ok: true };
+        },
+      );
+
+      if (enforced.status === "approval_required") {
+        throw new Error(`Conversation write requires approval: ${enforced.enforcement.reason}`);
+      }
+    } catch (err: unknown) {
+      if (err instanceof EnforcementBlockedError) {
+        throw new Error(`Conversation write blocked by enforcement: ${err.message}`);
+      }
+      throw err;
+    }
   }
 }
 

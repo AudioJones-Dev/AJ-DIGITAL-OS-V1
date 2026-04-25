@@ -33,6 +33,16 @@ import { evaluateMcpPolicy } from "../mcp/mcp-policy.js";
 import { executeMcpTask } from "../mcp/mcp-execution-adapter.js";
 import { handleBelRequest } from "../bel/bel-controller.js";
 import type { BelToolName as BelControllerTool } from "../bel/bel-types.js";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../security/permissions/enforced-execution.js";
+import {
+  AgentTenantMismatchError,
+  assertAgentTenantAccess,
+  assertAgentToolAccess,
+  resolveAgentContext,
+} from "../security/agents/agent-registry.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -414,27 +424,87 @@ export function startHermesApi(port?: number): void {
             return;
           }
 
+          const requestedAgentId = String(body["agentId"] ?? "api-mcp-execute").trim() || "api-mcp-execute";
+          let agentContext: ReturnType<typeof resolveAgentContext>;
+          try {
+            agentContext = resolveAgentContext(requestedAgentId);
+            assertAgentToolAccess(agentContext, policy.taskType);
+            assertAgentTenantAccess(agentContext, body["clientId"] !== undefined ? String(body["clientId"]) : null);
+          } catch (err: unknown) {
+            const statusCode = err instanceof AgentTenantMismatchError ? 403 : 400;
+            res.writeHead(statusCode, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Invalid agent context" }));
+            return;
+          }
+
           const adapterRequest = {
             taskType: policy.taskType,
             task,
             dryRun,
+            agentId: agentContext.agentId,
             ...(policy.targetPath !== undefined ? { targetPath: policy.targetPath } : {}),
             ...(policy.command !== undefined ? { command: policy.command } : {}),
           };
 
-          return executeMcpTask(adapterRequest).then((result) => {
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(
-              JSON.stringify({
-                ok: result.ok,
-                classification,
-                approved: true,
-                dryRun,
-                plannedAction: policy.plannedAction,
-                result,
-              }),
-            );
-          });
+          return executeWithEnforcement(
+            {
+              agentId: agentContext.agentId,
+              actionType: "mcp_tool_call",
+              ...(policy.command !== undefined ? { command: policy.command } : {}),
+              ...(policy.targetPath !== undefined ? { target: policy.targetPath } : {}),
+              ...(policy.taskType !== null ? { toolName: policy.taskType } : {}),
+              ...(body["clientId"] !== undefined ? { clientId: String(body["clientId"]) } : {}),
+            },
+            {
+              permissionLevel: agentContext.permissionLevel,
+              ...(body["approvalGranted"] === true ? { approval: { approved: true } } : {}),
+              environment: agentContext.environment,
+            },
+            async () => executeMcpTask(adapterRequest),
+          )
+            .then((wrapped) => {
+              if (wrapped.status === "approval_required") {
+                res.writeHead(403, { "Content-Type": "application/json" });
+                res.end(
+                  JSON.stringify({
+                    ok: false,
+                    classification,
+                    approved: false,
+                    dryRun,
+                    plannedAction: policy.plannedAction,
+                    approvalRequired: true,
+                    approvalId: wrapped.enforcement.approvalId ?? null,
+                    auditId: wrapped.enforcement.auditId,
+                    error: wrapped.enforcement.reason,
+                  }),
+                );
+                return;
+              }
+
+              const result = wrapped.result;
+              res.writeHead(200, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  ok: result.ok,
+                  classification,
+                  approved: true,
+                  dryRun,
+                  plannedAction: policy.plannedAction,
+                  result,
+                  auditId: wrapped.enforcement.auditId,
+                }),
+              );
+            })
+            .catch((err: unknown) => {
+              if (err instanceof EnforcementBlockedError) {
+                res.writeHead(403, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ ok: false, error: err.message, auditId: err.auditId }));
+                return;
+              }
+
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Execution failed" }));
+            });
         })
         .catch((err: unknown) => {
           res.writeHead(400, { "Content-Type": "application/json" });
@@ -454,7 +524,6 @@ export function startHermesApi(port?: number): void {
           const tool = body["tool"] as BelControllerTool | undefined;
           const params = body["params"] as Record<string, unknown> | undefined;
           const sessionName = body["sessionName"] ? String(body["sessionName"]) : undefined;
-
           if (!task) {
             res.writeHead(400, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ ok: false, error: "task is required" }));
@@ -467,16 +536,69 @@ export function startHermesApi(port?: number): void {
             return;
           }
 
-          return handleBelRequest({
-            agentId, task, dryRun,
-            ...(tool !== undefined ? { tool } : {}),
-            ...(params !== undefined ? { params } : {}),
-            ...(sessionName !== undefined ? { sessionName } : {}),
-          }).then((result) => {
-            const status = result.approved ? 200 : 403;
-            res.writeHead(status, { "Content-Type": "application/json" });
-            res.end(JSON.stringify(result));
-          });
+          let agentContext: ReturnType<typeof resolveAgentContext>;
+          try {
+            agentContext = resolveAgentContext(agentId);
+            if (tool !== undefined) {
+              assertAgentToolAccess(agentContext, tool);
+            }
+            assertAgentTenantAccess(agentContext, body["clientId"] !== undefined ? String(body["clientId"]) : null);
+          } catch (err: unknown) {
+            const statusCode = err instanceof AgentTenantMismatchError ? 403 : 400;
+            res.writeHead(statusCode, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Invalid agent context" }));
+            return;
+          }
+
+          return executeWithEnforcement(
+            {
+              agentId: agentContext.agentId,
+              actionType: tool === "browser" ? "browser_action" : "mcp_tool_call",
+              ...(tool !== undefined ? { toolName: tool } : {}),
+              ...(body["target"] !== undefined ? { target: String(body["target"]) } : {}),
+              ...(body["clientId"] !== undefined ? { clientId: String(body["clientId"]) } : {}),
+            },
+            {
+              permissionLevel: agentContext.permissionLevel,
+              ...(body["approvalGranted"] === true ? { approval: { approved: true } } : {}),
+              environment: agentContext.environment,
+            },
+            async () => handleBelRequest({
+              agentId, task, dryRun,
+              ...(tool !== undefined ? { tool } : {}),
+              ...(params !== undefined ? { params } : {}),
+              ...(sessionName !== undefined ? { sessionName } : {}),
+            }),
+          )
+            .then((wrapped) => {
+              if (wrapped.status === "approval_required") {
+                res.writeHead(403, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({
+                  ok: false,
+                  approved: false,
+                  approvalRequired: true,
+                  approvalId: wrapped.enforcement.approvalId ?? null,
+                  auditId: wrapped.enforcement.auditId,
+                  error: wrapped.enforcement.reason,
+                }));
+                return;
+              }
+
+              const result = wrapped.result;
+              const status = result.approved ? 200 : 403;
+              res.writeHead(status, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ...result, auditId: wrapped.enforcement.auditId }));
+            })
+            .catch((err: unknown) => {
+              if (err instanceof EnforcementBlockedError) {
+                res.writeHead(403, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ ok: false, error: err.message, auditId: err.auditId }));
+                return;
+              }
+
+              res.writeHead(500, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Execution failed" }));
+            });
         })
         .catch((err: unknown) => {
           res.writeHead(400, { "Content-Type": "application/json" });

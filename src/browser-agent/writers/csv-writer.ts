@@ -1,5 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../../security/agents/agent-registry.js";
 
 export async function writeCsv(
   outputPath: string,
@@ -7,7 +12,7 @@ export async function writeCsv(
   rows: Array<Record<string, string>>,
 ): Promise<void> {
   const dir = path.dirname(outputPath);
-  await fs.mkdir(dir, { recursive: true });
+  const agentContext = resolveAgentContext("browser-agent-csv-writer");
 
   const escapeCsv = (value: string): string => {
     if (value.includes(",") || value.includes('"') || value.includes("\n")) {
@@ -23,5 +28,31 @@ export async function writeCsv(
     lines.push(values.join(","));
   }
 
-  await fs.writeFile(outputPath, lines.join("\n") + "\n", "utf-8");
+  try {
+    const enforced = await executeWithEnforcement(
+      {
+        agentId: agentContext.agentId,
+        actionType: "write_file",
+        target: outputPath,
+      },
+      {
+        permissionLevel: agentContext.permissionLevel,
+        environment: agentContext.environment,
+      },
+      async () => {
+        await fs.mkdir(dir, { recursive: true });
+        await fs.writeFile(outputPath, lines.join("\n") + "\n", "utf-8");
+        return { ok: true };
+      },
+    );
+
+    if (enforced.status === "approval_required") {
+      throw new Error(`CSV write requires approval: ${enforced.enforcement.reason}`);
+    }
+  } catch (err: unknown) {
+    if (err instanceof EnforcementBlockedError) {
+      throw new Error(`CSV write blocked by enforcement: ${err.message}`);
+    }
+    throw err;
+  }
 }

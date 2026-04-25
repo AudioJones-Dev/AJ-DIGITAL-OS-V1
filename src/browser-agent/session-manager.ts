@@ -1,6 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { BrowserContext } from "playwright";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../security/agents/agent-registry.js";
 
 export interface SessionManagerOptions {
   sessionFile: string;
@@ -54,6 +59,32 @@ export async function loadSession(context: BrowserContext, sessionFile: string):
 export async function saveSession(context: BrowserContext, sessionFile: string): Promise<void> {
   const state = await context.storageState();
   const dir = path.dirname(sessionFile);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(sessionFile, JSON.stringify(state, null, 2), "utf-8");
+  const agentContext = resolveAgentContext("browser-agent-session-manager");
+  try {
+    const enforced = await executeWithEnforcement(
+      {
+        agentId: agentContext.agentId,
+        actionType: "write_file",
+        target: sessionFile,
+      },
+      {
+        permissionLevel: agentContext.permissionLevel,
+        environment: agentContext.environment,
+      },
+      async () => {
+        await fs.mkdir(dir, { recursive: true });
+        await fs.writeFile(sessionFile, JSON.stringify(state, null, 2), "utf-8");
+        return { ok: true };
+      },
+    );
+
+    if (enforced.status === "approval_required") {
+      throw new Error(`Session save requires approval: ${enforced.enforcement.reason}`);
+    }
+  } catch (err: unknown) {
+    if (err instanceof EnforcementBlockedError) {
+      throw new Error(`Session save blocked by enforcement: ${err.message}`);
+    }
+    throw err;
+  }
 }

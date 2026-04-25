@@ -3,6 +3,11 @@ import path from "node:path";
 
 import { AssistantSessionSchema } from "../schemas/assistant-session.schema.js";
 import type { AssistantSessionRecord } from "../types/assistant-session.types.js";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../security/agents/agent-registry.js";
 
 export interface ListAssistantSessionsInput {
   limit?: number;
@@ -17,12 +22,40 @@ export class AssistantSessionStore {
 
   async save(session: AssistantSessionRecord): Promise<AssistantSessionRecord> {
     const parsedSession = AssistantSessionSchema.parse(session);
-    await mkdir(this.sessionsDirectory, { recursive: true });
-    await writeFile(
-      this.getSessionPath(parsedSession.timestamp, parsedSession.sessionId),
-      `${JSON.stringify(parsedSession, null, 2)}\n`,
-      "utf-8",
-    );
+    const outputPath = this.getSessionPath(parsedSession.timestamp, parsedSession.sessionId);
+    const agentContext = resolveAgentContext("assistant-session-store");
+    try {
+      const enforced = await executeWithEnforcement(
+        {
+          agentId: agentContext.agentId,
+          actionType: "write_file",
+          target: outputPath,
+        },
+        {
+          permissionLevel: agentContext.permissionLevel,
+          environment: agentContext.environment,
+        },
+        async () => {
+          await mkdir(this.sessionsDirectory, { recursive: true });
+          await writeFile(
+            outputPath,
+            `${JSON.stringify(parsedSession, null, 2)}\n`,
+            "utf-8",
+          );
+          return { ok: true };
+        },
+      );
+
+      if (enforced.status === "approval_required") {
+        throw new Error(`Assistant session save requires approval: ${enforced.enforcement.reason}`);
+      }
+    } catch (err: unknown) {
+      if (err instanceof EnforcementBlockedError) {
+        throw new Error(`Assistant session save blocked by enforcement: ${err.message}`);
+      }
+      throw err;
+    }
+
     return parsedSession;
   }
 

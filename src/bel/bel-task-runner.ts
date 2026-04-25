@@ -8,6 +8,10 @@
 import { randomUUID } from "node:crypto";
 import { dispatchToTool } from "../mcp/mcp-bridge.js";
 import { logExecution } from "../mcp/mcp-logger.js";
+import {
+  assertAgentToolAccess,
+  resolveAgentContext,
+} from "../security/agents/agent-registry.js";
 import type { BelTaskRequest, BelTaskResult, BelToolName } from "./bel-types.js";
 
 function inferTool(task: string): BelToolName {
@@ -25,6 +29,8 @@ export async function runBelTask(req: BelTaskRequest): Promise<BelTaskResult> {
   const taskId = req.taskId ?? randomUUID();
   const startMs = Date.now();
   const tool: BelToolName = req.tool ?? inferTool(req.task);
+  const agentContext = resolveAgentContext(req.agentId);
+  assertAgentToolAccess(agentContext, tool);
 
   if (req.dryRun) {
     return {
@@ -69,8 +75,9 @@ export async function runBelTask(req: BelTaskRequest): Promise<BelTaskResult> {
   const result = await dispatchToTool({
     taskType: bridgeTaskType,
     task: req.task,
-    agentId: req.agentId,
-    permissionLevel: tool === "browser" ? 4 : 2,
+    agentId: agentContext.agentId,
+    permissionLevel: agentContext.permissionLevel,
+    environment: agentContext.environment,
     ...(targetPath !== undefined ? { targetPath } : {}),
     ...(command !== undefined ? { command } : {}),
     ...(tool === "browser" && req.params !== undefined

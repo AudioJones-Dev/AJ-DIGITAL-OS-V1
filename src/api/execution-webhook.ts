@@ -9,6 +9,11 @@ import {
   logWebhookVerificationFailure,
 } from "../security/security-audit-log.js";
 import { verifyWebhookRequest } from "../security/webhook-signature.js";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../security/agents/agent-registry.js";
 
 export const ExecutionWebhookPayloadSchema = z.object({
   runId: z.string().min(1),
@@ -139,10 +144,65 @@ export const handleExecutionWebhook = async (
     target: parsedPayload.data.target,
   });
 
-  const executionResult = await executionAgent.execute({
-    runId: parsedPayload.data.runId,
-    target: parsedPayload.data.target,
-  });
+  let executionResult;
+  try {
+    const agentContext = resolveAgentContext("execution-webhook");
+    const wrapped = await executeWithEnforcement(
+      {
+        agentId: agentContext.agentId,
+        actionType: "remote_change",
+        target: parsedPayload.data.runId,
+      },
+      {
+        permissionLevel: agentContext.permissionLevel,
+        approval: { approved: true },
+        environment: agentContext.environment,
+      },
+      async () => executionAgent.execute({
+        runId: parsedPayload.data.runId,
+        target: parsedPayload.data.target,
+      }),
+    );
+
+    if (wrapped.status === "approval_required") {
+      return {
+        ok: false,
+        statusCode: 422,
+        runId: parsedPayload.data.runId,
+        target: parsedPayload.data.target,
+        status: "failed" as const,
+        filesWritten: [],
+        warnings: [],
+        errors: [wrapped.enforcement.reason],
+      };
+    }
+
+    executionResult = wrapped.result;
+  } catch (err: unknown) {
+    if (err instanceof EnforcementBlockedError) {
+      return {
+        ok: false,
+        statusCode: 422,
+        runId: parsedPayload.data.runId,
+        target: parsedPayload.data.target,
+        status: "failed" as const,
+        filesWritten: [],
+        warnings: [],
+        errors: [err.message],
+      };
+    }
+
+    return {
+      ok: false,
+      statusCode: 500,
+      runId: parsedPayload.data.runId,
+      target: parsedPayload.data.target,
+      status: "failed" as const,
+      filesWritten: [],
+      warnings: [],
+      errors: [err instanceof Error ? err.message : "Execution failed."],
+    };
+  }
 
   logger.info("Execution webhook received execution result.", {
     runId: executionResult.runId,

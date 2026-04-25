@@ -5,6 +5,8 @@ import type { ApprovalContext } from "./approval-gate.js";
 export interface ExecuteWithEnforcementContext {
   permissionLevel: PermissionLevel;
   approval?: ApprovalContext | undefined;
+  environment?: "local" | "dev" | "staging" | "production" | undefined;
+  approvalId?: string | undefined;
 }
 
 export interface ApprovalRequestResult {
@@ -48,7 +50,12 @@ export async function executeWithEnforcement<T>(
   context: ExecuteWithEnforcementContext,
   executor: () => Promise<T>,
 ): Promise<ExecuteWithEnforcementResult<T>> {
-  const enforcement = await enforceAgentAction(request, context);
+  const enforcement = await enforceAgentAction(request, {
+    permissionLevel: context.permissionLevel,
+    ...(context.approval !== undefined ? { approval: context.approval } : {}),
+    ...(context.environment !== undefined ? { environment: context.environment } : {}),
+    ...(context.approvalId !== undefined ? { approvalId: context.approvalId } : {}),
+  });
 
   if (enforcement.decision === "block") {
     throw new EnforcementBlockedError(enforcement.reason, enforcement.auditId);

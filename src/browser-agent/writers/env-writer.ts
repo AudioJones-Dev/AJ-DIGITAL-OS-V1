@@ -1,12 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../../security/agents/agent-registry.js";
 
 export async function writeEnvTemplate(
   outputPath: string,
   fields: Record<string, string>,
 ): Promise<void> {
   const dir = path.dirname(outputPath);
-  await fs.mkdir(dir, { recursive: true });
+  const agentContext = resolveAgentContext("browser-agent-env-writer");
 
   const lines: string[] = [
     "# Auto-generated config template",
@@ -20,7 +25,33 @@ export async function writeEnvTemplate(
     lines.push(`${envKey}=${value}`);
   }
 
-  await fs.writeFile(outputPath, lines.join("\n") + "\n", "utf-8");
+  try {
+    const enforced = await executeWithEnforcement(
+      {
+        agentId: agentContext.agentId,
+        actionType: "write_file",
+        target: outputPath,
+      },
+      {
+        permissionLevel: agentContext.permissionLevel,
+        environment: agentContext.environment,
+      },
+      async () => {
+        await fs.mkdir(dir, { recursive: true });
+        await fs.writeFile(outputPath, lines.join("\n") + "\n", "utf-8");
+        return { ok: true };
+      },
+    );
+
+    if (enforced.status === "approval_required") {
+      throw new Error(`Env template write requires approval: ${enforced.enforcement.reason}`);
+    }
+  } catch (err: unknown) {
+    if (err instanceof EnforcementBlockedError) {
+      throw new Error(`Env template write blocked by enforcement: ${err.message}`);
+    }
+    throw err;
+  }
 }
 
 function toScreamingSnake(input: string): string {

@@ -3,6 +3,11 @@ import path from "node:path";
 
 import { DeliverableSchema } from "../schemas/deliverable.schema.js";
 import type { DeliverableRecord } from "../types/deliverable.types.js";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../security/agents/agent-registry.js";
 
 export interface ListDeliverablesInput {
   limit?: number;
@@ -28,12 +33,40 @@ export class DeliverableStore {
 
   async save(deliverable: DeliverableRecord): Promise<DeliverableRecord> {
     const parsedDeliverable = DeliverableSchema.parse(deliverable);
-    await mkdir(this.registryDirectory, { recursive: true });
-    await writeFile(
-      this.getDeliverablePath(parsedDeliverable.createdAt, parsedDeliverable.deliverableId),
-      `${JSON.stringify(parsedDeliverable, null, 2)}\n`,
-      "utf-8",
-    );
+    const outputPath = this.getDeliverablePath(parsedDeliverable.createdAt, parsedDeliverable.deliverableId);
+    const agentContext = resolveAgentContext("deliverable-store");
+    try {
+      const enforced = await executeWithEnforcement(
+        {
+          agentId: agentContext.agentId,
+          actionType: "write_file",
+          target: outputPath,
+        },
+        {
+          permissionLevel: agentContext.permissionLevel,
+          environment: agentContext.environment,
+        },
+        async () => {
+          await mkdir(this.registryDirectory, { recursive: true });
+          await writeFile(
+            outputPath,
+            `${JSON.stringify(parsedDeliverable, null, 2)}\n`,
+            "utf-8",
+          );
+          return { ok: true };
+        },
+      );
+
+      if (enforced.status === "approval_required") {
+        throw new Error(`Deliverable save requires approval: ${enforced.enforcement.reason}`);
+      }
+    } catch (err: unknown) {
+      if (err instanceof EnforcementBlockedError) {
+        throw new Error(`Deliverable save blocked by enforcement: ${err.message}`);
+      }
+      throw err;
+    }
+
     return parsedDeliverable;
   }
 

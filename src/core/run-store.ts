@@ -3,6 +3,11 @@ import path from "node:path";
 
 import { RunSchema } from "../schemas/run.schema.js";
 import type { RunRecord } from "../types/run.types.js";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../security/agents/agent-registry.js";
 
 /**
  * File-backed local persistence for run records.
@@ -19,8 +24,35 @@ export class RunStore {
    */
   async save(run: RunRecord): Promise<RunRecord> {
     const parsedRun = RunSchema.parse(run);
-    await mkdir(this.runsDirectory, { recursive: true });
-    await writeFile(this.getRunPath(parsedRun.runId), `${JSON.stringify(parsedRun, null, 2)}\n`, "utf-8");
+    const agentContext = resolveAgentContext("run-store");
+    try {
+      const enforced = await executeWithEnforcement(
+        {
+          agentId: agentContext.agentId,
+          actionType: "write_file",
+          target: this.getRunPath(parsedRun.runId),
+        },
+        {
+          permissionLevel: agentContext.permissionLevel,
+          environment: agentContext.environment,
+        },
+        async () => {
+          await mkdir(this.runsDirectory, { recursive: true });
+          await writeFile(this.getRunPath(parsedRun.runId), `${JSON.stringify(parsedRun, null, 2)}\n`, "utf-8");
+          return { ok: true };
+        },
+      );
+
+      if (enforced.status === "approval_required") {
+        throw new Error(`Run save requires approval: ${enforced.enforcement.reason}`);
+      }
+    } catch (err: unknown) {
+      if (err instanceof EnforcementBlockedError) {
+        throw new Error(`Run save blocked by enforcement: ${err.message}`);
+      }
+      throw err;
+    }
+
     return parsedRun;
   }
 

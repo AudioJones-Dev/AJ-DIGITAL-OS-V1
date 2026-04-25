@@ -8,6 +8,11 @@ import {
   logWebhookVerificationFailure,
 } from "../security/security-audit-log.js";
 import { verifyWebhookRequest } from "../security/webhook-signature.js";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../security/agents/agent-registry.js";
 
 const ApprovalWebhookPayloadSchema = z.object({
   runId: z.string().min(1),
@@ -112,11 +117,54 @@ export const handleApprovalWebhook = async (
     resolverInput.source = parsedPayload.data.source;
   }
 
-  const resolution = await approvalResolver.resolve({
-    runId: resolverInput.runId,
-    decision: resolverInput.decision,
-    ...(resolverInput.actor ? { actor: resolverInput.actor } : {}),
-  });
+  let resolution;
+  try {
+    const agentContext = resolveAgentContext("approval-webhook");
+    const wrapped = await executeWithEnforcement(
+      {
+        agentId: agentContext.agentId,
+        actionType: "remote_change",
+        target: resolverInput.runId,
+      },
+      {
+        permissionLevel: agentContext.permissionLevel,
+        approval: { approved: true },
+        environment: agentContext.environment,
+      },
+      async () => approvalResolver.resolve({
+        runId: resolverInput.runId,
+        decision: resolverInput.decision,
+        ...(resolverInput.actor ? { actor: resolverInput.actor } : {}),
+      }),
+    );
+
+    if (wrapped.status === "approval_required") {
+      return {
+        ok: false,
+        statusCode: 422,
+        errors: [wrapped.enforcement.reason],
+        warnings: [],
+      };
+    }
+
+    resolution = wrapped.result;
+  } catch (err: unknown) {
+    if (err instanceof EnforcementBlockedError) {
+      return {
+        ok: false,
+        statusCode: 422,
+        errors: [err.message],
+        warnings: [],
+      };
+    }
+
+    return {
+      ok: false,
+      statusCode: 500,
+      errors: [err instanceof Error ? err.message : "Approval resolution failed."],
+      warnings: [],
+    };
+  }
 
   return resolution.ok
     ? {

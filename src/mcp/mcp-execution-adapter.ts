@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { dispatchToTool } from "./mcp-bridge.js";
 import { logExecution } from "./mcp-logger.js";
+import {
+  assertAgentToolAccess,
+  resolveAgentContext,
+} from "../security/agents/agent-registry.js";
 
 export type McpTaskType =
   | "read_file"
@@ -32,6 +36,8 @@ export async function executeMcpTask(request: McpExecutionRequest): Promise<McpE
   const startMs = Date.now();
   const taskId = request.taskId ?? randomUUID();
   const agentId = request.agentId ?? "mcp-adapter";
+  const agentContext = resolveAgentContext(agentId);
+  assertAgentToolAccess(agentContext, request.taskType);
 
   if (request.dryRun) {
     console.log("[MCP-ADAPTER] dry-run — skipping execution", { taskType: request.taskType });
@@ -41,8 +47,9 @@ export async function executeMcpTask(request: McpExecutionRequest): Promise<McpE
   const bridgeResult = await dispatchToTool({
     taskType: request.taskType,
     task: request.task,
-    agentId,
-    permissionLevel: 2,
+    agentId: agentContext.agentId,
+    permissionLevel: agentContext.permissionLevel,
+    environment: agentContext.environment,
     ...(request.targetPath !== undefined ? { targetPath: request.targetPath } : {}),
     ...(request.command !== undefined ? { command: request.command } : {}),
   });
