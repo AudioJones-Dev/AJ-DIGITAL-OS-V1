@@ -1,0 +1,47 @@
+[
+  {
+    "runId": "run-test-1",
+    "agentId": "agent-1",
+    "controlState": "queued",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "runId": "run-test-2",
+    "agentId": "agent-1",
+    "controlState": "planning",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z",
+    "previousState": "queued"
+  },
+  {
+    "runId": "run-test-3",
+    "agentId": "agent-2",
+    "controlState": "queued",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "runId": "run-approve-1",
+    "agentId": "agent-1",
+    "controlState": "running",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z",
+    "previousState": "waiting_for_approval"
+  },
+  {
+    "runId": "run-rerun-1",
+    "agentId": "agent-1",
+    "controlState": "failed",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z",
+    "previousState": "planning"
+  },
+  {
+    "runId": "run-inspect-1",
+    "agentId": "agent-1",
+    "controlState": "queued",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  }
+]

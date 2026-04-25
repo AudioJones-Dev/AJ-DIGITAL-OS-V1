@@ -42,7 +42,22 @@ import {
   assertAgentTenantAccess,
   assertAgentToolAccess,
   resolveAgentContext,
+  listAgents,
 } from "../security/agents/agent-registry.js";
+import {
+  listControlRuns,
+  getControlRun,
+  getAuditEvents,
+  executeControlAction,
+  type RunControlState,
+  type ControlAction,
+} from "../control-plane/run-registry/index.js";
+import {
+  getRecentEvents,
+} from "../attribution/attribution-tracker.js";
+import {
+  getMAPStats,
+} from "../attribution/map-validator.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -890,6 +905,83 @@ export function startHermesApi(port?: number): void {
         res.writeHead(500, { "Content-Type": "text/plain" });
         res.end("Error collecting metrics");
       });
+      return;
+    }
+
+    // ── Control Plane: list runs ────────────────────────────────────
+    const controlRunsListMatch = req.url?.match(/^\/control\/runs(?:\?(.*))?$/);
+    if (controlRunsListMatch && req.method === "GET") {
+      const params = new URLSearchParams(controlRunsListMatch[1] ?? "");
+      const limit = params.has("limit") ? Number(params.get("limit")) : 50;
+      const state = params.get("state") as RunControlState | null;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(listControlRuns({ ...(state ? { state } : {}), limit })));
+      return;
+    }
+
+    // ── Control Plane: run action ───────────────────────────────────
+    const controlRunActionMatch = req.url?.match(/^\/control\/runs\/([^/]+)\/action$/);
+    if (controlRunActionMatch && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as { action?: ControlAction; performedBy?: string; reason?: string };
+          const action = body.action;
+          if (!action) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "action is required" }));
+            return;
+          }
+          const result = await executeControlAction(
+            decodeURIComponent(controlRunActionMatch[1]!),
+            action,
+            body.performedBy ?? "api",
+            body.reason,
+          );
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Control Plane: run audit log ────────────────────────────────
+    const controlRunAuditMatch = req.url?.match(/^\/control\/runs\/([^/]+)\/audit(?:\?(.*))?$/);
+    if (controlRunAuditMatch && req.method === "GET") {
+      const params = new URLSearchParams(controlRunAuditMatch[2] ?? "");
+      const limit = params.has("limit") ? Number(params.get("limit")) : 50;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(getAuditEvents(decodeURIComponent(controlRunAuditMatch[1]!), limit)));
+      return;
+    }
+
+    // ── Control Plane: single run ───────────────────────────────────
+    const controlRunSingleMatch = req.url?.match(/^\/control\/runs\/([^/]+)$/);
+    if (controlRunSingleMatch && req.method === "GET") {
+      const run = getControlRun(decodeURIComponent(controlRunSingleMatch[1]!));
+      if (!run) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "not found" }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(run));
+      return;
+    }
+
+    // ── Control Plane: agents ───────────────────────────────────────
+    if (req.url === "/control/agents" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(listAgents()));
+      return;
+    }
+
+    // ── MAP Attribution stats ───────────────────────────────────────
+    if (req.url === "/attribution/map-stats" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(getMAPStats(getRecentEvents(500))));
       return;
     }
 

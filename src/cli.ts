@@ -41,6 +41,10 @@ import {
   HermesStartCommand,
   HermesStopCommand,
   HermesStatusCommand,
+  ListRunsCommand,
+  InspectRunCommand,
+  ControlRunCommand,
+  AuditRunCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -577,6 +581,47 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
         {
           const result = await new HermesStatusCommand().run({
             json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "list-runs":
+        {
+          const stateFlag = getStringFlag(parsed.flags, "state") as import("./control-plane/run-registry/run-control-types.js").RunControlState | undefined;
+          const result = await new ListRunsCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(stateFlag ? { state: stateFlag } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "inspect-run":
+        {
+          const result = await new InspectRunCommand().run({
+            runId,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "control-run":
+        {
+          const actionFlag = getStringFlag(parsed.flags, "action") ?? "";
+          const byFlag = getStringFlag(parsed.flags, "by");
+          const reasonFlag = getStringFlag(parsed.flags, "reason");
+          const result = await new ControlRunCommand().run({
+            runId,
+            action: actionFlag as import("./control-plane/run-registry/run-control-types.js").ControlAction,
+            ...(byFlag ? { by: byFlag } : {}),
+            ...(reasonFlag ? { reason: reasonFlag } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "audit-run":
+        {
+          const result = await new AuditRunCommand().run({
+            runId,
+            json: hasFlag(parsed.flags, "json"),
+            ...(limit !== undefined ? { limit } : {}),
           });
           return result.ok ? 0 : 1;
         }
