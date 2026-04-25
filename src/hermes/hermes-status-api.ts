@@ -60,6 +60,26 @@ import { executeControlAction } from "../control-plane/run-registry/control-acti
 import { getAuditEvents } from "../control-plane/run-registry/run-audit-log.js";
 import { listAgents } from "../security/agents/agent-registry.js";
 import type { ControlAction } from "../control-plane/run-registry/run-control-types.js";
+import {
+  validateStateTransition,
+  getAllowedTransitions as getAllowedRunStateTransitions,
+  isTerminalState,
+} from "../core/state/run-state-machine.js";
+import { VALID_RUN_STATE_TRANSITIONS, type RunState } from "../core/state/run-state-types.js";
+import { evaluateActionRisk } from "../core/policy/policy-engine.js";
+import {
+  listSystemEvents,
+  getEventsByRunId,
+  getEventsByTenantId,
+} from "../core/events/event-ledger.js";
+import { replayRunEvents } from "../core/events/event-replay.js";
+import {
+  listSchemas as listCoreSchemas,
+  getSchema as getCoreSchema,
+  exportJsonSchema,
+} from "../core/schemas/schema-registry.js";
+import { checkIdempotency } from "../core/idempotency/idempotency-store.js";
+import { getMetricSnapshot } from "../core/observability/metrics-store.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -1074,6 +1094,210 @@ export function startHermesApi(port?: number): void {
     if (req.url === "/control/agents" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, data: listAgents() }));
+      return;
+    }
+
+    // ── Operating Core: health ─────────────────────────────────────────
+    if (req.url === "/core/health" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: true,
+          modules: {
+            state: "v1",
+            policy: "v1",
+            events: "v1",
+            schemas: "v1",
+            idempotency: "v1",
+            observability: "v1",
+            commands: "v1",
+          },
+          timestamp: new Date().toISOString(),
+        }),
+      );
+      return;
+    }
+
+    // ── Operating Core: state transitions table ───────────────────────
+    if (req.url === "/core/state/transitions" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, transitions: VALID_RUN_STATE_TRANSITIONS }));
+      return;
+    }
+
+    // ── Operating Core: validate transition ───────────────────────────
+    if (req.url === "/core/state/validate" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const from = body["from"] as RunState | undefined;
+          const to = body["to"] as RunState | undefined;
+          const force = body["force"] === true;
+          if (!from || !to) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "from and to are required" }));
+            return;
+          }
+          const validation = validateStateTransition(from, to, force);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: true,
+              ...validation,
+              terminal: isTerminalState(from),
+              allowed: getAllowedRunStateTransitions(from),
+            }),
+          );
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Operating Core: policy evaluate ───────────────────────────────
+    if (req.url === "/core/policy/evaluate" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const action = String(body["action"] ?? "").trim();
+          const environment = (body["environment"] as
+            | "local"
+            | "dev"
+            | "staging"
+            | "production"
+            | undefined) ?? "local";
+          const tenantId = body["tenantId"] !== undefined ? String(body["tenantId"]) : undefined;
+          if (!action) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "action is required" }));
+            return;
+          }
+          const result = evaluateActionRisk(action, environment, tenantId);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, ...result }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Operating Core: events list ───────────────────────────────────
+    const coreEventsListMatch = req.url?.match(/^\/core\/events(?:\?(.*))?$/);
+    if (coreEventsListMatch && req.method === "GET") {
+      const params = new URLSearchParams(coreEventsListMatch[1] ?? "");
+      const filter: Parameters<typeof listSystemEvents>[0] = {};
+      const cat = params.get("category");
+      if (cat) filter.category = cat as Parameters<typeof listSystemEvents>[0] extends infer F ? F extends { category?: infer C } ? C : never : never;
+      const runIdParam = params.get("runId");
+      if (runIdParam) filter.runId = runIdParam;
+      const tenantIdParam = params.get("tenantId");
+      if (tenantIdParam) filter.tenantId = tenantIdParam;
+      const limitRaw = params.get("limit");
+      if (limitRaw) filter.limit = Math.max(1, parseInt(limitRaw, 10) || 100);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, events: listSystemEvents(filter) }));
+      return;
+    }
+
+    // ── Operating Core: events by run ─────────────────────────────────
+    const coreEventsRunMatch = req.url?.match(/^\/core\/events\/run\/([^/]+)$/);
+    if (coreEventsRunMatch && req.method === "GET") {
+      const runId = decodeURIComponent(coreEventsRunMatch[1]!);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, events: getEventsByRunId(runId) }));
+      return;
+    }
+
+    // ── Operating Core: events by tenant ──────────────────────────────
+    const coreEventsTenantMatch = req.url?.match(/^\/core\/events\/tenant\/([^/]+)$/);
+    if (coreEventsTenantMatch && req.method === "GET") {
+      const tenantId = decodeURIComponent(coreEventsTenantMatch[1]!);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, events: getEventsByTenantId(tenantId) }));
+      return;
+    }
+
+    // ── Operating Core: replay run events ─────────────────────────────
+    if (req.url === "/core/events/replay" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const runId = String(body["runId"] ?? "").trim();
+          if (!runId) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "runId is required" }));
+            return;
+          }
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, events: replayRunEvents(runId) }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Operating Core: schemas list ──────────────────────────────────
+    if (req.url === "/core/schemas" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, schemas: listCoreSchemas() }));
+      return;
+    }
+
+    // ── Operating Core: schema detail ─────────────────────────────────
+    const coreSchemaMatch = req.url?.match(/^\/core\/schemas\/([^/]+)$/);
+    if (coreSchemaMatch && req.method === "GET") {
+      const name = decodeURIComponent(coreSchemaMatch[1]!);
+      const reg = getCoreSchema(name);
+      if (!reg) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Schema not found" }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: true,
+          name: reg.name,
+          version: reg.version,
+          jsonSchema: exportJsonSchema(name),
+        }),
+      );
+      return;
+    }
+
+    // ── Operating Core: idempotency check ─────────────────────────────
+    if (req.url === "/core/idempotency/check" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const idempotencyKey = String(body["idempotencyKey"] ?? "").trim();
+          const commandHash = String(body["commandHash"] ?? "").trim();
+          if (!idempotencyKey || !commandHash) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "idempotencyKey and commandHash are required" }));
+            return;
+          }
+          const result = checkIdempotency(idempotencyKey, commandHash);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, ...result }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Operating Core: metrics snapshot ──────────────────────────────
+    if (req.url === "/core/metrics" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, metrics: getMetricSnapshot() }));
       return;
     }
 

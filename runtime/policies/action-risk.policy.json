@@ -1,0 +1,22 @@
+{
+  "policy": "action-risk",
+  "version": "1.0.0",
+  "description": "Maps control / command actions to risk tiers used by the policy engine.",
+  "rules": {
+    "default": "medium",
+    "actions": {
+      "inspect": "low",
+      "read": "low",
+      "list": "low",
+      "pause": "medium",
+      "resume": "medium",
+      "approve": "medium",
+      "reject": "medium",
+      "rerun": "high",
+      "escalate": "high",
+      "cancel": "high",
+      "force_unlock": "high",
+      "delete": "high"
+    }
+  }
+}

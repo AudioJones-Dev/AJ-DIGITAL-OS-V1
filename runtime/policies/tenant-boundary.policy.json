@@ -1,0 +1,10 @@
+{
+  "policy": "tenant-boundary",
+  "version": "1.0.0",
+  "description": "Enforces tenant isolation. Cross-tenant access is always blocked. Production requires a tenantId for any non-low-risk action.",
+  "rules": {
+    "requireTenantIdInProduction": true,
+    "requireTenantIdInStaging": false,
+    "blockCrossTenant": true
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "policy": "environment",
+  "version": "1.0.0",
+  "description": "Per-environment restrictions on actions.",
+  "rules": {
+    "allowedEnvironments": ["local", "dev", "staging", "production"],
+    "restrictedActions": {
+      "local": [],
+      "dev": [],
+      "staging": ["force_unlock", "delete"],
+      "production": ["force_unlock", "delete"]
+    }
+  }
+}

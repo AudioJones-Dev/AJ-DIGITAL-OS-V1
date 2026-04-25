@@ -1,0 +1,14 @@
+{
+  "policy": "cache-access",
+  "version": "1.0.0",
+  "description": "Cache-tier access risk policy.",
+  "rules": {
+    "default": "low",
+    "actions": {
+      "cache_read": "low",
+      "cache_write": "medium",
+      "cache_evict": "medium",
+      "cache_purge": "high"
+    }
+  }
+}
