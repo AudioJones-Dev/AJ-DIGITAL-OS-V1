@@ -56,7 +56,11 @@ structured agents to execute at the speed of software.
         ↓
 [FEEDBACK LOOP LAYER]       ← Memory runtime, pattern extraction, scoring iteration
         ↓
-[SECURITY / TRUST LAYER]    ← Trust boundaries, permissions, secrets, audit, incident response
+[SECURITY / TRUST LAYER]    ← Trust boundaries, permissions, secrets, audit, incident response + runtime enforcement engine
+        ↓
+  [Approval System]         ← Human approval lifecycle for high-risk actions
+  [MCP Secure Exec Layer]   ← Registered tool policy + secure execution wrapper
+  [Client Isolation Layer]  ← Tenant context, policy checks, data separation
         ↓
 [GUARDRAILS LAYER]          ← Security, policy gates, brand voice, compliance checks
         ↓
@@ -86,7 +90,7 @@ structured agents to execute at the speed of software.
 | 7. Interface | 40% | Partial | 50+ CLI commands (full operator surface); local web shell (ui-start); brand/skill/model selection | Next.js admin dashboard; agent control panel; client portal | High | Scaffold Next.js dashboard using existing read models |
 | 8. Attribution / ROI | 25% | Defined | Distribution metrics (`distribution-metrics.ts`), attribution schema in run record, BEL attribution event spec | Lead-to-revenue tracking, ROI per workflow/agent/content, real data flowing | High | Wire attribution recording to orchestrator + publisher |
 | 9. Feedback Loop | 55% | Partial | Memory runtime (beforeRun/afterRun/onFailure hooks), retrieval policy (12K budget, 4 slots), Hermes pattern extraction (daily), prediction error gauge | Formal compare-vs-prediction loop, scoring adjustment automation | Medium | Wire prediction-error feedback into scoring update path |
-| 10. Guardrails | 65% | Functional | HMAC webhook security, replay protection, timing-safe compare, BEL policy engine, MCP policy, Zod validation at all boundaries | Brand voice runtime enforcement, content compliance filter, output quality gate | Medium | Add brand voice check to content agent output path |
+| 10. Guardrails | 65% | Functional | HMAC webhook security, replay protection, timing-safe compare, BEL policy engine, MCP policy, Zod validation at all boundaries, agent permission enforcement scaffold | Brand voice runtime enforcement, content compliance filter, output quality gate, full permission hook-up across all agent runtimes | Medium | Wire permission enforcement engine into all execution entry points |
 | 11. Offer Engine | 30% | Defined | Stripe checkout (3 tiers), HMAC webhook verification, Supabase provisioning stub | AI readiness scoring algorithm, qualification framework (80/50 threshold), offer routing | High | Build readiness scorer tied to lead intake |
 | 12. Module Layer | 30% | Defined | 5 skill markdown files (SEO, lead-gen, transcript, blog, publish-to-sanity); skill loader/executor/registry | SEO/AEO execution engine, lead gen pipeline, voice agent, CRM intelligence layer | Medium | Activate skills as real executable modules vs markdown only |
 | 13. Infrastructure | 75% | Functional | Node.js CLI ✅, Neon/Postgres ✅, Supabase ✅, Ollama ✅, OpenAI/Anthropic ✅, Cloudflare R2 client ✅, Telegram control plane ✅, Docker + Prometheus/Grafana ✅ | Next.js frontend, n8n server deployment, Windows path portability (PR-04) | Medium | Fix Windows paths; containerize app baseline |
@@ -123,6 +127,9 @@ The gap is business-logic completeness — the intelligence scoring, attribution
 but not fully executing. You can run internal workflows. You cannot confidently deploy to clients yet.
 
 **Required core layer reference:** Security / Trust Layer requirements are defined in `docs/system/AJ_DIGITAL_OS_SECURITY_TRUST_LAYER_SPEC.md`.
+**Runtime enforcement reference:** Agent Permission Enforcement requirements are defined in `docs/system/AJ_DIGITAL_OS_AGENT_PERMISSION_ENFORCEMENT_SPEC.md`.
+**Execution wrapper reference:** `src/security/permissions/enforced-execution.ts` standardizes allow/block/approval checks before execution.
+**Security sublayer references:** `docs/system/AJ_DIGITAL_OS_APPROVAL_SYSTEM_SPEC.md`, `docs/system/AJ_DIGITAL_OS_MCP_SECURE_EXECUTION_LAYER_SPEC.md`, and `docs/system/AJ_DIGITAL_OS_CLIENT_ISOLATION_MULTI_TENANT_SPEC.md`.
 
 **Path to Early Production (70%):** Close the Attribution layer (+15% impact), complete BEL v3 (+5%), scaffold the
 Next.js dashboard (+5%), and wire the AEO scoring engine (+5%). That's the fastest 20% gain.

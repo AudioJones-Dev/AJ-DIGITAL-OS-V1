@@ -24,6 +24,15 @@ Its function is to:
 
 Security in AJ Digital OS is not a separate bolt-on feature. It is an operating requirement across every layer that can execute, connect, store, or publish.
 
+Runtime enforcement mechanism:
+
+- Security / Trust policy is enforced at runtime by the Agent Permission Enforcement System
+- specification: `docs/system/AJ_DIGITAL_OS_AGENT_PERMISSION_ENFORCEMENT_SPEC.md`
+- shared execution wrapper: `src/security/permissions/enforced-execution.ts` (`executeWithEnforcement`)
+- approval lifecycle: `docs/system/AJ_DIGITAL_OS_APPROVAL_SYSTEM_SPEC.md`
+- MCP secure execution: `docs/system/AJ_DIGITAL_OS_MCP_SECURE_EXECUTION_LAYER_SPEC.md`
+- client isolation and tenancy: `docs/system/AJ_DIGITAL_OS_CLIENT_ISOLATION_MULTI_TENANT_SPEC.md`
+
 ---
 
 ## 2. Core Security Principles
@@ -176,6 +185,14 @@ Rules:
 - no agent should self-escalate without an explicit human-approved control path
 - permission level must be logged with the task identity for ACP and MCP sessions
 
+Runtime reference:
+
+- Permission levels and execution outcomes are enforced by `src/security/permissions/enforcement-engine.ts`
+- category classification is handled by `src/security/permissions/action-classifier.ts`
+- policy decisions are handled by `src/security/permissions/permission-policy.ts`
+- approvals are handled by `src/security/permissions/approval-gate.ts`
+- audit records are written by `src/security/permissions/audit-logger.ts`
+
 ---
 
 ## 8. Command Safety Policy
@@ -238,6 +255,7 @@ Rules:
 - ACP sessions must be logged with agent identity, task, and permission level
 - enforce policy before execution, not after
 - prefer capability discovery and explicit tool registration over dynamic unrestricted access
+- route MCP tool calls through the secure executor layer (`src/security/mcp/mcp-secure-executor.ts`)
 
 ---
 
@@ -274,6 +292,10 @@ Rules:
 - ensure support artifacts and debugging data do not quietly inherit production client data
 
 Client isolation is mandatory for trust. Shared infra does not justify shared identity, shared secrets, or shared data access.
+
+Operational control reference:
+
+- tenant context and policy checks are defined in `src/security/tenancy/tenant-context.ts` and `src/security/tenancy/tenant-policy.ts`
 
 ---
 
@@ -383,6 +405,10 @@ Reasoning:
 - Security governs whether an action may occur; guardrails govern whether it should occur within business standards
 
 The master architecture schema must always include this layer explicitly.
+
+Required runtime layer linkage:
+
+- The Security / Trust Layer must reference the Agent Permission Enforcement System as the runtime control mechanism for action-level allow/block/approval decisions.
 
 ---
 

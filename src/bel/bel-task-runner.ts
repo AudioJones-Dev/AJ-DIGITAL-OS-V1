@@ -69,6 +69,8 @@ export async function runBelTask(req: BelTaskRequest): Promise<BelTaskResult> {
   const result = await dispatchToTool({
     taskType: bridgeTaskType,
     task: req.task,
+    agentId: req.agentId,
+    permissionLevel: tool === "browser" ? 4 : 2,
     ...(targetPath !== undefined ? { targetPath } : {}),
     ...(command !== undefined ? { command } : {}),
     ...(tool === "browser" && req.params !== undefined

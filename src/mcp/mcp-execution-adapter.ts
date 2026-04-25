@@ -41,6 +41,8 @@ export async function executeMcpTask(request: McpExecutionRequest): Promise<McpE
   const bridgeResult = await dispatchToTool({
     taskType: request.taskType,
     task: request.task,
+    agentId,
+    permissionLevel: 2,
     ...(request.targetPath !== undefined ? { targetPath: request.targetPath } : {}),
     ...(request.command !== undefined ? { command: request.command } : {}),
   });
