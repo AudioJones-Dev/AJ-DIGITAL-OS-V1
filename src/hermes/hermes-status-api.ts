@@ -56,6 +56,22 @@ import {
   listControlRuns,
   getControlRun,
 } from "../control-plane/run-registry/run-control-store.js";
+import { ingestDocument } from "../retrieval/retrieval-ingestor.js";
+import { searchRetrieval } from "../retrieval/retrieval-search.js";
+import { createContextPack } from "../retrieval/retrieval-context.js";
+import {
+  getDocument,
+  getRetrievalTrace,
+  listDocuments,
+  listRetrievalTraces,
+} from "../retrieval/retrieval-store.js";
+import type {
+  RetrievalEnvironment,
+  RetrievalIngestRequest,
+  RetrievalNamespace,
+  RetrievalSearchRequest,
+  RetrievalSourceType,
+} from "../retrieval/retrieval-types.js";
 import { executeControlAction } from "../control-plane/run-registry/control-actions.js";
 import { getAuditEvents } from "../control-plane/run-registry/run-audit-log.js";
 import { listAgents } from "../security/agents/agent-registry.js";
@@ -1074,6 +1090,184 @@ export function startHermesApi(port?: number): void {
     if (req.url === "/control/agents" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, data: listAgents() }));
+      return;
+    }
+
+    // ── Retrieval: ingest ───────────────────────────────────────────
+    if (req.url === "/retrieval/ingest" && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const namespace = body["namespace"] as RetrievalNamespace | undefined;
+          const title = typeof body["title"] === "string" ? body["title"] : undefined;
+          const content = typeof body["content"] === "string" ? body["content"] : undefined;
+          const sourceType = body["sourceType"] as RetrievalSourceType | undefined;
+          if (!namespace || !title || !content || !sourceType) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "namespace, title, content, sourceType are required" }));
+            return;
+          }
+          const ingestRequest: RetrievalIngestRequest = {
+            namespace,
+            title,
+            content,
+            sourceType,
+            ...(typeof body["tenantId"] === "string" ? { tenantId: body["tenantId"] } : {}),
+            ...(typeof body["sourceUri"] === "string" ? { sourceUri: body["sourceUri"] } : {}),
+            ...(typeof body["version"] === "string" ? { version: body["version"] } : {}),
+            ...(typeof body["actor"] === "string" ? { actor: body["actor"] } : {}),
+            ...(typeof body["environment"] === "string"
+              ? { environment: body["environment"] as RetrievalEnvironment }
+              : {}),
+          };
+          const result = await ingestDocument(ingestRequest);
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Retrieval: search ───────────────────────────────────────────
+    if (req.url === "/retrieval/search" && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const query = typeof body["query"] === "string" ? body["query"] : undefined;
+          const namespaces = Array.isArray(body["namespaces"])
+            ? (body["namespaces"] as RetrievalNamespace[])
+            : undefined;
+          const environment =
+            typeof body["environment"] === "string"
+              ? (body["environment"] as RetrievalEnvironment)
+              : "development";
+          if (!query || !namespaces || namespaces.length === 0) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "query and namespaces are required" }));
+            return;
+          }
+          const searchRequest: RetrievalSearchRequest = {
+            query,
+            namespaces,
+            environment,
+            maxResults:
+              typeof body["maxResults"] === "number" ? body["maxResults"] : 10,
+            ...(typeof body["tenantId"] === "string" ? { tenantId: body["tenantId"] } : {}),
+            ...(typeof body["minScore"] === "number" ? { minScore: body["minScore"] } : {}),
+            ...(typeof body["runId"] === "string" ? { runId: body["runId"] } : {}),
+            ...(typeof body["actor"] === "string" ? { actor: body["actor"] } : {}),
+          };
+          const result = await searchRetrieval(searchRequest);
+          res.writeHead(result.ok ? 200 : 403, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Retrieval: context pack ─────────────────────────────────────
+    if (req.url === "/retrieval/context-pack" && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const query = typeof body["query"] === "string" ? body["query"] : undefined;
+          const namespaces = Array.isArray(body["namespaces"])
+            ? (body["namespaces"] as RetrievalNamespace[])
+            : undefined;
+          const environment =
+            typeof body["environment"] === "string"
+              ? (body["environment"] as RetrievalEnvironment)
+              : "development";
+          if (!query || !namespaces || namespaces.length === 0) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "query and namespaces are required" }));
+            return;
+          }
+          const searchRequest: RetrievalSearchRequest = {
+            query,
+            namespaces,
+            environment,
+            maxResults:
+              typeof body["maxResults"] === "number" ? body["maxResults"] : 10,
+            ...(typeof body["tenantId"] === "string" ? { tenantId: body["tenantId"] } : {}),
+            ...(typeof body["minScore"] === "number" ? { minScore: body["minScore"] } : {}),
+            ...(typeof body["runId"] === "string" ? { runId: body["runId"] } : {}),
+            ...(typeof body["actor"] === "string" ? { actor: body["actor"] } : {}),
+          };
+          const pack = await createContextPack(searchRequest);
+          res.writeHead(pack.policyMeta.approved ? 200 : 403, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: pack.policyMeta.approved, data: pack }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Retrieval: list documents ──────────────────────────────────
+    if ((req.url === "/retrieval/documents" || req.url?.startsWith("/retrieval/documents?")) && req.method === "GET") {
+      const urlObj = new URL(req.url ?? "/retrieval/documents", "http://localhost");
+      const ns = urlObj.searchParams.get("namespace");
+      const tenant = urlObj.searchParams.get("tenantId");
+      const limitRaw = urlObj.searchParams.get("limit");
+      const filter: Parameters<typeof listDocuments>[0] = {};
+      if (ns) filter.namespace = ns as RetrievalNamespace;
+      if (tenant) filter.tenantId = tenant;
+      if (limitRaw) filter.limit = Math.max(1, parseInt(limitRaw, 10) || 50);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: listDocuments(filter) }));
+      return;
+    }
+
+    // ── Retrieval: get document by id ──────────────────────────────
+    const retrievalDocMatch = req.url?.match(/^\/retrieval\/documents\/([^/]+)$/);
+    if (retrievalDocMatch && req.method === "GET") {
+      const id = decodeURIComponent(retrievalDocMatch[1]!);
+      const doc = getDocument(id);
+      if (!doc) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Document not found" }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: doc }));
+      return;
+    }
+
+    // ── Retrieval: list traces ─────────────────────────────────────
+    if ((req.url === "/retrieval/traces" || req.url?.startsWith("/retrieval/traces?")) && req.method === "GET") {
+      const urlObj = new URL(req.url ?? "/retrieval/traces", "http://localhost");
+      const tenant = urlObj.searchParams.get("tenantId");
+      const runIdParam = urlObj.searchParams.get("runId");
+      const limitRaw = urlObj.searchParams.get("limit");
+      const filter: Parameters<typeof listRetrievalTraces>[0] = {};
+      if (tenant) filter.tenantId = tenant;
+      if (runIdParam) filter.runId = runIdParam;
+      if (limitRaw) filter.limit = Math.max(1, parseInt(limitRaw, 10) || 100);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: listRetrievalTraces(filter) }));
+      return;
+    }
+
+    // ── Retrieval: get trace by id ─────────────────────────────────
+    const retrievalTraceMatch = req.url?.match(/^\/retrieval\/traces\/([^/]+)$/);
+    if (retrievalTraceMatch && req.method === "GET") {
+      const id = decodeURIComponent(retrievalTraceMatch[1]!);
+      const trace = getRetrievalTrace(id);
+      if (!trace) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Trace not found" }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: trace }));
       return;
     }
 

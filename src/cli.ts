@@ -47,6 +47,12 @@ import {
   InspectRunCommand,
   ControlRunCommand,
   AuditRunCommand,
+  RetrievalIngestCommand,
+  RetrievalSearchCommand,
+  RetrievalContextCommand,
+  RetrievalListDocsCommand,
+  RetrievalTracesCommand,
+  RetrievalInspectDocCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -58,6 +64,11 @@ import {
 import type { RunModelFilter } from "./services/observability/run-dashboard.js";
 import type { ApprovalDecision } from "./types/run.types.js";
 import type { ExecutionMode, ExecutionTarget } from "./services/execution/execution-policy.js";
+import type {
+  RetrievalEnvironment,
+  RetrievalNamespace,
+  RetrievalSourceType,
+} from "./retrieval/retrieval-types.js";
 
 interface ParsedArgs {
   command?: string;
@@ -660,6 +671,129 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           });
           return result.ok ? 0 : 1;
         }
+      case "retrieval-ingest":
+      case "retrieval:ingest":
+        {
+          const namespace = parseRetrievalNamespace(getStringFlag(parsed.flags, "namespace"));
+          const title = getStringFlag(parsed.flags, "title");
+          const sourceType = parseRetrievalSourceType(getStringFlag(parsed.flags, "sourceType"));
+          const filePath = getStringFlag(parsed.flags, "file");
+          const content = getStringFlag(parsed.flags, "content");
+          if (!namespace || !title || !sourceType) {
+            console.error("Usage: retrieval-ingest --namespace <ns> --title <t> --sourceType <markdown|text|json|jsonl> [--file <path> | --content <text>] [--tenantId <id>] [--sourceUri <uri>] [--version <v>] [--actor <name>] [--environment <env>]");
+            return 1;
+          }
+          const result = await new RetrievalIngestCommand().run({
+            namespace,
+            title,
+            sourceType,
+            ...(filePath ? { filePath } : {}),
+            ...(content ? { content } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(getStringFlag(parsed.flags, "sourceUri") ? { sourceUri: getStringFlag(parsed.flags, "sourceUri")! } : {}),
+            ...(getStringFlag(parsed.flags, "version") ? { version: getStringFlag(parsed.flags, "version")! } : {}),
+            ...(getStringFlag(parsed.flags, "actor") ? { actor: getStringFlag(parsed.flags, "actor")! } : {}),
+            ...((() => { const e = parseRetrievalEnvironment(getStringFlag(parsed.flags, "environment")); return e ? { environment: e } : {}; })()),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-search":
+      case "retrieval:search":
+        {
+          const queryRaw = getStringFlag(parsed.flags, "query");
+          const namespacesRaw = getStringFlag(parsed.flags, "namespaces");
+          if (!queryRaw || !namespacesRaw) {
+            console.error("Usage: retrieval-search --query <text> --namespaces <ns,ns,...> [--tenantId <id>] [--maxResults <n>] [--minScore <0..1>] [--environment <env>] [--runId <id>] [--actor <name>]");
+            return 1;
+          }
+          const namespaces = parseRetrievalNamespaces(namespacesRaw);
+          if (namespaces.length === 0) {
+            console.error("Invalid --namespaces value");
+            return 1;
+          }
+          const maxResultsRaw = getStringFlag(parsed.flags, "maxResults");
+          const minScoreRaw = getStringFlag(parsed.flags, "minScore");
+          const env = parseRetrievalEnvironment(getStringFlag(parsed.flags, "environment")) ?? "development";
+          const result = await new RetrievalSearchCommand().run({
+            query: queryRaw,
+            namespaces,
+            environment: env,
+            maxResults: maxResultsRaw ? Math.max(1, parseInt(maxResultsRaw, 10) || 10) : 10,
+            ...(minScoreRaw ? { minScore: Number(minScoreRaw) } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(getStringFlag(parsed.flags, "runId") ? { runId: getStringFlag(parsed.flags, "runId")! } : {}),
+            ...(getStringFlag(parsed.flags, "actor") ? { actor: getStringFlag(parsed.flags, "actor")! } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-context":
+      case "retrieval:context":
+        {
+          const queryRaw = getStringFlag(parsed.flags, "query");
+          const namespacesRaw = getStringFlag(parsed.flags, "namespaces");
+          if (!queryRaw || !namespacesRaw) {
+            console.error("Usage: retrieval-context --query <text> --namespaces <ns,ns,...> [--tenantId <id>] [--maxResults <n>] [--minScore <0..1>] [--environment <env>] [--runId <id>] [--actor <name>]");
+            return 1;
+          }
+          const namespaces = parseRetrievalNamespaces(namespacesRaw);
+          if (namespaces.length === 0) {
+            console.error("Invalid --namespaces value");
+            return 1;
+          }
+          const maxResultsRaw = getStringFlag(parsed.flags, "maxResults");
+          const minScoreRaw = getStringFlag(parsed.flags, "minScore");
+          const env = parseRetrievalEnvironment(getStringFlag(parsed.flags, "environment")) ?? "development";
+          const result = await new RetrievalContextCommand().run({
+            query: queryRaw,
+            namespaces,
+            environment: env,
+            maxResults: maxResultsRaw ? Math.max(1, parseInt(maxResultsRaw, 10) || 10) : 10,
+            ...(minScoreRaw ? { minScore: Number(minScoreRaw) } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(getStringFlag(parsed.flags, "runId") ? { runId: getStringFlag(parsed.flags, "runId")! } : {}),
+            ...(getStringFlag(parsed.flags, "actor") ? { actor: getStringFlag(parsed.flags, "actor")! } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-list-docs":
+      case "retrieval:list-docs":
+        {
+          const ns = parseRetrievalNamespace(getStringFlag(parsed.flags, "namespace"));
+          const limitRaw = getStringFlag(parsed.flags, "limit");
+          const result = await new RetrievalListDocsCommand().run({
+            ...(ns ? { namespace: ns } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(limitRaw ? { limit: Math.max(1, parseInt(limitRaw, 10) || 50) } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-traces":
+      case "retrieval:traces":
+        {
+          const limitRaw = getStringFlag(parsed.flags, "limit");
+          const result = await new RetrievalTracesCommand().run({
+            ...(getStringFlag(parsed.flags, "tenantId") ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(getStringFlag(parsed.flags, "runId") ? { runId: getStringFlag(parsed.flags, "runId")! } : {}),
+            ...(limitRaw ? { limit: Math.max(1, parseInt(limitRaw, 10) || 100) } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-inspect-doc":
+      case "retrieval:inspect-doc":
+        {
+          const documentId = getStringFlag(parsed.flags, "documentId") ?? "";
+          if (!documentId) { console.error("Usage: retrieval-inspect-doc --documentId <id>"); return 1; }
+          const result = await new RetrievalInspectDocCommand().run({
+            documentId,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
       default:
         printUnknownCommand(command);
         return 1;
@@ -806,6 +940,57 @@ function normalizeTrackRunView(value: string | undefined): TrackRunViewMode | un
 
 function isOpportunityTier(value: string | undefined): value is "high" | "medium" | "low" {
   return value === "high" || value === "medium" || value === "low";
+}
+
+function parseRetrievalNamespace(value: string | undefined): RetrievalNamespace | undefined {
+  switch (value) {
+    case "system_docs":
+    case "client_docs":
+    case "brand_voice":
+    case "workflow_docs":
+    case "content_assets":
+    case "aeo_research":
+    case "attribution_memory":
+    case "audit_memory":
+    case "tool_docs":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function parseRetrievalNamespaces(value: string): RetrievalNamespace[] {
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .map((s) => parseRetrievalNamespace(s))
+    .filter((s): s is RetrievalNamespace => s !== undefined);
+}
+
+function parseRetrievalSourceType(value: string | undefined): RetrievalSourceType | undefined {
+  switch (value) {
+    case "markdown":
+    case "text":
+    case "json":
+    case "jsonl":
+    case "pdf_stub":
+    case "docx_stub":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function parseRetrievalEnvironment(value: string | undefined): RetrievalEnvironment | undefined {
+  switch (value) {
+    case "production":
+    case "staging":
+    case "development":
+    case "test":
+      return value;
+    default:
+      return undefined;
+  }
 }
 
 function isDeliverableStatus(value: string | undefined): value is "draft" | "pending_approval" | "approved" | "published" | "failed" | "archived" {
