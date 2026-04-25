@@ -11,7 +11,16 @@ export type AttributionEventType =
   | "dag_node_failed"
   | "dag_node_retried"
   | "dag_run_completed"
-  | "dag_run_failed";
+  | "dag_run_failed"
+  | "map_evaluation_created"
+  | "map_decision_execute"
+  | "map_decision_improve"
+  | "map_decision_reconsider"
+  | "cera_cycle_created"
+  | "compound_score_created"
+  | "decision_path_scale"
+  | "decision_path_pivot"
+  | "decision_path_kill";
 
 export interface MAPScore {
   meaningful: boolean;
