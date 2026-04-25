@@ -93,6 +93,21 @@ import type {
   CacheNamespace,
   CacheRiskLevel,
 } from "../cache/cache-types.js";
+import {
+  createDagRun,
+  executeReadyNodes,
+  retryNode,
+  skipNode,
+} from "../bel/dag/dag-runtime.js";
+import { validateDagPlan } from "../bel/dag/dag-validator.js";
+import {
+  getDagRun,
+  listDagRuns,
+  saveDagRun,
+  getDagAuditEvents,
+  getNodeOutputs,
+} from "../bel/dag/dag-store.js";
+import type { BelDagPlan } from "../bel/dag/dag-types.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -1127,6 +1142,164 @@ export function startHermesApi(port?: number): void {
     if (req.url === "/control/agents" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, data: listAgents() }));
+      return;
+    }
+
+    // ── BEL v4 DAG: list runs ──────────────────────────────────────────
+    if ((req.url === "/dag/runs" || req.url?.startsWith("/dag/runs?")) && req.method === "GET") {
+      const urlObj = new URL(req.url ?? "/dag/runs", "http://localhost");
+      const statusParam = urlObj.searchParams.get("status");
+      const tenantParam = urlObj.searchParams.get("tenantId");
+      const limitRaw = urlObj.searchParams.get("limit");
+      const filter: Parameters<typeof listDagRuns>[0] = {};
+      if (statusParam !== null) filter.status = statusParam as import("../bel/dag/dag-types.js").BelDagRunStatus;
+      if (tenantParam !== null) filter.tenantId = tenantParam;
+      if (limitRaw !== null) filter.limit = Math.max(1, parseInt(limitRaw, 10) || 50);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: listDagRuns(filter) }));
+      return;
+    }
+
+    // ── BEL v4 DAG: create run ─────────────────────────────────────────
+    if (req.url === "/dag/runs" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const plan = body["plan"] as BelDagPlan | undefined;
+          if (!plan || typeof plan !== "object") {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "plan is required" }));
+            return;
+          }
+          const validation = validateDagPlan(plan);
+          if (!validation.valid) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "Invalid DAG plan", validation }));
+            return;
+          }
+          try {
+            const state = createDagRun(plan, {
+              ...(body["actor"] !== undefined ? { actor: String(body["actor"]) } : {}),
+            });
+            res.writeHead(201, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: true, data: state, validation }));
+          } catch (err: unknown) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Failed to create run" }));
+          }
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── BEL v4 DAG: get run by id ──────────────────────────────────────
+    const dagGetMatch = req.url?.match(/^\/dag\/runs\/([^/]+)$/);
+    if (dagGetMatch && req.method === "GET") {
+      const runId = decodeURIComponent(dagGetMatch[1]!);
+      const state = getDagRun(runId);
+      if (!state) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "DAG run not found" }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: state }));
+      return;
+    }
+
+    // ── BEL v4 DAG: advance execution ──────────────────────────────────
+    const dagExecMatch = req.url?.match(/^\/dag\/runs\/([^/]+)\/execute$/);
+    if (dagExecMatch && req.method === "POST") {
+      const runId = decodeURIComponent(dagExecMatch[1]!);
+      const state = getDagRun(runId);
+      if (!state) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "DAG run not found" }));
+        return;
+      }
+      executeReadyNodes(state)
+        .then((next) => {
+          saveDagRun(next);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, data: next }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Execution failed" }));
+        });
+      return;
+    }
+
+    // ── BEL v4 DAG: retry node ─────────────────────────────────────────
+    const dagRetryMatch = req.url?.match(/^\/dag\/runs\/([^/]+)\/nodes\/([^/]+)\/retry$/);
+    if (dagRetryMatch && req.method === "POST") {
+      const runId = decodeURIComponent(dagRetryMatch[1]!);
+      const nodeId = decodeURIComponent(dagRetryMatch[2]!);
+      const state = getDagRun(runId);
+      if (!state) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "DAG run not found" }));
+        return;
+      }
+      try {
+        const next = retryNode(state, nodeId);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, data: next }));
+      } catch (err: unknown) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Retry failed" }));
+      }
+      return;
+    }
+
+    // ── BEL v4 DAG: skip node ──────────────────────────────────────────
+    const dagSkipMatch = req.url?.match(/^\/dag\/runs\/([^/]+)\/nodes\/([^/]+)\/skip$/);
+    if (dagSkipMatch && req.method === "POST") {
+      const runId = decodeURIComponent(dagSkipMatch[1]!);
+      const nodeId = decodeURIComponent(dagSkipMatch[2]!);
+      const state = getDagRun(runId);
+      if (!state) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "DAG run not found" }));
+        return;
+      }
+      try {
+        const next = skipNode(state, nodeId);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, data: next }));
+      } catch (err: unknown) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Skip failed" }));
+      }
+      return;
+    }
+
+    // ── BEL v4 DAG: audit events ───────────────────────────────────────
+    const dagAuditMatch = req.url?.match(/^\/dag\/runs\/([^/]+)\/audit(?:\?(.*))?$/);
+    if (dagAuditMatch && req.method === "GET") {
+      const runId = decodeURIComponent(dagAuditMatch[1]!);
+      const params = new URLSearchParams(dagAuditMatch[2] ?? "");
+      const limitRaw = params.get("limit");
+      const limit = limitRaw ? Math.max(1, parseInt(limitRaw, 10) || 100) : undefined;
+      const events = getDagAuditEvents({
+        runId,
+        ...(limit !== undefined ? { limit } : {}),
+      });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, events }));
+      return;
+    }
+
+    // ── BEL v4 DAG: node outputs ───────────────────────────────────────
+    const dagOutputsMatch = req.url?.match(/^\/dag\/runs\/([^/]+)\/outputs$/);
+    if (dagOutputsMatch && req.method === "GET") {
+      const runId = decodeURIComponent(dagOutputsMatch[1]!);
+      const outputs = getNodeOutputs({ runId });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: outputs }));
       return;
     }
 

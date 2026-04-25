@@ -1,0 +1,62 @@
+[
+  {
+    "dagId": "dag-1735689600000-49",
+    "runId": "run-1735689600000-50",
+    "nodes": [
+      {
+        "status": "completed",
+        "riskLevel": "low",
+        "inputRefs": [],
+        "outputRefs": [],
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nodeId": "a",
+        "type": "input",
+        "name": "Start",
+        "startedAt": "2025-01-01T00:00:00.000Z",
+        "completedAt": "2025-01-01T00:00:00.000Z"
+      },
+      {
+        "status": "completed",
+        "riskLevel": "low",
+        "inputRefs": [],
+        "outputRefs": [],
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nodeId": "b",
+        "type": "transform",
+        "name": "Transform",
+        "startedAt": "2025-01-01T00:00:00.000Z",
+        "completedAt": "2025-01-01T00:00:00.000Z"
+      },
+      {
+        "status": "completed",
+        "riskLevel": "low",
+        "inputRefs": [],
+        "outputRefs": [],
+        "attempts": 1,
+        "maxAttempts": 3,
+        "nodeId": "c",
+        "type": "publish",
+        "name": "Publish",
+        "startedAt": "2025-01-01T00:00:00.000Z",
+        "completedAt": "2025-01-01T00:00:00.000Z"
+      }
+    ],
+    "edges": [
+      {
+        "from": "a",
+        "to": "b"
+      },
+      {
+        "from": "b",
+        "to": "c"
+      }
+    ],
+    "status": "completed",
+    "environment": "development",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z",
+    "createdBy": "test"
+  }
+]

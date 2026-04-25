@@ -65,6 +65,14 @@ import {
   CacheListCommand,
   CacheAuditCommand,
   CacheStatsCommand,
+  DagCreateCommand,
+  DagListCommand,
+  DagInspectCommand,
+  DagExecuteCommand,
+  DagRetryNodeCommand,
+  DagSkipNodeCommand,
+  DagAuditCommand,
+  DagOutputsCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -895,6 +903,101 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           const result = await new CacheStatsCommand().run({
             ...(getStringFlag(parsed.flags, "namespace") !== undefined ? { namespace: getStringFlag(parsed.flags, "namespace")! } : {}),
             json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "dag-create":
+      case "dag:create":
+        {
+          const file = getStringFlag(parsed.flags, "file");
+          const actorFlag = getStringFlag(parsed.flags, "actor");
+          const result = await new DagCreateCommand().run({
+            ...(file !== undefined ? { file } : {}),
+            ...(actorFlag !== undefined ? { actor: actorFlag } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "dag-list":
+      case "dag:list":
+        {
+          const statusFlag = getStringFlag(parsed.flags, "status");
+          const tenantFlag = getStringFlag(parsed.flags, "tenantId");
+          const limitRaw = getStringFlag(parsed.flags, "limit");
+          const result = await new DagListCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(statusFlag !== undefined ? { status: statusFlag } : {}),
+            ...(tenantFlag !== undefined ? { tenantId: tenantFlag } : {}),
+            ...(limitRaw ? { limit: parseInt(limitRaw, 10) } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "dag-inspect":
+      case "dag:inspect":
+        {
+          const runIdFlag = getStringFlag(parsed.flags, "runId") ?? "";
+          const result = await new DagInspectCommand().run({
+            runId: runIdFlag,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "dag-execute":
+      case "dag:execute":
+        {
+          const runIdFlag = getStringFlag(parsed.flags, "runId") ?? "";
+          const result = await new DagExecuteCommand().run({
+            runId: runIdFlag,
+            force: hasFlag(parsed.flags, "force"),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "dag-retry-node":
+      case "dag:retry-node":
+        {
+          const runIdFlag = getStringFlag(parsed.flags, "runId") ?? "";
+          const nodeIdFlag = getStringFlag(parsed.flags, "nodeId") ?? "";
+          const result = await new DagRetryNodeCommand().run({
+            runId: runIdFlag,
+            nodeId: nodeIdFlag,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "dag-skip-node":
+      case "dag:skip-node":
+        {
+          const runIdFlag = getStringFlag(parsed.flags, "runId") ?? "";
+          const nodeIdFlag = getStringFlag(parsed.flags, "nodeId") ?? "";
+          const result = await new DagSkipNodeCommand().run({
+            runId: runIdFlag,
+            nodeId: nodeIdFlag,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "dag-audit":
+      case "dag:audit":
+        {
+          const runIdFlag = getStringFlag(parsed.flags, "runId") ?? "";
+          const limitRaw = getStringFlag(parsed.flags, "limit");
+          const result = await new DagAuditCommand().run({
+            runId: runIdFlag,
+            json: hasFlag(parsed.flags, "json"),
+            ...(limitRaw ? { limit: parseInt(limitRaw, 10) } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "dag-outputs":
+      case "dag:outputs":
+        {
+          const runIdFlag = getStringFlag(parsed.flags, "runId") ?? "";
+          const nodeIdFlag = getStringFlag(parsed.flags, "nodeId");
+          const result = await new DagOutputsCommand().run({
+            runId: runIdFlag,
+            json: hasFlag(parsed.flags, "json"),
+            ...(nodeIdFlag !== undefined ? { nodeId: nodeIdFlag } : {}),
           });
           return result.ok ? 0 : 1;
         }
