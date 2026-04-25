@@ -47,6 +47,12 @@ import {
   InspectRunCommand,
   ControlRunCommand,
   AuditRunCommand,
+  CacheLookupCommand,
+  CacheWriteCommand,
+  CacheInvalidateCommand,
+  CacheListCommand,
+  CacheAuditCommand,
+  CacheStatsCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -657,6 +663,88 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
             runId,
             json: hasFlag(parsed.flags, "json"),
             ...(limitRaw ? { limit: parseInt(limitRaw, 10) } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "cache-lookup":
+        {
+          const ns = getStringFlag(parsed.flags, "namespace");
+          const cacheKey = getStringFlag(parsed.flags, "cacheKey");
+          const result = await new CacheLookupCommand().run({
+            ...(ns !== undefined ? { namespace: ns } : {}),
+            ...(cacheKey !== undefined ? { cacheKey } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(getStringFlag(parsed.flags, "environment") !== undefined ? { environment: getStringFlag(parsed.flags, "environment")! } : {}),
+            ...(getStringFlag(parsed.flags, "policyVersion") !== undefined ? { policyVersion: getStringFlag(parsed.flags, "policyVersion")! } : {}),
+            ...(getStringFlag(parsed.flags, "formulaVersion") !== undefined ? { formulaVersion: getStringFlag(parsed.flags, "formulaVersion")! } : {}),
+            ...(getStringFlag(parsed.flags, "capabilityVersion") !== undefined ? { capabilityVersion: getStringFlag(parsed.flags, "capabilityVersion")! } : {}),
+            ...(getStringFlag(parsed.flags, "riskLevel") !== undefined ? { riskLevel: getStringFlag(parsed.flags, "riskLevel")! } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "cache-write":
+        {
+          const ns = getStringFlag(parsed.flags, "namespace");
+          const cacheKey = getStringFlag(parsed.flags, "cacheKey");
+          const data = getStringFlag(parsed.flags, "data");
+          const ttlRaw = getStringFlag(parsed.flags, "ttlSeconds");
+          const result = await new CacheWriteCommand().run({
+            ...(ns !== undefined ? { namespace: ns } : {}),
+            ...(cacheKey !== undefined ? { cacheKey } : {}),
+            ...(data !== undefined ? { data } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(getStringFlag(parsed.flags, "environment") !== undefined ? { environment: getStringFlag(parsed.flags, "environment")! } : {}),
+            ...(getStringFlag(parsed.flags, "policyVersion") !== undefined ? { policyVersion: getStringFlag(parsed.flags, "policyVersion")! } : {}),
+            ...(getStringFlag(parsed.flags, "formulaVersion") !== undefined ? { formulaVersion: getStringFlag(parsed.flags, "formulaVersion")! } : {}),
+            ...(getStringFlag(parsed.flags, "capabilityVersion") !== undefined ? { capabilityVersion: getStringFlag(parsed.flags, "capabilityVersion")! } : {}),
+            ...(getStringFlag(parsed.flags, "riskLevel") !== undefined ? { riskLevel: getStringFlag(parsed.flags, "riskLevel")! } : {}),
+            ...(getStringFlag(parsed.flags, "createdBy") !== undefined ? { createdBy: getStringFlag(parsed.flags, "createdBy")! } : {}),
+            ...(ttlRaw !== undefined ? { ttlSeconds: parseInt(ttlRaw, 10) } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "cache-invalidate":
+        {
+          const ns = getStringFlag(parsed.flags, "namespace");
+          const result = await new CacheInvalidateCommand().run({
+            ...(ns !== undefined ? { namespace: ns } : {}),
+            ...(getStringFlag(parsed.flags, "cacheKey") !== undefined ? { cacheKey: getStringFlag(parsed.flags, "cacheKey")! } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(getStringFlag(parsed.flags, "reason") !== undefined ? { reason: getStringFlag(parsed.flags, "reason")! } : {}),
+            ...(getStringFlag(parsed.flags, "performedBy") !== undefined ? { performedBy: getStringFlag(parsed.flags, "performedBy")! } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "cache-list":
+        {
+          const ns = getStringFlag(parsed.flags, "namespace");
+          const result = await new CacheListCommand().run({
+            ...(ns !== undefined ? { namespace: ns } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "cache-audit":
+        {
+          const limitRaw = getStringFlag(parsed.flags, "limit");
+          const result = await new CacheAuditCommand().run({
+            ...(getStringFlag(parsed.flags, "namespace") !== undefined ? { namespace: getStringFlag(parsed.flags, "namespace")! } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(getStringFlag(parsed.flags, "cacheKey") !== undefined ? { cacheKey: getStringFlag(parsed.flags, "cacheKey")! } : {}),
+            ...(limitRaw !== undefined ? { limit: parseInt(limitRaw, 10) } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "cache-stats":
+        {
+          const result = await new CacheStatsCommand().run({
+            ...(getStringFlag(parsed.flags, "namespace") !== undefined ? { namespace: getStringFlag(parsed.flags, "namespace")! } : {}),
+            json: hasFlag(parsed.flags, "json"),
           });
           return result.ok ? 0 : 1;
         }

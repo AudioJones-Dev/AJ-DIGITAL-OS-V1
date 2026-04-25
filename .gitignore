@@ -73,6 +73,9 @@ supabase/
 # Local caches
 *.tsbuildinfo
 
+# Cache Augmentation Layer runtime state (created on demand)
+runtime/cache/
+
 # Next.js dashboard build output
 dashboard/.next/
 dashboard/.env.local
