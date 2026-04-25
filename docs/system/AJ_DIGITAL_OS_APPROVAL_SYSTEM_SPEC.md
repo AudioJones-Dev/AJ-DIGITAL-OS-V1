@@ -143,3 +143,98 @@ With Agent Permission Enforcement:
 With Security / Trust Layer:
 
 - approval requirements become enforceable runtime controls, not documentation-only guidance.
+
+---
+
+## 11. Approval Resolution CLI
+
+The Approval Resolution CLI allows human operators to approve, deny, or list pending approval requests directly from a terminal.
+
+### Source
+
+`src/security/approvals/approval-cli.ts`
+
+Exported function:
+
+```ts
+runApprovalCli(argv: string[], service?: ApprovalService): Promise<number>
+```
+
+Returns an exit code: `0` success, `1` user/action error, `2` unexpected system error.
+
+### Commands
+
+#### List pending approvals
+
+```sh
+node dist/security/approvals/approval-cli.js list
+```
+
+Prints a fixed-width table with columns: `approvalId`, `requestedAt`, `expiresAt`, `category`, `risk`, `environment`, `clientId`, `target`, `reason`.
+
+If no approvals are pending:
+
+```
+No pending approvals.
+```
+
+#### Approve a request
+
+```sh
+node dist/security/approvals/approval-cli.js approve <approvalId>
+```
+
+Marks the approval as `approved` and persists the change. The acting operator ID is read from `AJ_OPERATOR_ID` (defaults to `operator-cli`).
+
+Success output:
+```
+Approved: <approvalId> (by <actorId>)
+```
+
+#### Deny a request
+
+```sh
+node dist/security/approvals/approval-cli.js deny <approvalId>
+```
+
+Marks the approval as `denied` and persists the change.
+
+Success output:
+```
+Denied: <approvalId> (by <actorId>)
+```
+
+### Error Behavior
+
+| Scenario | Message | Exit Code |
+|---|---|---|
+| Approval not found | `Error: Approval not found: <id>` | 1 |
+| Approval already expired | `Error: Approval <id> has expired and cannot be approved/denied.` | 1 |
+| Missing `<approvalId>` argument | `Usage: approval-cli approve <approvalId>` | 1 |
+| Unknown command | `Unknown command: <cmd>` | 1 |
+| Unhandled exception | `Unexpected error: <message>` | 2 |
+
+### Environment Variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `AJ_OPERATOR_ID` | `operator-cli` | Actor ID recorded on approve/deny decisions |
+
+### Limitations
+
+- **Single-writer concurrency**: The CLI and the application process both write to `data/security/approvals.json` without a file lock. Safe for single-operator, single-server use; multi-operator environments should migrate to a database-backed `ApprovalStore`.
+- **Point-in-time list**: The `list` command captures a snapshot; approvals created after the command starts are not shown.
+- **Lazy expiry**: TTL enforcement is triggered on read, not by a background timer.
+
+### Future Integration Path
+
+**Telegram**: A Telegram bot handler calls `ApprovalService.approvePendingRequest` / `denyPendingRequest` with `channel: "telegram"`. No changes to `ApprovalService` are required.
+
+**Dashboard**: A thin HTTP API wraps `ApprovalService`:
+```
+GET  /api/approvals?status=pending
+POST /api/approvals/:id/approve   { actorId, channel: "dashboard" }
+POST /api/approvals/:id/deny      { actorId, channel: "dashboard" }
+```
+
+**Database migration**: Replace `PersistentApprovalStore` with any implementation of the `ApprovalStore` interface (e.g. `SupabaseApprovalStore`). The `ApprovalService` constructor accepts any store — no other code changes needed.

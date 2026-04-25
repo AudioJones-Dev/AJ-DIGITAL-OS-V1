@@ -1,6 +1,7 @@
 import { appendFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
+import { defaultAuditStore } from "../audit/persistent-audit-store.js";
 import type {
   ActionCategory,
   ActionRisk,
@@ -91,4 +92,16 @@ export async function logAgentActionAudit(
   );
 
   await appendFile(filePath, `${JSON.stringify(record)}\n`, "utf-8");
+
+  await defaultAuditStore.append({
+    auditId: record.auditId,
+    timestamp: record.timestamp,
+    agentId: record.agentId,
+    tenantId: record.clientId ?? null,
+    permissionLevel: record.permissionLevel,
+    category: record.category,
+    decision: record.decision,
+    risk: record.risk,
+    reason: record.reason,
+  });
 }

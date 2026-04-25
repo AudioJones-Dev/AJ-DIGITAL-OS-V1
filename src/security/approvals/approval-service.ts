@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
-import { InMemoryApprovalStore, type ApprovalStore } from "./approval-store.js";
+import { PersistentApprovalStore } from "./persistent-approval-store.js";
+import type { ApprovalStore } from "./approval-store.js";
 import type {
   ApprovalDecisionInput,
   ApprovalRequest,
@@ -21,7 +22,7 @@ function requireEnvironment(input: CreateApprovalInput): "local" | "dev" | "stag
 }
 
 export class ApprovalService {
-  constructor(private readonly store: ApprovalStore = new InMemoryApprovalStore()) {}
+  constructor(private readonly store: ApprovalStore = new PersistentApprovalStore()) {}
 
   async createApprovalRequest(input: CreateApprovalInput): Promise<ApprovalRequest> {
     const request: ApprovalRequest = {
