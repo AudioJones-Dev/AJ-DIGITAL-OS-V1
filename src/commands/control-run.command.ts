@@ -1,58 +1,52 @@
-import {
-  executeControlAction,
-  APPROVAL_REQUIRED_ACTIONS,
-  type ControlAction,
-} from "../control-plane/run-registry/index.js";
+import { executeControlAction } from "../control-plane/run-registry/control-actions.js";
+import type { ControlAction, RunControlState } from "../control-plane/run-registry/run-control-types.js";
 
 export interface ControlRunCommandInput {
   runId: string;
-  action: ControlAction;
+  action: string;
   by?: string;
   reason?: string;
+  approvalGranted?: boolean;
   json?: boolean;
 }
 
 export interface ControlRunCommandResult {
   ok: boolean;
-  command: "control-run";
-  success?: boolean;
-  newState?: string;
+  newState?: RunControlState;
   requiresApproval?: boolean;
   error?: string;
 }
 
 export class ControlRunCommand {
   async run(input: ControlRunCommandInput): Promise<ControlRunCommandResult> {
-    if (APPROVAL_REQUIRED_ACTIONS.includes(input.action)) {
-      console.warn(`WARNING: "${input.action}" is a high-risk action that requires system approval.`);
-    }
+    try {
+      const result = await executeControlAction(
+        input.runId,
+        input.action as ControlAction,
+        input.by ?? "cli",
+        input.reason,
+        input.approvalGranted,
+      );
 
-    const result = await executeControlAction(
-      input.runId,
-      input.action,
-      input.by ?? "cli",
-      input.reason,
-    );
-
-    if (input.json === true) {
-      console.log(JSON.stringify(result, null, 2));
-    } else {
-      if (result.requiresApproval) {
-        console.log(`Action "${input.action}" requires approval. Submit via system escalation.`);
+      if (input.json) {
+        console.log(JSON.stringify({ ok: result.success, ...result }, null, 2));
       } else if (result.success) {
-        console.log(`OK: ${input.runId} → ${result.newState}`);
+        console.log(`Action '${input.action}' applied. New state: ${result.newState}`);
+      } else if (result.requiresApproval) {
+        console.log(`Action '${input.action}' requires approval. Re-run with --approval-granted flag after obtaining approval.`);
       } else {
-        console.error(`FAILED: ${result.error}`);
+        console.error(`Action failed: ${result.error}`);
       }
-    }
 
-    return {
-      ok: result.success ?? false,
-      command: "control-run",
-      ...(result.success !== undefined ? { success: result.success } : {}),
-      ...(result.newState !== undefined ? { newState: result.newState } : {}),
-      ...(result.requiresApproval !== undefined ? { requiresApproval: result.requiresApproval } : {}),
-      ...(result.error !== undefined ? { error: result.error } : {}),
-    };
+      const out: ControlRunCommandResult = { ok: result.success };
+      if (result.newState !== undefined) out.newState = result.newState;
+      if (result.requiresApproval !== undefined) out.requiresApproval = result.requiresApproval;
+      if (result.error !== undefined) out.error = result.error;
+      return out;
+    } catch (err) {
+      const error = err instanceof Error ? err.message : "Unknown error";
+      console.error(`Error: ${error}`);
+      return { ok: false, error };
+    }
   }
 }

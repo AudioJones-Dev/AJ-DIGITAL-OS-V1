@@ -1,7 +1,4 @@
-import {
-  getAuditEvents,
-  type AuditEvent,
-} from "../control-plane/run-registry/index.js";
+import { getAuditEvents } from "../control-plane/run-registry/run-audit-log.js";
 
 export interface AuditRunCommandInput {
   runId: string;
@@ -11,33 +8,38 @@ export interface AuditRunCommandInput {
 
 export interface AuditRunCommandResult {
   ok: boolean;
-  command: "audit-run";
-  events: AuditEvent[];
-  total: number;
+  events?: ReturnType<typeof getAuditEvents>;
+  error?: string;
 }
 
 export class AuditRunCommand {
   async run(input: AuditRunCommandInput): Promise<AuditRunCommandResult> {
-    const events = getAuditEvents(input.runId, input.limit ?? 50);
+    try {
+      const events = getAuditEvents(input.runId, input.limit);
 
-    if (input.json === true) {
-      console.log(JSON.stringify({ total: events.length, events }, null, 2));
-    } else {
-      this.renderHuman(input.runId, events);
-    }
+      if (input.json) {
+        console.log(JSON.stringify({ ok: true, events }, null, 2));
+        return { ok: true, events };
+      }
 
-    return { ok: true, command: "audit-run", events, total: events.length };
-  }
+      if (events.length === 0) {
+        console.log(`No audit events found for run: ${input.runId}`);
+        return { ok: true, events };
+      }
 
-  private renderHuman(runId: string, events: AuditEvent[]): void {
-    console.log(`AUDIT TRAIL — ${runId}`);
-    console.log("=".repeat(20 + runId.length));
-    if (events.length === 0) {
-      console.log("No audit events found.");
-      return;
-    }
-    for (const ev of events) {
-      console.log(`[${ev.timestamp}] ${ev.action.toUpperCase()} ${ev.fromState} → ${ev.toState} by ${ev.performedBy}`);
+      console.log(`Audit Trail: ${input.runId}`);
+      console.log("========================");
+      for (const e of events) {
+        console.log(`  [${e.timestamp}] ${e.action.toUpperCase()}: ${e.fromState} → ${e.toState} by ${e.performedBy}`);
+        if (e.metadata && Object.keys(e.metadata).length > 0) {
+          console.log(`    metadata: ${JSON.stringify(e.metadata)}`);
+        }
+      }
+      return { ok: true, events };
+    } catch (err) {
+      const error = err instanceof Error ? err.message : "Unknown error";
+      console.error(`Error: ${error}`);
+      return { ok: false, error };
     }
   }
 }

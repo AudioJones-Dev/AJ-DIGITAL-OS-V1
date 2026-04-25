@@ -263,6 +263,18 @@ export type {
   HermesStatusCommandResult,
 } from "./hermes-status.command.js";
 
+export { AttributionReportCommand } from "./attribution-report.command.js";
+export type {
+  AttributionReportCommandInput,
+  AttributionReportCommandResult,
+} from "./attribution-report.command.js";
+
+export { ScoreOpportunitiesCommand } from "./score-opportunities.js";
+export type {
+  ScoreOpportunitiesCommandInput,
+  ScoreOpportunitiesCommandResult,
+} from "./score-opportunities.js";
+
 export { ListRunsCommand } from "./list-runs.command.js";
 export type {
   ListRunsCommandInput,

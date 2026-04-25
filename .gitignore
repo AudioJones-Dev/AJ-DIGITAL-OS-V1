@@ -72,3 +72,7 @@ supabase/
 
 # Local caches
 *.tsbuildinfo
+
+# Next.js dashboard build output
+dashboard/.next/
+dashboard/.env.local

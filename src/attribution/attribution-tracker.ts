@@ -1,39 +1,44 @@
+import { appendFile, mkdir } from "node:fs/promises";
+import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { mkdirSync, appendFileSync } from "node:fs";
-import { join } from "node:path";
+
 import type { AttributionEvent } from "./attribution-types.js";
 import { evaluateMAP } from "./map-validator.js";
 
-const LOG_PATH = join(process.cwd(), "logs", "attribution-events.jsonl");
-const MAX_BUFFER = 1000;
+const LOGS_DIR = path.join(process.cwd(), "logs");
+const EVENTS_FILE = path.join(LOGS_DIR, "attribution-events.jsonl");
+const BUFFER_MAX = 1000;
+
 const buffer: AttributionEvent[] = [];
 
-function ensureLogDir(): void {
-  try {
-    mkdirSync(join(process.cwd(), "logs"), { recursive: true });
-  } catch {
-    // already exists
-  }
+async function ensureLogsDir(): Promise<void> {
+  await mkdir(LOGS_DIR, { recursive: true });
 }
 
-export function emitEvent(
+export async function emitEvent(
   event: Omit<AttributionEvent, "eventId" | "timestamp" | "mapScore">,
-): AttributionEvent {
-  const mapScore = evaluateMAP(event);
-  const full: AttributionEvent = {
+): Promise<AttributionEvent> {
+  const partial: Omit<AttributionEvent, "mapScore"> = {
     ...event,
     eventId: randomUUID(),
     timestamp: new Date().toISOString(),
-    mapScore,
   };
+
+  const mapScore = evaluateMAP(partial as AttributionEvent);
+  const full: AttributionEvent = { ...partial, mapScore };
+
   buffer.push(full);
-  if (buffer.length > MAX_BUFFER) buffer.shift();
-  try {
-    ensureLogDir();
-    appendFileSync(LOG_PATH, JSON.stringify(full) + "\n", "utf-8");
-  } catch {
-    // best-effort
+  if (buffer.length > BUFFER_MAX) {
+    buffer.shift();
   }
+
+  try {
+    await ensureLogsDir();
+    await appendFile(EVENTS_FILE, JSON.stringify(full) + "\n", "utf-8");
+  } catch {
+    // File write errors are non-fatal
+  }
+
   return full;
 }
 

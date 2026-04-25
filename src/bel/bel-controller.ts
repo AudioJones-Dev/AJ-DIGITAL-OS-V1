@@ -16,7 +16,9 @@ import { evaluateMcpPolicy } from "../mcp/mcp-policy.js";
 import { getOrCreateSession } from "./bel-session-manager.js";
 import { runBelTask } from "./bel-task-runner.js";
 import { logExecution } from "../mcp/mcp-logger.js";
-import type { BelTaskRequest, BelTaskResult } from "./bel-types.js";
+import { createExecutionPlan } from "./bel-execution-planner.js";
+import { executePlan } from "./bel-execution-runtime.js";
+import type { BelTaskRequest, BelTaskResult, BelNormalizedResult } from "./bel-types.js";
 
 export interface BelControllerInput {
   /** Agent identifier */
@@ -40,7 +42,7 @@ export interface BelControllerResult {
   approved: boolean;
   dryRun: boolean;
   plannedAction: string;
-  result: BelTaskResult | null;
+  result: BelTaskResult | BelNormalizedResult | null;
   error?: string;
 }
 
@@ -94,8 +96,26 @@ export async function handleBelRequest(input: BelControllerInput): Promise<BelCo
     dryRun,
   };
 
-  // 5. Execute
-  const result = await runBelTask(taskReq);
+  // 5. Execute via planner/runtime with fallback to legacy runner
+  let result: BelTaskResult | BelNormalizedResult;
+
+  if (!dryRun) {
+    let normalizedResult: BelNormalizedResult | null = null;
+    try {
+      const plan = createExecutionPlan(taskReq);
+      normalizedResult = await executePlan(plan);
+    } catch {
+      // Fallback to legacy runner
+    }
+
+    if (normalizedResult !== null) {
+      result = normalizedResult;
+    } else {
+      result = await runBelTask(taskReq);
+    }
+  } else {
+    result = await runBelTask(taskReq);
+  }
 
   return {
     taskId,

@@ -19,8 +19,8 @@ export interface AttributionEvent {
   contentType?: string;
   contentId?: string;
   timestamp: string;
-  mapScore?: MAPScore;
   metadata?: Record<string, unknown>;
+  mapScore?: MAPScore;
 }
 
 export interface AttributionSummary {
@@ -30,8 +30,7 @@ export interface AttributionSummary {
   completedRuns: number;
   failedRuns: number;
   publishedContent: number;
-  mapCompliantCount: number;
-  mapComplianceRate: number;
   periodStart: string;
   periodEnd: string;
+  mapScore?: MAPScore;
 }

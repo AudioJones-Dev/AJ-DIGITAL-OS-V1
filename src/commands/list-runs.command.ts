@@ -1,49 +1,46 @@
-import {
-  listControlRuns,
-  type ControlRunRecord,
-  type RunControlState,
-} from "../control-plane/run-registry/index.js";
+import { listControlRuns } from "../control-plane/run-registry/run-control-store.js";
+import type { RunControlState } from "../control-plane/run-registry/run-control-types.js";
 
 export interface ListRunsCommandInput {
   json?: boolean;
-  state?: RunControlState;
+  state?: string;
   limit?: number;
 }
 
 export interface ListRunsCommandResult {
   ok: boolean;
-  command: "list-runs";
-  runs: ControlRunRecord[];
-  total: number;
+  data?: ReturnType<typeof listControlRuns>;
+  error?: string;
 }
 
 export class ListRunsCommand {
-  async run(input: ListRunsCommandInput = {}): Promise<ListRunsCommandResult> {
-    const runs = listControlRuns({
-      ...(input.state ? { state: input.state } : {}),
-      ...(input.limit !== undefined ? { limit: input.limit } : {}),
-    });
+  async run(input: ListRunsCommandInput): Promise<ListRunsCommandResult> {
+    try {
+      const filter: { state?: RunControlState; limit?: number } = {};
+      if (input.state !== undefined) filter.state = input.state as RunControlState;
+      if (input.limit !== undefined) filter.limit = input.limit;
+      const runs = listControlRuns(filter);
 
-    if (input.json === true) {
-      console.log(JSON.stringify({ total: runs.length, runs }, null, 2));
-    } else {
-      this.renderHuman(runs);
-    }
+      if (input.json) {
+        console.log(JSON.stringify({ ok: true, data: runs }, null, 2));
+        return { ok: true, data: runs };
+      }
 
-    return { ok: true, command: "list-runs", runs, total: runs.length };
-  }
+      if (runs.length === 0) {
+        console.log("No control runs found.");
+        return { ok: true, data: runs };
+      }
 
-  private renderHuman(runs: ControlRunRecord[]): void {
-    console.log("CONTROL PLANE RUNS");
-    console.log("==================");
-    if (runs.length === 0) {
-      console.log("No runs found.");
-      return;
-    }
-    console.log(`Total: ${runs.length}`);
-    console.log("");
-    for (const run of runs) {
-      console.log(`- ${run.runId} | ${run.agentId} | ${run.controlState} | ${run.updatedAt}`);
+      console.log("Control Runs");
+      console.log("============");
+      for (const r of runs) {
+        console.log(`  ${r.runId}  [${r.controlState}]  agent=${r.agentId}  updated=${r.updatedAt}`);
+      }
+      return { ok: true, data: runs };
+    } catch (err) {
+      const error = err instanceof Error ? err.message : "Unknown error";
+      console.error(`Error: ${error}`);
+      return { ok: false, error };
     }
   }
 }

@@ -1,14 +1,7 @@
 import type { ControlAction, RunControlState } from "./run-control-types.js";
 import { APPROVAL_REQUIRED_ACTIONS } from "./run-control-types.js";
-import { getControlRun, updateControlState } from "./run-control-store.js";
+import { getControlRun, updateControlState, isValidTransition } from "./run-control-store.js";
 import { logAuditEvent } from "./run-audit-log.js";
-
-type ActionResult = {
-  success: boolean;
-  newState?: RunControlState;
-  error?: string;
-  requiresApproval?: boolean;
-};
 
 const ACTION_TRANSITIONS: Partial<Record<ControlAction, RunControlState>> = {
   rerun: "queued",
@@ -25,45 +18,58 @@ export async function executeControlAction(
   action: ControlAction,
   performedBy: string,
   reason?: string,
-): Promise<ActionResult> {
-  const run = getControlRun(runId);
-  if (!run) return { success: false, error: `Run not found: ${runId}` };
-
-  if (APPROVAL_REQUIRED_ACTIONS.includes(action) && performedBy !== "system") {
-    return { success: false, requiresApproval: true };
+  approvalGranted?: boolean,
+): Promise<{ success: boolean; newState?: RunControlState; error?: string; requiresApproval?: boolean }> {
+  const record = getControlRun(runId);
+  if (!record) {
+    return { success: false, error: `Run not found: ${runId}` };
   }
 
-  const fromState = run.controlState;
+  if (APPROVAL_REQUIRED_ACTIONS.includes(action) && !approvalGranted) {
+    return { success: false, requiresApproval: true, error: `Action '${action}' requires prior approval` };
+  }
 
   if (action === "inspect") {
     logAuditEvent({
       runId,
-      agentId: run.agentId,
+      agentId: record.agentId,
       action,
-      fromState,
-      toState: fromState,
+      fromState: record.controlState,
+      toState: record.controlState,
       performedBy,
-      ...(reason ? { metadata: { reason } } : {}),
+      ...(reason !== undefined ? { metadata: { reason } } : {}),
     });
-    return { success: true, newState: fromState };
+    return { success: true, newState: record.controlState };
   }
 
-  const toState = ACTION_TRANSITIONS[action];
-  if (!toState) return { success: false, error: `Unknown action: ${action}` };
-
-  try {
-    const updated = updateControlState(runId, toState, reason ? { reason } : undefined);
-    logAuditEvent({
-      runId,
-      agentId: run.agentId,
-      action,
-      fromState,
-      toState,
-      performedBy,
-      ...(reason ? { metadata: { reason } } : {}),
-    });
-    return { success: true, newState: updated.controlState };
-  } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+  const targetState = ACTION_TRANSITIONS[action];
+  if (!targetState) {
+    return { success: false, error: `Unknown action: ${action}` };
   }
+
+  if (!isValidTransition(record.controlState, targetState)) {
+    return {
+      success: false,
+      error: `Cannot transition from '${record.controlState}' to '${targetState}' via action '${action}'`,
+    };
+  }
+
+  const meta: Record<string, unknown> = {};
+  if (reason !== undefined) meta["reason"] = reason;
+  if (action === "approve") meta["approvedBy"] = performedBy;
+  if (action === "cancel") meta["cancelledBy"] = performedBy;
+
+  const updated = updateControlState(runId, targetState, meta);
+
+  logAuditEvent({
+    runId,
+    agentId: record.agentId,
+    action,
+    fromState: record.controlState,
+    toState: targetState,
+    performedBy,
+    ...(Object.keys(meta).length > 0 ? { metadata: meta } : {}),
+  });
+
+  return { success: true, newState: updated.controlState };
 }

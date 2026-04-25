@@ -200,5 +200,5 @@ export function assertAgentToolAccess(agent: AgentIdentityContext, toolName: str
 }
 
 export function listAgents(): AgentIdentityContext[] {
-  return Object.keys(AGENT_REGISTRY).map((agentId) => resolveAgentContext(agentId));
+  return Object.keys(AGENT_REGISTRY).map((id) => resolveAgentContext(id));
 }

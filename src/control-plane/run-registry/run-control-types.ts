@@ -1,5 +1,3 @@
-import { randomUUID } from "crypto";
-
 export type RunControlState =
   | "queued" | "planning" | "running" | "waiting_for_approval"
   | "retrying" | "escalated" | "completed" | "failed" | "cancelled";
@@ -56,7 +54,3 @@ export const ACTION_RISK: Record<ControlAction, "low" | "medium" | "high"> = {
 };
 
 export const APPROVAL_REQUIRED_ACTIONS: ControlAction[] = ["rerun", "escalate", "cancel"];
-
-export function isValidTransition(from: RunControlState, to: RunControlState): boolean {
-  return VALID_TRANSITIONS[from]?.includes(to) ?? false;
-}

@@ -21,6 +21,8 @@ import {
   type SupabaseConfig,
 } from "../../db/supabase-client.js";
 import type { DbClient } from "../../db/db-types.js";
+import { loadOpportunities, saveOpportunities } from "../../intelligence/opportunity-store.js";
+import { scoreOpportunity } from "../../intelligence/opportunity-scorer.js";
 
 const TAG = "[INTELLIGENCE]";
 const MIN_SAMPLE_SIZE = 3;
@@ -82,6 +84,20 @@ export async function computeIntelligence(cfg?: SupabaseConfig): Promise<number>
   }
 
   console.log(`${TAG} Cycle complete — ${totalInserted} row(s) inserted`);
+
+  // Re-score stored opportunities so their scores reflect current signals
+  try {
+    const stored = await loadOpportunities();
+    if (stored.length > 0) {
+      const rescored = stored.map((o) => scoreOpportunity(o.keyword, o.signals));
+      await saveOpportunities(rescored);
+      console.log(`${TAG} Re-scored ${rescored.length} stored opportunity/opportunities`);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`${TAG} Failed to re-score opportunities: ${msg}`);
+  }
+
   return totalInserted;
 }
 
