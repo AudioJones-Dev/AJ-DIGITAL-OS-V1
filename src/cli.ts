@@ -43,6 +43,10 @@ import {
   HermesStatusCommand,
   AttributionReportCommand,
   ScoreOpportunitiesCommand,
+  ListRunsCommand,
+  InspectRunCommand,
+  ControlRunCommand,
+  AuditRunCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -80,6 +84,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     "repairedSuccess",
     "modelFailed",
     "fallbackUsed",
+    "approval-granted",
+    "map",
   ]);
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -590,6 +596,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
             ...(agentFlag ? { agent: agentFlag } : {}),
             ...(daysFlag ? { days: Number(daysFlag) } : {}),
             json: hasFlag(parsed.flags, "json"),
+            ...(hasFlag(parsed.flags, "map") ? { map: true } : {}),
           });
           return result.ok ? 0 : 1;
         }
@@ -602,6 +609,54 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
             ...(topN !== undefined && !isNaN(topN) ? { top: topN } : {}),
             ...(isOpportunityTier(tierRaw) ? { tier: tierRaw } : {}),
             json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "list-runs":
+        {
+          const stateFlag = getStringFlag(parsed.flags, "state");
+          const limitRaw = getStringFlag(parsed.flags, "limit");
+          const result = await new ListRunsCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(stateFlag ? { state: stateFlag } : {}),
+            ...(limitRaw ? { limit: parseInt(limitRaw, 10) } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "inspect-run":
+        {
+          const runId = getStringFlag(parsed.flags, "runId") ?? "";
+          if (!runId) { console.error("Usage: inspect-run --runId <id>"); return 1; }
+          const result = await new InspectRunCommand().run({
+            runId,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "control-run":
+        {
+          const runId = getStringFlag(parsed.flags, "runId") ?? "";
+          const action = getStringFlag(parsed.flags, "action") ?? "";
+          if (!runId || !action) { console.error("Usage: control-run --runId <id> --action <action> [--by <user>] [--reason <text>]"); return 1; }
+          const controlRunInput: import("./commands/control-run.command.js").ControlRunCommandInput = { runId, action };
+          const byFlag = getStringFlag(parsed.flags, "by");
+          if (byFlag !== undefined) controlRunInput.by = byFlag;
+          const reasonFlag = getStringFlag(parsed.flags, "reason");
+          if (reasonFlag !== undefined) controlRunInput.reason = reasonFlag;
+          if (hasFlag(parsed.flags, "approval-granted")) controlRunInput.approvalGranted = true;
+          if (hasFlag(parsed.flags, "json")) controlRunInput.json = true;
+          const result = await new ControlRunCommand().run(controlRunInput);
+          return result.ok ? 0 : 1;
+        }
+      case "audit-run":
+        {
+          const runId = getStringFlag(parsed.flags, "runId") ?? "";
+          if (!runId) { console.error("Usage: audit-run --runId <id>"); return 1; }
+          const limitRaw = getStringFlag(parsed.flags, "limit");
+          const result = await new AuditRunCommand().run({
+            runId,
+            json: hasFlag(parsed.flags, "json"),
+            ...(limitRaw ? { limit: parseInt(limitRaw, 10) } : {}),
           });
           return result.ok ? 0 : 1;
         }

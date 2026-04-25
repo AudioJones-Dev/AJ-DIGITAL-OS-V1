@@ -198,3 +198,7 @@ export function assertAgentToolAccess(agent: AgentIdentityContext, toolName: str
     throw new AgentToolAccessError(agent.agentId, toolName);
   }
 }
+
+export function listAgents(): AgentIdentityContext[] {
+  return Object.keys(AGENT_REGISTRY).map((id) => resolveAgentContext(id));
+}

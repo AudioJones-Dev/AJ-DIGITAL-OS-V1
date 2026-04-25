@@ -1,5 +1,7 @@
 import { fetchFullRunData } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
+import RunControls from "@/components/RunControls";
+import AuditTrail from "@/components/AuditTrail";
 
 export const dynamic = "force-dynamic";
 
@@ -198,6 +200,17 @@ export default async function RunDetailPage({ params }: Props) {
           </div>
         </div>
       )}
+      {/* Control Plane */}
+      <div>
+        <h2 className="text-sm font-semibold text-zinc-400 mb-3">Run Controls</h2>
+        <RunControls runId={params.runId} currentState={"queued"} />
+      </div>
+
+      {/* Audit Trail */}
+      <div>
+        <h2 className="text-sm font-semibold text-zinc-400 mb-3">Audit Trail</h2>
+        <AuditTrail runId={params.runId} />
+      </div>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 import type { AttributionEvent } from "./attribution-types.js";
+import { evaluateMAP } from "./map-validator.js";
 
 const LOGS_DIR = path.join(process.cwd(), "logs");
 const EVENTS_FILE = path.join(LOGS_DIR, "attribution-events.jsonl");
@@ -15,13 +16,16 @@ async function ensureLogsDir(): Promise<void> {
 }
 
 export async function emitEvent(
-  event: Omit<AttributionEvent, "eventId" | "timestamp">,
+  event: Omit<AttributionEvent, "eventId" | "timestamp" | "mapScore">,
 ): Promise<AttributionEvent> {
-  const full: AttributionEvent = {
+  const partial: Omit<AttributionEvent, "mapScore"> = {
     ...event,
     eventId: randomUUID(),
     timestamp: new Date().toISOString(),
   };
+
+  const mapScore = evaluateMAP(partial as AttributionEvent);
+  const full: AttributionEvent = { ...partial, mapScore };
 
   buffer.push(full);
   if (buffer.length > BUFFER_MAX) {

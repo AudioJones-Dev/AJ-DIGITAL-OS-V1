@@ -274,3 +274,27 @@ export type {
   ScoreOpportunitiesCommandInput,
   ScoreOpportunitiesCommandResult,
 } from "./score-opportunities.js";
+
+export { ListRunsCommand } from "./list-runs.command.js";
+export type {
+  ListRunsCommandInput,
+  ListRunsCommandResult,
+} from "./list-runs.command.js";
+
+export { InspectRunCommand } from "./inspect-run.command.js";
+export type {
+  InspectRunCommandInput,
+  InspectRunCommandResult,
+} from "./inspect-run.command.js";
+
+export { ControlRunCommand } from "./control-run.command.js";
+export type {
+  ControlRunCommandInput,
+  ControlRunCommandResult,
+} from "./control-run.command.js";
+
+export { AuditRunCommand } from "./audit-run.command.js";
+export type {
+  AuditRunCommandInput,
+  AuditRunCommandResult,
+} from "./audit-run.command.js";

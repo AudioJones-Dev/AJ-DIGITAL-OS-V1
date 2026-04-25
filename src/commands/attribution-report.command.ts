@@ -1,10 +1,13 @@
 import { generateSummary } from "../attribution/attribution-report.js";
+import { getRecentEvents } from "../attribution/attribution-tracker.js";
+import { filterMAPCompliant, getMAPStats } from "../attribution/map-validator.js";
 import type { AttributionSummary } from "../attribution/attribution-types.js";
 
 export interface AttributionReportCommandInput {
   agent?: string;
   days?: number;
   json?: boolean;
+  map?: boolean;
 }
 
 export interface AttributionReportCommandResult {
@@ -23,6 +26,23 @@ export class AttributionReportCommand {
 
     try {
       const summary = await generateSummary(agentId, days);
+
+      if (input.map) {
+        const events = getRecentEvents(500);
+        const compliant = filterMAPCompliant(events);
+        const stats = getMAPStats(events);
+        if (input.json) {
+          console.log(JSON.stringify({ ok: true, mapStats: stats, compliantEvents: compliant }, null, 2));
+        } else {
+          console.log("MAP ATTRIBUTION REPORT");
+          console.log("======================");
+          console.log(`Total events:      ${stats.total}`);
+          console.log(`MAP-compliant:     ${stats.compliant}`);
+          console.log(`Non-compliant:     ${stats.nonCompliant}`);
+          console.log(`Compliance rate:   ${stats.complianceRate}%`);
+        }
+        return { ok: true, command: "attribution-report", rendered: true, summary, warnings: [], errors: [] };
+      }
 
       if (input.json === true) {
         this.printJson(summary);

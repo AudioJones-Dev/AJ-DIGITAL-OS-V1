@@ -7,6 +7,8 @@ const nav = [
   { href: "/runs", label: "Runs" },
   { href: "/hermes", label: "Hermes" },
   { href: "/opportunities", label: "Opportunities" },
+  { href: "/control", label: "Control Plane" },
+  { href: "/agents", label: "Agents" },
 ];
 
 export default function Sidebar() {
