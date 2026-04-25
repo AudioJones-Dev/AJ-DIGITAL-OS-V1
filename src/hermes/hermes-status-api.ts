@@ -80,6 +80,19 @@ import {
 } from "../core/schemas/schema-registry.js";
 import { checkIdempotency } from "../core/idempotency/idempotency-store.js";
 import { getMetricSnapshot } from "../core/observability/metrics-store.js";
+import {
+  lookupCache as cacheLookup,
+  writeCache as cacheWrite,
+  invalidateCache as cacheInvalidate,
+  listCacheEntries as cacheList,
+  hashInput as cacheHashInput,
+} from "../cache/cache-store.js";
+import { getCacheAuditEvents } from "../cache/cache-audit-log.js";
+import type {
+  CacheEnvironment,
+  CacheNamespace,
+  CacheRiskLevel,
+} from "../cache/cache-types.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -1114,6 +1127,132 @@ export function startHermesApi(port?: number): void {
     if (req.url === "/control/agents" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, data: listAgents() }));
+      return;
+    }
+
+    // ── Cache: list namespace ──────────────────────────────────────────
+    const cacheListMatch = req.url?.match(/^\/cache\/([^/?]+)(?:\?(.*))?$/);
+    if (cacheListMatch && req.method === "GET" && !cacheListMatch[1]?.startsWith("audit")) {
+      const namespace = decodeURIComponent(cacheListMatch[1]!) as CacheNamespace;
+      const params = new URLSearchParams(cacheListMatch[2] ?? "");
+      const tenantId = params.get("tenantId") ?? undefined;
+      const entries = cacheList(namespace, tenantId ?? undefined);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, namespace, data: entries }));
+      return;
+    }
+
+    // ── Cache: get entry by key ────────────────────────────────────────
+    const cacheKeyMatch = req.url?.match(/^\/cache\/([^/]+)\/([^/?]+)(?:\?(.*))?$/);
+    if (cacheKeyMatch && req.method === "GET" && cacheKeyMatch[1] !== "audit") {
+      const namespace = decodeURIComponent(cacheKeyMatch[1]!) as CacheNamespace;
+      const cacheKey = decodeURIComponent(cacheKeyMatch[2]!);
+      const entries = cacheList(namespace);
+      const entry = entries.find((e) => e.cacheKey === cacheKey);
+      if (!entry) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Cache entry not found" }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: entry }));
+      return;
+    }
+
+    // ── Cache: lookup ──────────────────────────────────────────────────
+    if (req.url === "/cache/lookup" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const result = cacheLookup({
+            namespace: String(body["namespace"] ?? "") as CacheNamespace,
+            cacheKey: String(body["cacheKey"] ?? ""),
+            ...(body["tenantId"] !== undefined ? { tenantId: String(body["tenantId"]) } : {}),
+            environment: (body["environment"] !== undefined ? String(body["environment"]) : "development") as CacheEnvironment,
+            policyVersion: String(body["policyVersion"] ?? "cache-policy-v1"),
+            ...(body["formulaVersion"] !== undefined ? { formulaVersion: String(body["formulaVersion"]) } : {}),
+            ...(body["capabilityVersion"] !== undefined ? { capabilityVersion: String(body["capabilityVersion"]) } : {}),
+            riskLevel: (body["riskLevel"] !== undefined ? String(body["riskLevel"]) : "low") as CacheRiskLevel,
+            ...(body["approvalGranted"] === true ? { approvalGranted: true } : {}),
+          });
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, ...result }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Cache: write ───────────────────────────────────────────────────
+    if (req.url === "/cache/write" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const data = body["data"];
+          const inputHash = String(body["inputHash"] ?? cacheHashInput(data));
+          const entry = cacheWrite({
+            namespace: String(body["namespace"] ?? "") as CacheNamespace,
+            cacheKey: String(body["cacheKey"] ?? ""),
+            ...(body["tenantId"] !== undefined ? { tenantId: String(body["tenantId"]) } : {}),
+            inputHash,
+            ...(body["formulaVersion"] !== undefined ? { formulaVersion: String(body["formulaVersion"]) } : {}),
+            policyVersion: String(body["policyVersion"] ?? "cache-policy-v1"),
+            ...(body["capabilityVersion"] !== undefined ? { capabilityVersion: String(body["capabilityVersion"]) } : {}),
+            environment: (body["environment"] !== undefined ? String(body["environment"]) : "development") as CacheEnvironment,
+            riskLevel: (body["riskLevel"] !== undefined ? String(body["riskLevel"]) : "low") as CacheRiskLevel,
+            ttlSeconds: typeof body["ttlSeconds"] === "number" ? body["ttlSeconds"] : 3600,
+            createdBy: String(body["createdBy"] ?? "hermes-api"),
+            data,
+          });
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, data: entry }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Cache: invalidate ──────────────────────────────────────────────
+    if (req.url === "/cache/invalidate" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const count = cacheInvalidate({
+            namespace: String(body["namespace"] ?? "") as CacheNamespace,
+            ...(body["cacheKey"] !== undefined ? { cacheKey: String(body["cacheKey"]) } : {}),
+            ...(body["tenantId"] !== undefined ? { tenantId: String(body["tenantId"]) } : {}),
+            reason: String(body["reason"] ?? "manual invalidation"),
+            performedBy: String(body["performedBy"] ?? "hermes-api"),
+          });
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, invalidated: count }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Cache: audit log ───────────────────────────────────────────────
+    if (req.url === "/cache/audit" || req.url?.startsWith("/cache/audit?")) {
+      const urlObj = new URL(req.url ?? "/cache/audit", "http://localhost");
+      const namespaceParam = urlObj.searchParams.get("namespace");
+      const tenantIdParam = urlObj.searchParams.get("tenantId");
+      const cacheKeyParam = urlObj.searchParams.get("cacheKey");
+      const limitRaw = urlObj.searchParams.get("limit");
+      const events = getCacheAuditEvents({
+        ...(namespaceParam !== null ? { namespace: namespaceParam as CacheNamespace } : {}),
+        ...(tenantIdParam !== null ? { tenantId: tenantIdParam } : {}),
+        ...(cacheKeyParam !== null ? { cacheKey: cacheKeyParam } : {}),
+        ...(limitRaw !== null ? { limit: parseInt(limitRaw, 10) || 100 } : { limit: 100 }),
+      });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, events }));
       return;
     }
 
