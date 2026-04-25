@@ -1,5 +1,19 @@
 export type AttributionChannel = "seo" | "aeo" | "social" | "email" | "blog" | "distribution" | "unknown";
-export type AttributionEventType = "run_created" | "run_completed" | "run_failed" | "content_published" | "content_distributed";
+export type AttributionEventType =
+  | "run_created"
+  | "run_completed"
+  | "run_failed"
+  | "content_published"
+  | "content_distributed"
+  | "map_evaluation_created"
+  | "map_decision_execute"
+  | "map_decision_improve"
+  | "map_decision_reconsider"
+  | "cera_cycle_created"
+  | "compound_score_created"
+  | "decision_path_scale"
+  | "decision_path_pivot"
+  | "decision_path_kill";
 
 export interface MAPScore {
   meaningful: boolean;

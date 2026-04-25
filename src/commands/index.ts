@@ -298,3 +298,45 @@ export type {
   AuditRunCommandInput,
   AuditRunCommandResult,
 } from "./audit-run.command.js";
+
+export { MapEvaluateCommand } from "./map-evaluate.command.js";
+export type {
+  MapEvaluateCommandInput,
+  MapEvaluateCommandResult,
+} from "./map-evaluate.command.js";
+
+export { MapListCommand } from "./map-list.command.js";
+export type {
+  MapListCommandInput,
+  MapListCommandResult,
+} from "./map-list.command.js";
+
+export { MapInspectCommand } from "./map-inspect.command.js";
+export type {
+  MapInspectCommandInput,
+  MapInspectCommandResult,
+} from "./map-inspect.command.js";
+
+export { CeraCycleCommand } from "./cera-cycle.command.js";
+export type {
+  CeraCycleCommandInput,
+  CeraCycleCommandResult,
+} from "./cera-cycle.command.js";
+
+export { CeraListCommand } from "./cera-list.command.js";
+export type {
+  CeraListCommandInput,
+  CeraListCommandResult,
+} from "./cera-list.command.js";
+
+export { CompoundScoreCommand } from "./compound-score.command.js";
+export type {
+  CompoundScoreCommandInput,
+  CompoundScoreCommandResult,
+} from "./compound-score.command.js";
+
+export { DecisionAuditCommand } from "./decision-audit.command.js";
+export type {
+  DecisionAuditCommandInput,
+  DecisionAuditCommandResult,
+} from "./decision-audit.command.js";

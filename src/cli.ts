@@ -47,6 +47,13 @@ import {
   InspectRunCommand,
   ControlRunCommand,
   AuditRunCommand,
+  MapEvaluateCommand,
+  MapListCommand,
+  MapInspectCommand,
+  CeraCycleCommand,
+  CeraListCommand,
+  CompoundScoreCommand,
+  DecisionAuditCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -660,6 +667,111 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           });
           return result.ok ? 0 : 1;
         }
+      case "map-evaluate":
+        {
+          const title = getStringFlag(parsed.flags, "title") ?? "";
+          const description = getStringFlag(parsed.flags, "description") ?? "";
+          const categoryRaw = getStringFlag(parsed.flags, "category") ?? "";
+          if (!title || !description || !isDecisionCategory(categoryRaw)) {
+            console.error("Usage: map-evaluate --title <t> --description <d> --category <c> --meaningful <0-3> --actionable <0-3> --profitable <0-3> [--aeoScore <n>] [--tenantId <id>] [--runId <id>] [--createdBy <user>] [--environment <env>]");
+            return 1;
+          }
+          const meaningful = parseScore(getStringFlag(parsed.flags, "meaningful"));
+          const actionable = parseScore(getStringFlag(parsed.flags, "actionable"));
+          const profitable = parseScore(getStringFlag(parsed.flags, "profitable"));
+          const aeoRaw = getStringFlag(parsed.flags, "aeoScore");
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const runIdFlag = getStringFlag(parsed.flags, "runId");
+          const createdBy = getStringFlag(parsed.flags, "createdBy");
+          const environmentRaw = getStringFlag(parsed.flags, "environment");
+          const result = await new MapEvaluateCommand().run({
+            title,
+            description,
+            category: categoryRaw,
+            meaningful,
+            actionable,
+            profitable,
+            ...(aeoRaw !== undefined ? { aeoScore: Number(aeoRaw) } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(runIdFlag !== undefined ? { runId: runIdFlag } : {}),
+            ...(createdBy !== undefined ? { createdBy } : {}),
+            ...(isDecisionEnvironment(environmentRaw) ? { environment: environmentRaw } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "map-list":
+        {
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const result = await new MapListCommand().run({
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "map-inspect":
+        {
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId") ?? "";
+          if (!evaluationId) { console.error("Usage: map-inspect --evaluationId <id>"); return 1; }
+          const result = await new MapInspectCommand().run({
+            evaluationId,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "cera-cycle":
+        {
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId") ?? "";
+          if (!evaluationId) { console.error("Usage: cera-cycle --evaluationId <id> [--capture <csv>] [--extract <csv>] [--refine <csv>] [--amplify <csv>] [--tenantId <id>] [--runId <id>]"); return 1; }
+          const result = await new CeraCycleCommand().run({
+            evaluationId,
+            capture: parseCsv(getStringFlag(parsed.flags, "capture")),
+            extract: parseCsv(getStringFlag(parsed.flags, "extract")),
+            refine: parseCsv(getStringFlag(parsed.flags, "refine")),
+            amplify: parseCsv(getStringFlag(parsed.flags, "amplify")),
+            ...(getStringFlag(parsed.flags, "tenantId") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(getStringFlag(parsed.flags, "runId") !== undefined ? { runId: getStringFlag(parsed.flags, "runId")! } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "cera-list":
+        {
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId");
+          const result = await new CeraListCommand().run({
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(evaluationId !== undefined ? { evaluationId } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "compound-score":
+        {
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId") ?? "";
+          if (!evaluationId) { console.error("Usage: compound-score --evaluationId <id>"); return 1; }
+          const result = await new CompoundScoreCommand().run({
+            evaluationId,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "decision-audit":
+        {
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId");
+          const cycleId = getStringFlag(parsed.flags, "cycleId");
+          const eventFlag = getStringFlag(parsed.flags, "event");
+          const result = await new DecisionAuditCommand().run({
+            ...(evaluationId !== undefined ? { evaluationId } : {}),
+            ...(cycleId !== undefined ? { cycleId } : {}),
+            ...(eventFlag !== undefined ? { event: eventFlag } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
       default:
         printUnknownCommand(command);
         return 1;
@@ -806,6 +918,49 @@ function normalizeTrackRunView(value: string | undefined): TrackRunViewMode | un
 
 function isOpportunityTier(value: string | undefined): value is "high" | "medium" | "low" {
   return value === "high" || value === "medium" || value === "low";
+}
+
+function isDecisionCategory(
+  value: string | undefined,
+): value is import("./decision/decision-types.js").DecisionCategory {
+  switch (value) {
+    case "offer":
+    case "campaign":
+    case "workflow":
+    case "content":
+    case "automation":
+    case "agent_action":
+    case "operational_change":
+    case "client_strategy":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function isDecisionEnvironment(
+  value: string | undefined,
+): value is import("./decision/decision-types.js").DecisionEnvironment {
+  switch (value) {
+    case "local":
+    case "dev":
+    case "staging":
+    case "production":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function parseScore(value: string | undefined): number {
+  if (value === undefined) return 0;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function parseCsv(value: string | undefined): string[] {
+  if (value === undefined || value.trim() === "") return [];
+  return value.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
 function isDeliverableStatus(value: string | undefined): value is "draft" | "pending_approval" | "approved" | "published" | "failed" | "archived" {

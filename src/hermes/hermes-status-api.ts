@@ -60,6 +60,33 @@ import { executeControlAction } from "../control-plane/run-registry/control-acti
 import { getAuditEvents } from "../control-plane/run-registry/run-audit-log.js";
 import { listAgents } from "../security/agents/agent-registry.js";
 import type { ControlAction } from "../control-plane/run-registry/run-control-types.js";
+import {
+  evaluateMap,
+  createCeraCycle,
+  getCompoundScore,
+} from "../decision/decision-engine.js";
+import {
+  saveEvaluation,
+  getEvaluation,
+  listEvaluations,
+  saveCycle,
+  getCycle,
+  listCycles,
+  appendDecisionAuditEvent,
+  getDecisionAuditEvents,
+} from "../decision/decision-store.js";
+import {
+  emitMapEvaluation,
+  emitCeraCycle,
+  emitCompoundScore,
+} from "../decision/decision-attribution.js";
+import { applyDecisionPolicy, validateProductionTenant } from "../decision/decision-policy.js";
+import type {
+  CeraSignals,
+  DecisionCategory,
+  DecisionEnvironment,
+  DecisionInput,
+} from "../decision/decision-types.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -1074,6 +1101,250 @@ export function startHermesApi(port?: number): void {
     if (req.url === "/control/agents" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, data: listAgents() }));
+      return;
+    }
+
+    // ── Decision: MAP evaluate ─────────────────────────────────────────
+    if (req.url === "/decision/map/evaluate" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const title = String(body["title"] ?? "").trim();
+          const description = String(body["description"] ?? "").trim();
+          const category = body["category"] as DecisionCategory | undefined;
+          const meaningfulScore = Number(body["meaningfulScore"] ?? 0);
+          const actionableScore = Number(body["actionableScore"] ?? 0);
+          const profitableScore = Number(body["profitableScore"] ?? 0);
+          const createdBy = String(body["createdBy"] ?? "system").trim() || "system";
+          const environment = (body["environment"] as DecisionEnvironment | undefined) ?? "local";
+
+          if (!title || !description || !category) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "title, description, category are required" }));
+            return;
+          }
+
+          const input: DecisionInput = {
+            title,
+            description,
+            category,
+            meaningfulScore,
+            actionableScore,
+            profitableScore,
+            createdBy,
+            environment,
+            ...(body["tenantId"] !== undefined ? { tenantId: String(body["tenantId"]) } : {}),
+            ...(body["runId"] !== undefined ? { runId: String(body["runId"]) } : {}),
+            ...(body["policyVersion"] !== undefined ? { policyVersion: String(body["policyVersion"]) } : {}),
+            ...(typeof body["aeoScore"] === "number" ? { aeoScore: body["aeoScore"] as number } : {}),
+          };
+
+          const tenantCheck = validateProductionTenant(input);
+          if (!tenantCheck.ok) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: tenantCheck.reason }));
+            return;
+          }
+
+          const evaluation = evaluateMap(input);
+          saveEvaluation(evaluation);
+          appendDecisionAuditEvent({
+            evaluationId: evaluation.evaluationId,
+            event: "map_evaluation_created",
+            actorId: createdBy,
+            ...(evaluation.tenantId !== undefined ? { tenantId: evaluation.tenantId } : {}),
+            payload: {
+              mapScore: evaluation.mapScore,
+              decisionBand: evaluation.decisionBand,
+              decision: evaluation.decision,
+              category: evaluation.category,
+            },
+          });
+          emitMapEvaluation(evaluation);
+
+          const actorTypeRaw = body["actorType"];
+          const actorType =
+            actorTypeRaw === "system" || actorTypeRaw === "user" || actorTypeRaw === "agent"
+              ? (actorTypeRaw as "system" | "user" | "agent")
+              : undefined;
+          const policy = applyDecisionPolicy(evaluation, {
+            ...(actorType !== undefined ? { actorType } : {}),
+            ...(body["forceExecute"] === true ? { forceExecute: true } : {}),
+          });
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, data: evaluation, policy }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Decision: list MAP evaluations ─────────────────────────────────
+    if ((req.url === "/decision/map/evaluations" || req.url?.startsWith("/decision/map/evaluations?")) && req.method === "GET") {
+      const urlObj = new URL(req.url ?? "/decision/map/evaluations", "http://localhost");
+      const tenantId = urlObj.searchParams.get("tenantId");
+      const limitRaw = urlObj.searchParams.get("limit");
+      const filter: Parameters<typeof listEvaluations>[0] = {};
+      if (tenantId !== null) filter.tenantId = tenantId;
+      if (limitRaw !== null) filter.limit = Math.max(1, parseInt(limitRaw, 10) || 50);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: listEvaluations(filter) }));
+      return;
+    }
+
+    // ── Decision: get evaluation by id ─────────────────────────────────
+    const mapEvalMatch = req.url?.match(/^\/decision\/map\/evaluations\/([^/]+)$/);
+    if (mapEvalMatch && req.method === "GET") {
+      const evaluationId = decodeURIComponent(mapEvalMatch[1]!);
+      const record = getEvaluation(evaluationId);
+      if (!record) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Evaluation not found" }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: record }));
+      return;
+    }
+
+    // ── Decision: CERA create cycle ────────────────────────────────────
+    if (req.url === "/decision/cera/cycle" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const evaluationId = String(body["evaluationId"] ?? "").trim();
+          if (!evaluationId) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "evaluationId is required" }));
+            return;
+          }
+          const evaluation = getEvaluation(evaluationId);
+          if (!evaluation) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "Evaluation not found" }));
+            return;
+          }
+
+          const toStringArray = (v: unknown): string[] =>
+            Array.isArray(v) ? v.map((x) => String(x)).filter(Boolean) : [];
+
+          const signals: CeraSignals = {
+            captureSignals: toStringArray(body["captureSignals"]),
+            extractedInsights: toStringArray(body["extractedInsights"]),
+            refinementActions: toStringArray(body["refinementActions"]),
+            amplificationActions: toStringArray(body["amplificationActions"]),
+            ...(body["tenantId"] !== undefined ? { tenantId: String(body["tenantId"]) } : {}),
+            ...(body["runId"] !== undefined ? { runId: String(body["runId"]) } : {}),
+          };
+
+          const cycle = createCeraCycle(evaluation, signals);
+          saveCycle(cycle);
+          appendDecisionAuditEvent({
+            evaluationId: cycle.evaluationId,
+            cycleId: cycle.cycleId,
+            event: "cera_cycle_created",
+            ...(cycle.tenantId !== undefined ? { tenantId: cycle.tenantId } : {}),
+            payload: {
+              ceraEfficiencyScore: cycle.ceraEfficiencyScore,
+              compoundScore: cycle.compoundScore,
+              decisionPath: cycle.decisionPath,
+            },
+          });
+          emitCeraCycle(cycle);
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, data: cycle }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Decision: list cycles ──────────────────────────────────────────
+    if ((req.url === "/decision/cera/cycles" || req.url?.startsWith("/decision/cera/cycles?")) && req.method === "GET") {
+      const urlObj = new URL(req.url ?? "/decision/cera/cycles", "http://localhost");
+      const tenantId = urlObj.searchParams.get("tenantId");
+      const evaluationId = urlObj.searchParams.get("evaluationId");
+      const limitRaw = urlObj.searchParams.get("limit");
+      const filter: Parameters<typeof listCycles>[0] = {};
+      if (tenantId !== null) filter.tenantId = tenantId;
+      if (evaluationId !== null) filter.evaluationId = evaluationId;
+      if (limitRaw !== null) filter.limit = Math.max(1, parseInt(limitRaw, 10) || 50);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: listCycles(filter) }));
+      return;
+    }
+
+    // ── Decision: get cycle by id ──────────────────────────────────────
+    const ceraCycleMatch = req.url?.match(/^\/decision\/cera\/cycles\/([^/]+)$/);
+    if (ceraCycleMatch && req.method === "GET") {
+      const cycleId = decodeURIComponent(ceraCycleMatch[1]!);
+      const record = getCycle(cycleId);
+      if (!record) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Cycle not found" }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: record }));
+      return;
+    }
+
+    // ── Decision: compound score for evaluation ────────────────────────
+    const compoundMatch = req.url?.match(/^\/decision\/compound\/([^/]+)$/);
+    if (compoundMatch && req.method === "GET") {
+      const evaluationId = decodeURIComponent(compoundMatch[1]!);
+      const evaluation = getEvaluation(evaluationId);
+      if (!evaluation) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "Evaluation not found" }));
+        return;
+      }
+      const cycles = listCycles({ evaluationId, limit: 1 });
+      const cycle = cycles[0];
+      if (!cycle) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: "No CERA cycle for evaluation" }));
+        return;
+      }
+      const score = getCompoundScore(evaluation, cycle);
+      appendDecisionAuditEvent({
+        evaluationId: evaluation.evaluationId,
+        cycleId: cycle.cycleId,
+        event: "compound_score_created",
+        ...(evaluation.tenantId !== undefined ? { tenantId: evaluation.tenantId } : {}),
+        payload: {
+          mapScore: score.mapScore,
+          ceraEfficiencyScore: score.ceraEfficiencyScore,
+          compoundScore: score.compoundScore,
+          decisionPath: score.decisionPath,
+        },
+      });
+      emitCompoundScore(score, evaluation.runId);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: score }));
+      return;
+    }
+
+    // ── Decision: audit log ────────────────────────────────────────────
+    if ((req.url === "/decision/audit" || req.url?.startsWith("/decision/audit?")) && req.method === "GET") {
+      const urlObj = new URL(req.url ?? "/decision/audit", "http://localhost");
+      const evaluationId = urlObj.searchParams.get("evaluationId");
+      const cycleId = urlObj.searchParams.get("cycleId");
+      const event = urlObj.searchParams.get("event");
+      const limitRaw = urlObj.searchParams.get("limit");
+      const filter: Parameters<typeof getDecisionAuditEvents>[0] = {};
+      if (evaluationId !== null) filter.evaluationId = evaluationId;
+      if (cycleId !== null) filter.cycleId = cycleId;
+      if (event !== null) filter.event = event;
+      if (limitRaw !== null) filter.limit = Math.max(1, parseInt(limitRaw, 10) || 100);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, events: getDecisionAuditEvents(filter) }));
       return;
     }
 
