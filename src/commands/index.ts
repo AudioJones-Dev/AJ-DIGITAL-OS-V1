@@ -262,3 +262,9 @@ export type {
   HermesStatusCommandInput,
   HermesStatusCommandResult,
 } from "./hermes-status.command.js";
+
+export { AttributionReportCommand } from "./attribution-report.command.js";
+export type {
+  AttributionReportCommandInput,
+  AttributionReportCommandResult,
+} from "./attribution-report.command.js";

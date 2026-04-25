@@ -41,6 +41,7 @@ import {
   HermesStartCommand,
   HermesStopCommand,
   HermesStatusCommand,
+  AttributionReportCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -576,6 +577,17 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       case "hermes-status":
         {
           const result = await new HermesStatusCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "attribution-report":
+        {
+          const agentFlag = getStringFlag(parsed.flags, "agent");
+          const daysFlag = getStringFlag(parsed.flags, "days");
+          const result = await new AttributionReportCommand().run({
+            ...(agentFlag ? { agent: agentFlag } : {}),
+            ...(daysFlag ? { days: Number(daysFlag) } : {}),
             json: hasFlag(parsed.flags, "json"),
           });
           return result.ok ? 0 : 1;

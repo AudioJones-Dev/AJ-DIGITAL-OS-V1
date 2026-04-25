@@ -46,6 +46,7 @@ import {
 import { getCapabilities } from "../bel/bel-capabilities.js";
 import { listSessions } from "../bel/bel-session-manager.js";
 import { getRecentLogs } from "../mcp/mcp-logger.js";
+import { getRecentEvents, getEventsByRun } from "../attribution/attribution-tracker.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -904,6 +905,26 @@ export function startHermesApi(port?: number): void {
       const limit = Number(urlObj.searchParams.get("limit")) || 50;
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(getRecentLogs(limit)));
+      return;
+    }
+
+    // ── Attribution events by runId ───────────────────────────────────────
+    const attributionRunMatch = req.url?.match(/^\/attribution\/events\/(.+)$/);
+    if (attributionRunMatch && req.method === "GET") {
+      const runId = decodeURIComponent(attributionRunMatch[1]!);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, events: getEventsByRun(runId) }));
+      return;
+    }
+
+    // ── Attribution events list ───────────────────────────────────────────
+    const attributionEventsMatch = req.url?.match(/^\/attribution\/events(?:\?(.*))?$/);
+    if (attributionEventsMatch && req.method === "GET") {
+      const params = new URLSearchParams(attributionEventsMatch[1] ?? "");
+      const limitRaw = params.get("limit");
+      const limit = limitRaw ? Math.max(1, Math.min(1000, parseInt(limitRaw, 10) || 100)) : 100;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, events: getRecentEvents(limit) }));
       return;
     }
 
