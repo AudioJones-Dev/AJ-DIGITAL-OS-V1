@@ -84,6 +84,11 @@ import {
 import type { RunModelFilter } from "./services/observability/run-dashboard.js";
 import type { ApprovalDecision } from "./types/run.types.js";
 import type { ExecutionMode, ExecutionTarget } from "./services/execution/execution-policy.js";
+import type {
+  RetrievalEnvironment,
+  RetrievalNamespace,
+  RetrievalSourceType,
+} from "./retrieval/retrieval-types.js";
 
 interface ParsedArgs {
   command?: string;
@@ -1147,6 +1152,57 @@ function normalizeTrackRunView(value: string | undefined): TrackRunViewMode | un
 
 function isOpportunityTier(value: string | undefined): value is "high" | "medium" | "low" {
   return value === "high" || value === "medium" || value === "low";
+}
+
+function parseRetrievalNamespace(value: string | undefined): RetrievalNamespace | undefined {
+  switch (value) {
+    case "system_docs":
+    case "client_docs":
+    case "brand_voice":
+    case "workflow_docs":
+    case "content_assets":
+    case "aeo_research":
+    case "attribution_memory":
+    case "audit_memory":
+    case "tool_docs":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function parseRetrievalNamespaces(value: string): RetrievalNamespace[] {
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .map((s) => parseRetrievalNamespace(s))
+    .filter((s): s is RetrievalNamespace => s !== undefined);
+}
+
+function parseRetrievalSourceType(value: string | undefined): RetrievalSourceType | undefined {
+  switch (value) {
+    case "markdown":
+    case "text":
+    case "json":
+    case "jsonl":
+    case "pdf_stub":
+    case "docx_stub":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function parseRetrievalEnvironment(value: string | undefined): RetrievalEnvironment | undefined {
+  switch (value) {
+    case "production":
+    case "staging":
+    case "development":
+    case "test":
+      return value;
+    default:
+      return undefined;
+  }
 }
 
 function isDeliverableStatus(value: string | undefined): value is "draft" | "pending_approval" | "approved" | "published" | "failed" | "archived" {

@@ -56,6 +56,22 @@ import {
   listControlRuns,
   getControlRun,
 } from "../control-plane/run-registry/run-control-store.js";
+import { ingestDocument } from "../retrieval/retrieval-ingestor.js";
+import { searchRetrieval } from "../retrieval/retrieval-search.js";
+import { createContextPack } from "../retrieval/retrieval-context.js";
+import {
+  getDocument,
+  getRetrievalTrace,
+  listDocuments,
+  listRetrievalTraces,
+} from "../retrieval/retrieval-store.js";
+import type {
+  RetrievalEnvironment,
+  RetrievalIngestRequest,
+  RetrievalNamespace,
+  RetrievalSearchRequest,
+  RetrievalSourceType,
+} from "../retrieval/retrieval-types.js";
 import { executeControlAction } from "../control-plane/run-registry/control-actions.js";
 import { getAuditEvents } from "../control-plane/run-registry/run-audit-log.js";
 import { listAgents } from "../security/agents/agent-registry.js";
