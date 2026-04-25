@@ -56,3 +56,44 @@ export interface BelExecutionLog {
   timestamp: string;
   latencyMs: number;
 }
+
+export type BelExecutionMode = "explore" | "script" | "supervisor";
+
+export interface BelToolCall {
+  tool: BelToolName;
+  operation: string;
+  params: Record<string, unknown>;
+  retryable: boolean;
+  timeout: number;
+}
+
+export interface BelExecutionPlan {
+  planId: string;
+  taskId: string;
+  agentId: string;
+  mode: BelExecutionMode;
+  steps: BelToolCall[];
+  estimatedDuration: number;
+  requiresApproval: boolean;
+  createdAt: string;
+}
+
+export interface BelNormalizedResult {
+  planId: string;
+  taskId: string;
+  success: boolean;
+  output?: string;
+  error?: string;
+  stepsCompleted: number;
+  stepsTotal: number;
+  latencyMs: number;
+  tool: BelToolName;
+  timestamp: string;
+}
+
+export interface BelRuntimeState {
+  activePlans: Record<string, BelExecutionPlan>;
+  completedPlanIds: string[];
+  failedPlanIds: string[];
+  lastUpdated: string;
+}

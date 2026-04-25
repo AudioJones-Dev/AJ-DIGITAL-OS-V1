@@ -7,11 +7,49 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import type { BelSession } from "./bel-types.js";
 
 const TAG = "[BEL-SESSION]";
 
+const RUNTIME_DIR = join(process.cwd(), "runtime");
+const SESSIONS_FILE = join(RUNTIME_DIR, "bel-sessions.json");
+
 const sessions = new Map<string, BelSession>();
+
+function ensureRuntimeDir(): void {
+  if (!existsSync(RUNTIME_DIR)) {
+    mkdirSync(RUNTIME_DIR, { recursive: true });
+  }
+}
+
+function persistSessions(): void {
+  try {
+    ensureRuntimeDir();
+    const data: Record<string, BelSession> = {};
+    for (const [key, session] of sessions.entries()) {
+      data[key] = session;
+    }
+    writeFileSync(SESSIONS_FILE, JSON.stringify(data, null, 2), "utf-8");
+  } catch {
+    // Silent — don't crash if persistence fails
+  }
+}
+
+// Hydrate from disk on module load
+try {
+  ensureRuntimeDir();
+  if (existsSync(SESSIONS_FILE)) {
+    const data = JSON.parse(readFileSync(SESSIONS_FILE, "utf-8")) as Record<string, BelSession>;
+    for (const [key, session] of Object.entries(data)) {
+      sessions.set(key, session);
+    }
+    console.log(`${TAG} Hydrated ${sessions.size} session(s) from disk`);
+  }
+} catch {
+  // Silent — start fresh
+}
 
 function compositeKey(agentId: string, sessionName: string): string {
   return `${agentId}::${sessionName}`;
@@ -25,6 +63,7 @@ export function getOrCreateSession(agentId: string, sessionName: string): BelSes
   const existing = sessions.get(key);
   if (existing) {
     existing.lastUsedAt = new Date().toISOString();
+    persistSessions();
     return existing;
   }
 
@@ -38,6 +77,7 @@ export function getOrCreateSession(agentId: string, sessionName: string): BelSes
 
   sessions.set(key, session);
   console.log(`${TAG} Created session ${session.sessionId} for agent=${agentId} name=${sessionName}`);
+  persistSessions();
   return session;
 }
 
