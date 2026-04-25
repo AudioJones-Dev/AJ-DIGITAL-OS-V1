@@ -1,9 +1,9 @@
 {
-  "policy_allow_count": 34,
-  "system_event_count": 72,
-  "system_event_count.policy": 43,
-  "state_transition_count": 29,
-  "system_event_count.state": 29,
-  "approval_required_count": 18,
-  "policy_block_count": 20
+  "policy_allow_count": 41,
+  "system_event_count": 87,
+  "system_event_count.policy": 52,
+  "state_transition_count": 35,
+  "system_event_count.state": 35,
+  "approval_required_count": 22,
+  "policy_block_count": 24
 }
