@@ -3,9 +3,7 @@ import { mkdirSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 // ── Isolate file-system state between tests ───────────────────────────────
-const TEST_DIR = join(process.cwd(), "runtime", "__test__");
-const TEST_STORE = join(TEST_DIR, "control-runs.json");
-const TEST_AUDIT = join(process.cwd(), "logs", "__test-audit__.jsonl");
+const TEST_STORE = join(process.cwd(), "runtime", "control-runs.json");
 
 beforeEach(() => {
   if (existsSync(TEST_STORE)) rmSync(TEST_STORE);
@@ -21,6 +19,7 @@ import {
 } from "../../src/control-plane/run-registry/run-control-store.js";
 
 import { executeControlAction } from "../../src/control-plane/run-registry/control-actions.js";
+import type { ControlActionContext } from "../../src/control-plane/run-registry/control-context.js";
 import { logAuditEvent, getAuditEvents } from "../../src/control-plane/run-registry/run-audit-log.js";
 
 import {
@@ -309,5 +308,81 @@ describe("MAP validator", () => {
     const stats = getMAPStats([]);
     expect(stats.total).toBe(0);
     expect(stats.complianceRate).toBe(0);
+  });
+});
+
+// ── Enforcement integration ───────────────────────────────────────────────
+describe("enforcement integration", () => {
+  it("control action blocked on invalid state transition", async () => {
+    createControlRun("enf-invalid-run", "publisher-agent");
+    updateControlState("enf-invalid-run", "planning");
+    updateControlState("enf-invalid-run", "running");
+    updateControlState("enf-invalid-run", "completed");
+    // completed is a terminal state — approve (→ running) must be rejected
+    const result = await executeControlAction("enf-invalid-run", "approve", "admin", undefined, true);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Cannot transition");
+  });
+
+  it("control action requires approval if high risk, non-system actor", async () => {
+    createControlRun("enf-hirisk-run", "publisher-agent");
+    updateControlState("enf-hirisk-run", "planning");
+    updateControlState("enf-hirisk-run", "running");
+    // escalate is in APPROVAL_REQUIRED_ACTIONS; non-system actor must get requiresApproval
+    const result = await executeControlAction("enf-hirisk-run", "escalate", "user-actor");
+    expect(result.success).toBe(false);
+    expect(result.requiresApproval).toBe(true);
+    expect(result.approvalId).toBeTruthy();
+  });
+
+  it("control action blocked if tenantId missing in production environment", async () => {
+    createControlRun("enf-tenant-run", "publisher-agent");
+    updateControlState("enf-tenant-run", "planning");
+    updateControlState("enf-tenant-run", "running");
+    // system actor so approval gate is bypassed; medium risk in production without tenantId → block
+    const ctx: ControlActionContext = {
+      agentId: "agent-x",
+      permissionLevel: 3,
+      environment: "production",
+      performedBy: "system",
+    };
+    const result = await executeControlAction("enf-tenant-run", "pause", ctx);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("tenantId required");
+  });
+
+  it("system actor bypasses approval requirement for APPROVAL_REQUIRED_ACTIONS", async () => {
+    createControlRun("enf-sys-run", "publisher-agent");
+    updateControlState("enf-sys-run", "planning");
+    updateControlState("enf-sys-run", "running");
+    updateControlState("enf-sys-run", "failed");
+    // rerun is in APPROVAL_REQUIRED_ACTIONS; system actor (_legacyApprovalGranted=true) bypasses
+    const result = await executeControlAction("enf-sys-run", "rerun", "admin", undefined, true);
+    expect(result.success).toBe(true);
+    expect(result.requiresApproval).toBeUndefined();
+    expect(result.newState).toBe("queued");
+  });
+
+  it("audit log records decision=block on invalid state transition", async () => {
+    createControlRun("enf-audit-run", "publisher-agent");
+    updateControlState("enf-audit-run", "planning");
+    updateControlState("enf-audit-run", "running");
+    updateControlState("enf-audit-run", "completed");
+    await executeControlAction("enf-audit-run", "approve", "admin", undefined, true);
+    const events = getAuditEvents("enf-audit-run");
+    const blocked = events.find((e) => e.action === "approve" && e.decision === "block");
+    expect(blocked).toBeDefined();
+    expect(blocked?.decision).toBe("block");
+  });
+
+  it("MAP attribution emitted after successful control action — never throws", async () => {
+    createControlRun("enf-map-run", "publisher-agent");
+    updateControlState("enf-map-run", "planning");
+    updateControlState("enf-map-run", "waiting_for_approval");
+    // approve is not in APPROVAL_REQUIRED_ACTIONS; system actor executes directly
+    const result = await executeControlAction("enf-map-run", "approve", "admin", undefined, true);
+    // attribution is fire-and-forget; verify it never throws and action succeeds
+    expect(result.success).toBe(true);
+    expect(result.newState).toBe("running");
   });
 });

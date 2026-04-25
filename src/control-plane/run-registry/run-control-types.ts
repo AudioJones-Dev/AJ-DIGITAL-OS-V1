@@ -27,6 +27,12 @@ export interface AuditEvent {
   toState: RunControlState;
   performedBy: string;
   timestamp: string;
+  // Enforcement fields
+  decision?: "allow" | "block" | "approval_required";
+  risk?: "low" | "medium" | "high";
+  tenantId?: string;
+  enforcementResult?: string;
+  approvalId?: string;
   metadata?: Record<string, unknown>;
 }
 

@@ -24,6 +24,11 @@ export function logAuditEvent(event: Omit<AuditEvent, "eventId" | "timestamp">):
     performedBy: event.performedBy,
     eventId: randomUUID(),
     timestamp: new Date().toISOString(),
+    decision: event.decision ?? "allow",
+    risk: event.risk ?? "low",
+    ...(event.tenantId !== undefined ? { tenantId: event.tenantId } : {}),
+    ...(event.enforcementResult !== undefined ? { enforcementResult: event.enforcementResult } : {}),
+    ...(event.approvalId !== undefined ? { approvalId: event.approvalId } : {}),
     ...(event.metadata !== undefined ? { metadata: event.metadata } : {}),
   };
   buffer.push(full);
