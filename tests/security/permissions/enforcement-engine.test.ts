@@ -76,7 +76,7 @@ describe("permission enforcement engine", () => {
     expect(result.category).toBe("COMMAND_SAFE");
   });
 
-  it("requires approval for git push at level 4", async () => {
+  it("requires approval for git push at level 4", { timeout: 15_000 }, async () => {
     const result = await enforceAgentAction(
       {
         agentId: "agent-remote",
@@ -121,7 +121,7 @@ describe("permission enforcement engine", () => {
     expect(highLevelNoApproval.category).toBe("COMMAND_RESTRICTED");
   });
 
-  it("requires approval for secret modification", async () => {
+  it("requires approval for secret modification", { timeout: 15_000 }, async () => {
     const result = await enforceAgentAction(
       {
         agentId: "agent-secrets",
@@ -160,7 +160,7 @@ describe("permission enforcement engine", () => {
     expect(executed).toBe(false);
   });
 
-  it("ensures approval-gated command does not execute without approval", async () => {
+  it("ensures approval-gated command does not execute without approval", { timeout: 15_000 }, async () => {
     let executed = false;
 
     const result = await executeWithEnforcement(

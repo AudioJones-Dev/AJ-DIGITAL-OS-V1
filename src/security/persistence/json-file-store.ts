@@ -32,11 +32,33 @@ export async function readJSON<T>(
   }
 }
 
+/**
+ * Rename with retry for Windows EPERM/EBUSY races.
+ * Uses a unique tmp suffix per call so concurrent writes never collide.
+ */
+async function renameWithRetry(src: string, dest: string, retries = 5): Promise<void> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      await rename(src, dest);
+      return;
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (attempt < retries - 1 && (code === "EPERM" || code === "EBUSY")) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 20 * (attempt + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 export async function writeJSON<T>(filePath: string, data: T): Promise<void> {
   const dir = path.dirname(filePath);
   await ensureDirExists(dir);
 
-  const tmp = `${filePath}.tmp`;
+  // Unique tmp suffix: PID + random hex prevents concurrent-write collisions on Windows
+  const suffix = `${process.pid}.${Math.random().toString(36).slice(2)}`;
+  const tmp = `${filePath}.${suffix}.tmp`;
   await writeFile(tmp, JSON.stringify(data, null, 2), "utf-8");
-  await rename(tmp, filePath);
+  await renameWithRetry(tmp, filePath);
 }
