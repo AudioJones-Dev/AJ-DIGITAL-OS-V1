@@ -1,115 +1,139 @@
 "use client";
 
 import { useState } from "react";
+import type {
+  ControlAction,
+  ControlActionResult,
+  RunControlState,
+} from "@/lib/types";
+import {
+  APPROVAL_REQUIRED_ACTIONS,
+  ACTION_RISK,
+} from "@/lib/types";
+import {
+  buildActionPayload,
+  clientControlRunAction,
+  isActionDisabledForState,
+  PUBLIC_DEFAULT_TENANT_ID,
+} from "@/lib/control-client";
 
-type RunControlState =
-  | "queued" | "planning" | "running" | "waiting_for_approval"
-  | "retrying" | "escalated" | "completed" | "failed" | "cancelled";
-
-type ControlAction =
-  | "rerun" | "pause" | "resume" | "cancel"
-  | "approve" | "reject" | "escalate" | "inspect";
-
-const VALID_TRANSITIONS: Record<RunControlState, RunControlState[]> = {
-  queued: ["planning", "cancelled"],
-  planning: ["running", "waiting_for_approval", "failed", "cancelled"],
-  running: ["completed", "failed", "retrying", "escalated", "waiting_for_approval", "cancelled"],
-  waiting_for_approval: ["running", "cancelled", "failed"],
-  retrying: ["running", "failed", "escalated", "cancelled"],
-  escalated: ["running", "cancelled", "failed"],
-  completed: [],
-  failed: ["queued"],
-  cancelled: [],
-};
-
-const ACTION_TARGET: Partial<Record<ControlAction, RunControlState>> = {
-  rerun: "queued",
-  pause: "waiting_for_approval",
-  resume: "running",
-  cancel: "cancelled",
-  approve: "running",
-  reject: "failed",
-  escalate: "escalated",
-};
-
-const APPROVAL_REQUIRED: ControlAction[] = ["rerun", "escalate", "cancel"];
-const AVAILABLE_ACTIONS: ControlAction[] = ["approve", "resume", "pause", "rerun", "reject", "escalate", "cancel", "inspect"];
-
-const HERMES_API_URL = process.env.NEXT_PUBLIC_HERMES_API_URL ?? "http://localhost:3001";
+const ACTIONS: ControlAction[] = [
+  "approve",
+  "reject",
+  "pause",
+  "resume",
+  "rerun",
+  "escalate",
+  "cancel",
+];
 
 interface Props {
   runId: string;
   currentState: RunControlState;
+  onResult?: (action: ControlAction, result: ControlActionResult) => void;
 }
 
-export default function RunControls({ runId, currentState }: Props) {
+interface ActionMessage {
+  kind: "success" | "error" | "approval";
+  text: string;
+}
+
+export default function RunControls({ runId, currentState, onResult }: Props) {
   const [loading, setLoading] = useState<ControlAction | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [currentStateLocal, setCurrentStateLocal] = useState(currentState);
+  const [state, setState] = useState<RunControlState>(currentState);
+  const [message, setMessage] = useState<ActionMessage | null>(null);
 
-  const validNextStates = VALID_TRANSITIONS[currentStateLocal] ?? [];
-  const availableActions = AVAILABLE_ACTIONS.filter((action) => {
-    if (action === "inspect") return true;
-    const target = ACTION_TARGET[action];
-    return target !== undefined && validNextStates.includes(target);
-  });
-
-  async function executeAction(action: ControlAction) {
-    if (APPROVAL_REQUIRED.includes(action)) {
-      if (!confirm(`Action '${action}' requires approval. Proceed?`)) return;
+  async function handleAction(action: ControlAction) {
+    if (APPROVAL_REQUIRED_ACTIONS.includes(action)) {
+      const ok = typeof window !== "undefined"
+        ? window.confirm(`'${action}' is a high-risk action and requires approval. Continue?`)
+        : true;
+      if (!ok) return;
     }
+
     setLoading(action);
     setMessage(null);
-    try {
-      const res = await fetch(`${HERMES_API_URL}/control/runs/${runId}/action`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action,
-          performedBy: "dashboard-user",
-          approvalGranted: APPROVAL_REQUIRED.includes(action),
-        }),
+
+    const payload = buildActionPayload({
+      action,
+      actor: "dashboard-user",
+      actorType: "human",
+      ...(PUBLIC_DEFAULT_TENANT_ID ? { tenantId: PUBLIC_DEFAULT_TENANT_ID } : {}),
+    });
+
+    const result = await clientControlRunAction(runId, payload);
+
+    if (result.requiresApproval) {
+      setMessage({
+        kind: "approval",
+        text: `Approval required${result.approvalId ? ` (${result.approvalId.slice(0, 8)}…)` : ""}. Awaiting human approver.`,
       });
-      const json = await res.json() as { ok: boolean; newState?: RunControlState; error?: string };
-      if (json.ok && json.newState) {
-        setCurrentStateLocal(json.newState);
-        setMessage(`Done. State: ${json.newState}`);
-      } else {
-        setMessage(`Error: ${json.error ?? "Unknown"}`);
-      }
-    } catch (e) {
-      setMessage(`Request failed: ${e instanceof Error ? e.message : "Unknown"}`);
-    } finally {
-      setLoading(null);
+    } else if (result.ok) {
+      if (result.newState) setState(result.newState);
+      setMessage({
+        kind: "success",
+        text: `'${action}' applied. State: ${result.newState ?? state}`,
+      });
+    } else {
+      setMessage({
+        kind: "error",
+        text: result.error ?? "Action failed",
+      });
     }
+
+    onResult?.(action, result);
+    setLoading(null);
   }
 
-  if (availableActions.length === 0) {
-    return <p className="text-zinc-500 text-xs">No actions available for state: {currentStateLocal}</p>;
+  function btnClass(action: ControlAction, disabled: boolean): string {
+    const risk = ACTION_RISK[action];
+    const base =
+      "px-3 py-1.5 rounded text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+    if (disabled) return `${base} bg-zinc-800 text-zinc-500 border border-zinc-800`;
+    if (risk === "high") return `${base} bg-red-950/60 hover:bg-red-900/70 text-red-200 border border-red-900`;
+    if (risk === "medium") return `${base} bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-900/60`;
+    return `${base} bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700`;
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-testid="run-controls">
       <div className="flex flex-wrap gap-2">
-        {availableActions.map((action) => (
-          <button
-            key={action}
-            onClick={() => executeAction(action)}
-            disabled={loading !== null}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-              APPROVAL_REQUIRED.includes(action)
-                ? "bg-red-900 hover:bg-red-800 text-red-200"
-                : "bg-zinc-700 hover:bg-zinc-600 text-zinc-100"
-            } disabled:opacity-50`}
-          >
-            {loading === action ? "…" : action}
-          </button>
-        ))}
+        {ACTIONS.map((action) => {
+          const stateDisabled = isActionDisabledForState(action, state);
+          const disabled = stateDisabled || loading !== null;
+          return (
+            <button
+              key={action}
+              onClick={() => handleAction(action)}
+              disabled={disabled}
+              data-testid={`action-${action}`}
+              data-disabled={stateDisabled ? "true" : "false"}
+              className={btnClass(action, stateDisabled)}
+              title={stateDisabled ? `Run is in terminal state: ${state}` : `Risk: ${ACTION_RISK[action]}`}
+            >
+              {loading === action ? "…" : action}
+              {APPROVAL_REQUIRED_ACTIONS.includes(action) && (
+                <span className="ml-1 text-[10px] opacity-70">⚠</span>
+              )}
+            </button>
+          );
+        })}
       </div>
+
       {message && (
-        <p className={`text-xs ${message.startsWith("Error") ? "text-red-400" : "text-green-400"}`}>
-          {message}
-        </p>
+        <div
+          data-testid="action-message"
+          data-kind={message.kind}
+          className={`text-xs rounded border px-2 py-1.5 ${
+            message.kind === "success"
+              ? "bg-emerald-950/40 border-emerald-900 text-emerald-300"
+              : message.kind === "approval"
+              ? "bg-amber-950/40 border-amber-900 text-amber-200"
+              : "bg-red-950/40 border-red-900 text-red-300"
+          }`}
+        >
+          {message.text}
+        </div>
       )}
     </div>
   );

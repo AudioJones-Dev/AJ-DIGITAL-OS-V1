@@ -1,6 +1,22 @@
-import type { Run, Step, Observation, Failure, HermesStatus, BelCapabilities, FullRunData } from "./types";
+import type {
+  Run,
+  Step,
+  Observation,
+  Failure,
+  HermesStatus,
+  BelCapabilities,
+  FullRunData,
+  ControlRunRecord,
+  ControlAuditEvent,
+  ControlActionPayload,
+  ControlActionResult,
+  AttributionEvent,
+} from "./types";
 
 const HERMES_API_URL = process.env.HERMES_API_URL ?? "http://localhost:3001";
+// Public env var used by client components (must be NEXT_PUBLIC_*)
+export const PUBLIC_HERMES_API_URL =
+  process.env.NEXT_PUBLIC_HERMES_API_URL ?? process.env.HERMES_API_URL ?? "http://localhost:3001";
 const NEON_DATABASE_URL = process.env.NEON_DATABASE_URL ?? "";
 
 // ── Neon HTTP API ─────────────────────────────────────────────────
@@ -125,4 +141,63 @@ export async function fetchOpportunities(): Promise<unknown[]> {
   if (!res.ok) throw new Error(`Hermes /intelligence/opportunities returned ${res.status}`);
   const data = await res.json() as { opportunities?: unknown[] } | unknown[];
   return Array.isArray(data) ? data : ((data as { opportunities?: unknown[] }).opportunities ?? []);
+}
+
+// ── Control Plane (server-side: uses HERMES_API_URL) ─────────────
+
+export async function getControlRuns(): Promise<ControlRunRecord[]> {
+  const res = await fetch(`${HERMES_API_URL}/control/runs`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Hermes /control/runs returned ${res.status}`);
+  const json = (await res.json()) as { ok: boolean; data: ControlRunRecord[] };
+  return json.data ?? [];
+}
+
+export async function getControlRun(runId: string): Promise<ControlRunRecord | null> {
+  const res = await fetch(`${HERMES_API_URL}/control/runs/${encodeURIComponent(runId)}`, {
+    cache: "no-store",
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Hermes /control/runs/${runId} returned ${res.status}`);
+  const json = (await res.json()) as { ok: boolean; data: ControlRunRecord };
+  return json.data ?? null;
+}
+
+export async function getControlRunAudit(runId: string, limit?: number): Promise<ControlAuditEvent[]> {
+  const url = new URL(`${HERMES_API_URL}/control/runs/${encodeURIComponent(runId)}/audit`);
+  if (limit !== undefined) url.searchParams.set("limit", String(limit));
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  if (!res.ok) throw new Error(`Hermes /control/runs/${runId}/audit returned ${res.status}`);
+  const json = (await res.json()) as { ok: boolean; events: ControlAuditEvent[] };
+  return json.events ?? [];
+}
+
+/**
+ * Server-side control action call. Client components should use
+ * `clientControlRunAction` from `lib/control-client.ts` so the request
+ * goes to the publicly reachable `NEXT_PUBLIC_HERMES_API_URL`.
+ */
+export async function controlRunAction(
+  runId: string,
+  payload: ControlActionPayload,
+): Promise<ControlActionResult> {
+  const res = await fetch(`${HERMES_API_URL}/control/runs/${encodeURIComponent(runId)}/action`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+  const json = (await res.json().catch(() => ({}))) as ControlActionResult;
+  return json;
+}
+
+// ── Attribution ──────────────────────────────────────────────────
+
+export async function getAttributionEventsByRun(runId: string): Promise<AttributionEvent[]> {
+  const res = await fetch(
+    `${HERMES_API_URL}/attribution/events/${encodeURIComponent(runId)}`,
+    { cache: "no-store" },
+  );
+  if (!res.ok) throw new Error(`Hermes /attribution/events/${runId} returned ${res.status}`);
+  const json = (await res.json()) as { ok: boolean; events: AttributionEvent[] };
+  return json.events ?? [];
 }

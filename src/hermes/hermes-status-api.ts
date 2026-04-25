@@ -1038,7 +1038,12 @@ export function startHermesApi(port?: number): void {
         .then(async (raw) => {
           const body = JSON.parse(raw) as Record<string, unknown>;
           const action = body["action"] as ControlAction | undefined;
-          const performedBy = String(body["performedBy"] ?? "system").trim();
+          // Accept new contract { actor, actorType, tenantId } and legacy { performedBy, approvalGranted }
+          const actor = body["actor"] !== undefined ? String(body["actor"]).trim() : undefined;
+          const actorType = body["actorType"] !== undefined ? String(body["actorType"]).trim() : undefined;
+          const tenantId = body["tenantId"] !== undefined ? String(body["tenantId"]) : undefined;
+          const performedByLegacy = body["performedBy"] !== undefined ? String(body["performedBy"]).trim() : undefined;
+          const performedBy = actor ?? performedByLegacy ?? "system";
           const reason = body["reason"] !== undefined ? String(body["reason"]) : undefined;
           const approvalGranted = body["approvalGranted"] === true;
           if (!action) {
@@ -1046,8 +1051,23 @@ export function startHermesApi(port?: number): void {
             res.end(JSON.stringify({ ok: false, error: "action is required" }));
             return;
           }
+          // If new contract used (actor/actorType/tenantId provided), build full context
+          if (actor !== undefined || tenantId !== undefined) {
+            const ctx: import("../control-plane/run-registry/control-context.js").ControlActionContext = {
+              agentId: performedBy,
+              permissionLevel: 2,
+              environment: (process.env.HERMES_ENVIRONMENT as "local" | "dev" | "staging" | "production") ?? "local",
+              performedBy: actorType === "system" ? "system" : performedBy,
+              ...(tenantId !== undefined ? { tenantId } : {}),
+            };
+            const result = await executeControlAction(runId, action, ctx, reason);
+            const status = result.success ? 200 : result.requiresApproval ? 403 : result.blocked ? 403 : 400;
+            res.writeHead(status, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: result.success, ...result }));
+            return;
+          }
           const result = await executeControlAction(runId, action, performedBy, reason, approvalGranted);
-          const status = result.success ? 200 : result.requiresApproval ? 403 : 400;
+          const status = result.success ? 200 : result.requiresApproval ? 403 : result.blocked ? 403 : 400;
           res.writeHead(status, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: result.success, ...result }));
         })

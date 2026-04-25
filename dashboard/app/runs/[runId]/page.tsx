@@ -1,7 +1,18 @@
-import { fetchFullRunData } from "@/lib/api";
+import {
+  fetchFullRunData,
+  getControlRun,
+  getControlRunAudit,
+  getAttributionEventsByRun,
+} from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
-import RunControls from "@/components/RunControls";
-import AuditTrail from "@/components/AuditTrail";
+import RunDetailEnforcement from "@/components/RunDetailEnforcement";
+import MAPAttribution from "@/components/MAPAttribution";
+import type {
+  AttributionEvent,
+  ControlAuditEvent,
+  ControlRunRecord,
+  RunControlState,
+} from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +27,30 @@ export default async function RunDetailPage({ params }: Props) {
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to fetch run";
   }
+
+  // Best-effort fetches — if Hermes is down we still render the run from Neon.
+  let controlRecord: ControlRunRecord | null = null;
+  let auditEvents: ControlAuditEvent[] = [];
+  let attributionEvents: AttributionEvent[] = [];
+  try {
+    controlRecord = await getControlRun(params.runId);
+  } catch {
+    /* tolerate */
+  }
+  try {
+    auditEvents = await getControlRunAudit(params.runId);
+  } catch {
+    /* tolerate */
+  }
+  try {
+    attributionEvents = await getAttributionEventsByRun(params.runId);
+  } catch {
+    /* tolerate */
+  }
+
+  const initialControlState: RunControlState =
+    controlRecord?.controlState ?? "queued";
+  const environment = process.env.HERMES_ENVIRONMENT;
 
   if (error) {
     return (
@@ -200,16 +235,21 @@ export default async function RunDetailPage({ params }: Props) {
           </div>
         </div>
       )}
-      {/* Control Plane */}
+      {/* Enforcement: status + controls + audit, all driven by the control plane */}
       <div>
-        <h2 className="text-sm font-semibold text-zinc-400 mb-3">Run Controls</h2>
-        <RunControls runId={params.runId} currentState={"queued"} />
+        <h2 className="text-sm font-semibold mb-3 text-zinc-300">Enforcement</h2>
+        <RunDetailEnforcement
+          runId={params.runId}
+          initialState={initialControlState}
+          initialAudit={auditEvents}
+          {...(environment ? { environment } : {})}
+        />
       </div>
 
-      {/* Audit Trail */}
+      {/* MAP Attribution */}
       <div>
-        <h2 className="text-sm font-semibold text-zinc-400 mb-3">Audit Trail</h2>
-        <AuditTrail runId={params.runId} />
+        <h2 className="text-sm font-semibold mb-3 text-zinc-300">MAP Attribution</h2>
+        <MAPAttribution events={attributionEvents} />
       </div>
     </div>
   );
