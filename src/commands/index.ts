@@ -268,3 +268,9 @@ export type {
   AttributionReportCommandInput,
   AttributionReportCommandResult,
 } from "./attribution-report.command.js";
+
+export { ScoreOpportunitiesCommand } from "./score-opportunities.js";
+export type {
+  ScoreOpportunitiesCommandInput,
+  ScoreOpportunitiesCommandResult,
+} from "./score-opportunities.js";
