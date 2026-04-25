@@ -1,5 +1,17 @@
 export type AttributionChannel = "seo" | "aeo" | "social" | "email" | "blog" | "distribution" | "unknown";
-export type AttributionEventType = "run_created" | "run_completed" | "run_failed" | "content_published" | "content_distributed";
+export type AttributionEventType =
+  | "run_created"
+  | "run_completed"
+  | "run_failed"
+  | "content_published"
+  | "content_distributed"
+  | "dag_run_created"
+  | "dag_node_started"
+  | "dag_node_completed"
+  | "dag_node_failed"
+  | "dag_node_retried"
+  | "dag_run_completed"
+  | "dag_run_failed";
 
 export interface MAPScore {
   meaningful: boolean;
