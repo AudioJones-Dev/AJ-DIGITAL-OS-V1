@@ -6,6 +6,8 @@ import {
 } from "../../security/permissions/enforced-execution.js";
 import { defaultApprovalService } from "../../security/approvals/approval-service.js";
 import { emitEvent } from "../../attribution/attribution-tracker.js";
+import { appendSystemEvent } from "../../core/events/event-ledger.js";
+import { incrementMetric } from "../../core/observability/metrics-store.js";
 
 import type { ControlAction, RunControlState } from "./run-control-types.js";
 import { APPROVAL_REQUIRED_ACTIONS, ACTION_RISK } from "./run-control-types.js";
@@ -87,6 +89,11 @@ export async function executeControlAction(
       ...(tenantId !== undefined ? { tenantId } : {}),
       enforcementResult: "tenantId required",
     });
+    recordControlDecision({
+      runId, action, fromState: record.controlState, toState: record.controlState,
+      decision: "block", agentId, performedBy, environment,
+      reason: "missing_tenant_id",
+    });
     return { success: false, error: `tenantId required for ${risk} actions` };
   }
 
@@ -114,6 +121,12 @@ export async function executeControlAction(
       ...(tenantId !== undefined ? { tenantId } : {}),
       approvalId: approvalReq.approvalId,
     });
+    recordControlDecision({
+      runId, action, fromState: record.controlState, toState: record.controlState,
+      decision: "approval_required", agentId, performedBy,
+      ...(tenantId !== undefined ? { tenantId } : {}),
+      environment,
+    });
 
     return { success: false, requiresApproval: true, approvalId: approvalReq.approvalId };
   }
@@ -130,6 +143,13 @@ export async function executeControlAction(
         fromState: record.controlState, toState: record.controlState,
         performedBy, decision: "block", risk,
         enforcementResult: `Cannot transition: ${record.controlState} → ${targetState}`,
+      });
+      recordControlDecision({
+        runId, action, fromState: record.controlState, toState: record.controlState,
+        decision: "block", agentId, performedBy,
+        ...(tenantId !== undefined ? { tenantId } : {}),
+        environment,
+        reason: "invalid_transition",
       });
       return {
         success: false,
@@ -210,6 +230,13 @@ export async function executeControlAction(
         ...(tenantId !== undefined ? { tenantId } : {}),
         enforcementResult: err.message,
       });
+      recordControlDecision({
+        runId, action, fromState: record.controlState, toState: record.controlState,
+        decision: "block", agentId, performedBy,
+        ...(tenantId !== undefined ? { tenantId } : {}),
+        environment,
+        reason: "enforcement_blocked",
+      });
       return { success: false, blocked: true, error: `enforcement blocked: ${err.message}` };
     }
     throw err;
@@ -222,6 +249,12 @@ export async function executeControlAction(
       fromState: record.controlState, toState: record.controlState,
       performedBy, decision: "allow", risk,
       ...(tenantId !== undefined ? { tenantId } : {}),
+    });
+    recordControlDecision({
+      runId, action, fromState: record.controlState, toState: record.controlState,
+      decision: "allow", agentId, performedBy,
+      ...(tenantId !== undefined ? { tenantId } : {}),
+      environment,
     });
     emitAttributionEvent(runId, action, record.controlState, record.controlState, agentId, true);
     return { success: true, newState: record.controlState };
@@ -242,6 +275,14 @@ export async function executeControlAction(
     performedBy, decision: "allow", risk,
     ...(tenantId !== undefined ? { tenantId } : {}),
     ...(Object.keys(meta).length > 0 ? { metadata: meta } : {}),
+  });
+
+  recordControlDecision({
+    runId, action, fromState: record.controlState, toState: targetState,
+    decision: "allow", agentId, performedBy,
+    ...(tenantId !== undefined ? { tenantId } : {}),
+    environment,
+    ...(reason !== undefined ? { reason } : {}),
   });
 
   emitAttributionEvent(runId, action, record.controlState, targetState, agentId, true);
@@ -268,5 +309,49 @@ function emitAttributionEvent(
     });
   } catch {
     // attribution must never break control flow
+  }
+}
+
+/** Operating Core integration — record metric + system event for each decision. */
+export function recordControlDecision(args: {
+  runId: string;
+  action: ControlAction;
+  fromState: RunControlState;
+  toState: RunControlState;
+  decision: "allow" | "block" | "approval_required";
+  agentId: string;
+  performedBy: string;
+  tenantId?: string;
+  environment: "local" | "dev" | "staging" | "production";
+  reason?: string;
+}): void {
+  try {
+    if (args.decision === "allow") incrementMetric("policy_allow_count");
+    else if (args.decision === "block") incrementMetric("policy_block_count");
+    else incrementMetric("approval_required_count");
+
+    if (args.fromState !== args.toState) {
+      incrementMetric("state_transition_count");
+    }
+
+    appendSystemEvent({
+      eventType: `control_${args.action}_${args.decision}`,
+      category: args.fromState !== args.toState ? "state" : "policy",
+      runId: args.runId,
+      ...(args.tenantId !== undefined ? { tenantId: args.tenantId } : {}),
+      actorId: args.performedBy,
+      actorType: "system",
+      environment: args.environment,
+      payload: {
+        action: args.action,
+        agentId: args.agentId,
+        fromState: args.fromState,
+        toState: args.toState,
+        decision: args.decision,
+        ...(args.reason !== undefined ? { reason: args.reason } : {}),
+      },
+    });
+  } catch {
+    // Operating Core hooks must never break control flow.
   }
 }

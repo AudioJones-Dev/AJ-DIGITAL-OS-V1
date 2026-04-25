@@ -1,0 +1,15 @@
+{
+  "policy": "retrieval-access",
+  "version": "1.0.0",
+  "description": "Namespace access rules for retrieval / vector store operations.",
+  "rules": {
+    "default": "low",
+    "namespaces": {
+      "public": "low",
+      "tenant": "medium",
+      "internal": "medium",
+      "admin": "high"
+    },
+    "requireTenantIdForNamespaces": ["tenant", "internal", "admin"]
+  }
+}

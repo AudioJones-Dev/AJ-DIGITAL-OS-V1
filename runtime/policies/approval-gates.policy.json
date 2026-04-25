@@ -1,0 +1,10 @@
+{
+  "policy": "approval-gates",
+  "version": "1.0.0",
+  "description": "Actions that require human / admin approval. System actors bypass approval.",
+  "rules": {
+    "approvalRequired": ["rerun", "escalate", "cancel", "delete", "force_unlock"],
+    "systemActorsBypass": true,
+    "highRiskAlwaysRequiresApproval": true
+  }
+}

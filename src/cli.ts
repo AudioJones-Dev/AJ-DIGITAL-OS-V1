@@ -47,6 +47,18 @@ import {
   InspectRunCommand,
   ControlRunCommand,
   AuditRunCommand,
+  CoreHealthCommand,
+  StateValidateCommand,
+  StateTransitionsCommand,
+  PolicyEvaluateCommand,
+  EventsListCommand,
+  EventsRunCommand,
+  EventsTenantCommand,
+  EventsReplayCommand,
+  SchemasListCommand,
+  SchemaInspectCommand,
+  IdempotencyCheckCommand,
+  MetricsSnapshotCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -86,6 +98,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     "fallbackUsed",
     "approval-granted",
     "map",
+    "force",
   ]);
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -658,6 +671,147 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
             json: hasFlag(parsed.flags, "json"),
             ...(limitRaw ? { limit: parseInt(limitRaw, 10) } : {}),
           });
+          return result.ok ? 0 : 1;
+        }
+      case "core-health":
+        {
+          const result = await new CoreHealthCommand().run({ json: hasFlag(parsed.flags, "json") });
+          return result.ok ? 0 : 1;
+        }
+      case "state-validate":
+        {
+          const from = getStringFlag(parsed.flags, "from");
+          const to = getStringFlag(parsed.flags, "to");
+          if (!from || !to) {
+            console.error("Usage: state-validate --from <state> --to <state> [--force]");
+            return 1;
+          }
+          const result = await new StateValidateCommand().run({
+            from,
+            to,
+            force: hasFlag(parsed.flags, "force"),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "state-transitions":
+        {
+          const stateFlag = getStringFlag(parsed.flags, "state");
+          const result = await new StateTransitionsCommand().run({
+            ...(stateFlag ? { state: stateFlag } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "policy-evaluate":
+        {
+          const action = getStringFlag(parsed.flags, "action");
+          const envFlag = getStringFlag(parsed.flags, "environment") ?? "local";
+          if (!action) {
+            console.error("Usage: policy-evaluate --action <action> [--environment <env>] [--tenantId <id>]");
+            return 1;
+          }
+          const tenantIdFlag = getStringFlag(parsed.flags, "tenantId");
+          const env = (envFlag === "local" || envFlag === "dev" || envFlag === "staging" || envFlag === "production")
+            ? envFlag
+            : "local";
+          const result = await new PolicyEvaluateCommand().run({
+            action,
+            environment: env,
+            ...(tenantIdFlag ? { tenantId: tenantIdFlag } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "events-list":
+        {
+          const categoryFlag = getStringFlag(parsed.flags, "category");
+          const runIdFlag = getStringFlag(parsed.flags, "runId");
+          const tenantIdFlag = getStringFlag(parsed.flags, "tenantId");
+          const result = await new EventsListCommand().run({
+            ...(categoryFlag ? { category: categoryFlag } : {}),
+            ...(runIdFlag ? { runId: runIdFlag } : {}),
+            ...(tenantIdFlag ? { tenantId: tenantIdFlag } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "events-run":
+        {
+          const runIdFlag = getStringFlag(parsed.flags, "runId");
+          if (!runIdFlag) {
+            console.error("Usage: events-run --runId <id>");
+            return 1;
+          }
+          const result = await new EventsRunCommand().run({
+            runId: runIdFlag,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "events-tenant":
+        {
+          const tenantIdFlag = getStringFlag(parsed.flags, "tenantId");
+          if (!tenantIdFlag) {
+            console.error("Usage: events-tenant --tenantId <id>");
+            return 1;
+          }
+          const result = await new EventsTenantCommand().run({
+            tenantId: tenantIdFlag,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "events-replay":
+        {
+          const runIdFlag = getStringFlag(parsed.flags, "runId");
+          if (!runIdFlag) {
+            console.error("Usage: events-replay --runId <id>");
+            return 1;
+          }
+          const result = await new EventsReplayCommand().run({
+            runId: runIdFlag,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "schemas-list":
+        {
+          const result = await new SchemasListCommand().run({ json: hasFlag(parsed.flags, "json") });
+          return result.ok ? 0 : 1;
+        }
+      case "schema-inspect":
+        {
+          const nameFlag = getStringFlag(parsed.flags, "name");
+          if (!nameFlag) {
+            console.error("Usage: schema-inspect --name <SchemaName>");
+            return 1;
+          }
+          const result = await new SchemaInspectCommand().run({
+            name: nameFlag,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "idempotency-check":
+        {
+          const keyFlag = getStringFlag(parsed.flags, "idempotencyKey");
+          const hashFlag = getStringFlag(parsed.flags, "commandHash");
+          if (!keyFlag || !hashFlag) {
+            console.error("Usage: idempotency-check --idempotencyKey <key> --commandHash <hash>");
+            return 1;
+          }
+          const result = await new IdempotencyCheckCommand().run({
+            idempotencyKey: keyFlag,
+            commandHash: hashFlag,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "metrics-snapshot":
+        {
+          const result = await new MetricsSnapshotCommand().run({ json: hasFlag(parsed.flags, "json") });
           return result.ok ? 0 : 1;
         }
       default:
