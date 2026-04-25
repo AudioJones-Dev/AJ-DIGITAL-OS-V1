@@ -7,10 +7,24 @@ import { DeliverableRecorder } from "../services/runtime/deliverable-recorder.js
 import { OutputPathResolver } from "../services/runtime/output-path-resolver.js";
 import type { RunRecord } from "../types/run.types.js";
 import type { WorkflowAsset, WorkflowExecutionResult } from "../types/workflow.types.js";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../security/agents/agent-registry.js";
+import type { ApprovalContext } from "../security/permissions/approval-gate.js";
+import type { PermissionLevel } from "../security/permissions/permission-levels.js";
 
 export interface PublisherInput {
   runId: string;
   target?: "local";
+  enforcement?: PublisherEnforcementContext | undefined;
+}
+
+export interface PublisherEnforcementContext {
+  agentId: string;
+  permissionLevel: PermissionLevel;
+  approval?: ApprovalContext | undefined;
 }
 
 export interface PublisherResult {
@@ -63,10 +77,31 @@ export class PublisherAgent {
         workflowId: run.workflowId,
       });
 
-      const outputDirectory = await this.resolveOutputDirectory(run);
-      await mkdir(outputDirectory, { recursive: true });
+      const enforcement = this.resolveEnforcement(input.enforcement);
 
-      const filesWritten = await this.writeArtifacts(outputDirectory, run.taskType, run.workflowResult);
+      const outputDirectory = await this.resolveOutputDirectory(run);
+      await this.enforcedMutation({
+        agentId: enforcement.agentId,
+        permissionLevel: enforcement.permissionLevel,
+        approval: enforcement.approval,
+        clientId: run.clientId ?? null,
+        target: outputDirectory,
+        actionType: "write_file",
+      }, async () => {
+        await mkdir(outputDirectory, { recursive: true });
+      });
+
+      const filesWritten = await this.writeArtifacts(
+        outputDirectory,
+        run.taskType,
+        run.workflowResult,
+        {
+          agentId: enforcement.agentId,
+          permissionLevel: enforcement.permissionLevel,
+          approval: enforcement.approval,
+          clientId: run.clientId ?? null,
+        },
+      );
       logger.info("Publisher wrote artifacts.", {
         runId: run.runId,
         filesWritten,
@@ -152,6 +187,7 @@ export class PublisherAgent {
     const outputPaths = await this.outputPathResolver.resolve({
       clientId: run.clientId,
     });
+    // Ensure this mutating directory preparation path can be gated by caller-level enforcement.
     await this.outputPathResolver.ensureDirectories(outputPaths);
     return path.join(outputPaths.published, this.sanitizeSegment(run.runId));
   }
@@ -160,6 +196,12 @@ export class PublisherAgent {
     outputDirectory: string,
     taskType: string,
     workflowResult: WorkflowExecutionResult,
+    context: {
+      agentId: string;
+      permissionLevel: PermissionLevel;
+      approval?: ApprovalContext | undefined;
+      clientId?: string | null | undefined;
+    },
   ): Promise<string[]> {
     const filesWritten: string[] = [];
     const usedFileNames = new Set<string>();
@@ -172,7 +214,16 @@ export class PublisherAgent {
 
       const uniqueFileName = this.ensureUniqueFilename(fileName, usedFileNames);
       const filePath = path.join(outputDirectory, uniqueFileName);
-      await writeFile(filePath, this.normalizeText(asset.value), "utf-8");
+      await this.enforcedMutation({
+        agentId: context.agentId,
+        permissionLevel: context.permissionLevel,
+        approval: context.approval,
+        clientId: context.clientId,
+        target: filePath,
+        actionType: "write_file",
+      }, async () => {
+        await writeFile(filePath, this.normalizeText(asset.value), "utf-8");
+      });
       filesWritten.push(filePath);
       logger.info("Publisher wrote file.", {
         filePath,
@@ -182,7 +233,16 @@ export class PublisherAgent {
 
     if (taskType === "transcript_to_content") {
       const summaryPath = path.join(outputDirectory, "summary.md");
-      await writeFile(summaryPath, this.normalizeText(workflowResult.summary), "utf-8");
+      await this.enforcedMutation({
+        agentId: context.agentId,
+        permissionLevel: context.permissionLevel,
+        approval: context.approval,
+        clientId: context.clientId,
+        target: summaryPath,
+        actionType: "write_file",
+      }, async () => {
+        await writeFile(summaryPath, this.normalizeText(workflowResult.summary), "utf-8");
+      });
       filesWritten.push(summaryPath);
       logger.info("Publisher wrote file.", {
         filePath: summaryPath,
@@ -241,5 +301,57 @@ export class PublisherAgent {
 
   private sanitizeSegment(value: string): string {
     return value.replace(/[^a-zA-Z0-9-_]/g, "_");
+  }
+
+  private resolveEnforcement(
+    context: PublisherEnforcementContext | undefined,
+  ): PublisherEnforcementContext {
+    const registryContext = resolveAgentContext(context?.agentId ?? "publisher-agent");
+
+    return {
+      agentId: context?.agentId ?? registryContext.agentId,
+      permissionLevel: context?.permissionLevel ?? registryContext.permissionLevel,
+      ...(context?.approval !== undefined ? { approval: context.approval } : {}),
+    };
+  }
+
+  private async enforcedMutation(
+    context: {
+      agentId: string;
+      permissionLevel: PermissionLevel;
+      approval?: ApprovalContext | undefined;
+      clientId?: string | null | undefined;
+      target: string;
+      actionType: string;
+    },
+    execute: () => Promise<void>,
+  ): Promise<void> {
+    try {
+      const enforced = await executeWithEnforcement(
+        {
+          agentId: context.agentId,
+          actionType: context.actionType,
+          target: context.target,
+          ...(context.clientId !== undefined ? { clientId: context.clientId } : {}),
+        },
+        {
+          permissionLevel: context.permissionLevel,
+          ...(context.approval !== undefined ? { approval: context.approval } : {}),
+        },
+        async () => {
+          await execute();
+          return { ok: true };
+        },
+      );
+
+      if (enforced.status === "approval_required") {
+        throw new Error(`Publisher mutation requires approval: ${enforced.enforcement.reason}`);
+      }
+    } catch (err: unknown) {
+      if (err instanceof EnforcementBlockedError) {
+        throw new Error(`Publisher mutation blocked: ${err.message}`);
+      }
+      throw err;
+    }
   }
 }

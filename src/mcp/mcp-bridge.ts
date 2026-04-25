@@ -13,6 +13,7 @@ import type { AgentActionRequest } from "../security/permissions/permission-leve
 import { mcpSecureExecute } from "../security/mcp/mcp-secure-executor.js";
 import type { ExecuteWithEnforcementContext } from "../security/permissions/enforced-execution.js";
 import type { TenantContext } from "../security/tenancy/tenant-types.js";
+import { resolveAgentContext } from "../security/agents/agent-registry.js";
 
 export interface BridgeRequest {
   taskType: McpTaskType | "browser_task";
@@ -85,7 +86,8 @@ function toActionRequest(req: BridgeRequest): AgentActionRequest {
 }
 
 export async function dispatchToTool(req: BridgeRequest): Promise<BridgeResult> {
-  const environment = req.environment ?? "local";
+  const agentContext = resolveAgentContext(req.agentId ?? "mcp-bridge");
+  const environment = req.environment ?? agentContext.environment;
 
   if (req.clientId && !req.tenantContext) {
     return {
@@ -101,7 +103,7 @@ export async function dispatchToTool(req: BridgeRequest): Promise<BridgeResult> 
         toolName: "list_directory",
         actionRequest: toActionRequest(req),
         environment,
-        permissionLevel: req.permissionLevel ?? 2,
+        permissionLevel: req.permissionLevel ?? agentContext.permissionLevel,
         ...(req.approval !== undefined ? { approval: req.approval } : {}),
         ...(req.tenantContext !== undefined ? { tenantContext: req.tenantContext } : {}),
       },
@@ -119,7 +121,7 @@ export async function dispatchToTool(req: BridgeRequest): Promise<BridgeResult> 
         toolName: "read_file",
         actionRequest: toActionRequest(req),
         environment,
-        permissionLevel: req.permissionLevel ?? 2,
+        permissionLevel: req.permissionLevel ?? agentContext.permissionLevel,
         ...(req.approval !== undefined ? { approval: req.approval } : {}),
         ...(req.tenantContext !== undefined ? { tenantContext: req.tenantContext } : {}),
       },
@@ -136,7 +138,7 @@ export async function dispatchToTool(req: BridgeRequest): Promise<BridgeResult> 
         toolName: "run_safe_command",
         actionRequest: toActionRequest(req),
         environment,
-        permissionLevel: req.permissionLevel ?? 2,
+        permissionLevel: req.permissionLevel ?? agentContext.permissionLevel,
         ...(req.approval !== undefined ? { approval: req.approval } : {}),
         ...(req.tenantContext !== undefined ? { tenantContext: req.tenantContext } : {}),
       },
@@ -160,7 +162,7 @@ export async function dispatchToTool(req: BridgeRequest): Promise<BridgeResult> 
         toolName: "browser_task",
         actionRequest: toActionRequest(req),
         environment,
-        permissionLevel: req.permissionLevel ?? 2,
+        permissionLevel: req.permissionLevel ?? agentContext.permissionLevel,
         ...(req.approval !== undefined ? { approval: req.approval } : {}),
         ...(req.tenantContext !== undefined ? { tenantContext: req.tenantContext } : {}),
       },

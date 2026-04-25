@@ -1,6 +1,20 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { isPathAllowed } from "./allowlist.js";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../security/agents/agent-registry.js";
+import type { ApprovalContext } from "../security/permissions/approval-gate.js";
+import type { PermissionLevel } from "../security/permissions/permission-levels.js";
+
+export interface FileToolsEnforcementContext {
+  agentId: string;
+  permissionLevel: PermissionLevel;
+  approval?: ApprovalContext | undefined;
+  clientId?: string | null | undefined;
+}
 
 /**
  * Safely read a file within the allowlist.
@@ -34,6 +48,7 @@ export async function safeWriteFile(
   filePath: string,
   content: string,
   allowedPaths?: string[],
+  enforcement?: FileToolsEnforcementContext,
 ): Promise<{ ok: boolean; error: string | null }> {
   const check = isPathAllowed(filePath, allowedPaths);
   if (!check.allowed) {
@@ -41,10 +56,48 @@ export async function safeWriteFile(
   }
 
   try {
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
-    await fs.writeFile(filePath, content, "utf-8");
+    const registryContext = resolveAgentContext(enforcement?.agentId ?? "local-agent-file-tools");
+    const context: FileToolsEnforcementContext = {
+      agentId: enforcement?.agentId ?? registryContext.agentId,
+      permissionLevel: enforcement?.permissionLevel ?? registryContext.permissionLevel,
+      ...(enforcement?.approval !== undefined ? { approval: enforcement.approval } : {}),
+      ...(enforcement?.clientId !== undefined ? { clientId: enforcement.clientId } : {}),
+    };
+
+    const enforced = await executeWithEnforcement(
+      {
+        agentId: context.agentId,
+        actionType: "write_file",
+        target: filePath,
+        ...(context.clientId !== undefined ? { clientId: context.clientId } : {}),
+      },
+      {
+        permissionLevel: context.permissionLevel,
+        ...(context.approval !== undefined ? { approval: context.approval } : {}),
+      },
+      async () => {
+        await fs.mkdir(path.dirname(filePath), { recursive: true });
+        await fs.writeFile(filePath, content, "utf-8");
+        return { ok: true };
+      },
+    );
+
+    if (enforced.status === "approval_required") {
+      return {
+        ok: false,
+        error: `Write requires approval: ${enforced.enforcement.reason}`,
+      };
+    }
+
     return { ok: true, error: null };
   } catch (err) {
+    if (err instanceof EnforcementBlockedError) {
+      return {
+        ok: false,
+        error: `Write blocked by enforcement: ${err.message}`,
+      };
+    }
+
     return {
       ok: false,
       error: err instanceof Error ? err.message : "Write failed",

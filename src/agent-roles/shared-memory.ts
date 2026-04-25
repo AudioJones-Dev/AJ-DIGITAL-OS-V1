@@ -1,6 +1,13 @@
 import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import type { MissionState, MissionAlert, MissionRole } from "./mission-types.js";
+import {
+  EnforcementBlockedError,
+  executeWithEnforcement,
+} from "../security/permissions/enforced-execution.js";
+import { resolveAgentContext } from "../security/agents/agent-registry.js";
+import type { ApprovalContext } from "../security/permissions/approval-gate.js";
+import type { PermissionLevel } from "../security/permissions/permission-levels.js";
 
 // ── Shared Memory Layout ───────────────────────────────────────────
 //
@@ -18,6 +25,14 @@ const DEFAULT_ROOT = path.resolve("data", "memory");
 
 export interface SharedMemoryConfig {
   root: string;
+  enforcement?: SharedMemoryEnforcementContext | undefined;
+}
+
+export interface SharedMemoryEnforcementContext {
+  agentId: string;
+  permissionLevel: PermissionLevel;
+  clientId?: string | null | undefined;
+  approval?: ApprovalContext | undefined;
 }
 
 const DEFAULT_CONFIG: SharedMemoryConfig = { root: DEFAULT_ROOT };
@@ -34,21 +49,41 @@ export async function writeMissionState(
 ): Promise<string> {
   const root = config?.root ?? DEFAULT_CONFIG.root;
   const dir = path.join(root, "missions", state.missionId);
-  await ensureDir(dir);
+  await ensureDir(dir, config?.enforcement);
 
-  await writeFile(path.join(dir, "state.json"), toJSON(state), "utf-8");
+  await enforcedWrite(
+    path.join(dir, "state.json"),
+    toJSON(state),
+    config?.enforcement,
+  );
 
   if (state.plan !== null && state.plan !== undefined) {
-    await writeFile(path.join(dir, "plan.json"), toJSON(state.plan), "utf-8");
+    await enforcedWrite(
+      path.join(dir, "plan.json"),
+      toJSON(state.plan),
+      config?.enforcement,
+    );
   }
   if (state.executionOutput !== null && state.executionOutput !== undefined) {
-    await writeFile(path.join(dir, "execution.json"), toJSON(state.executionOutput), "utf-8");
+    await enforcedWrite(
+      path.join(dir, "execution.json"),
+      toJSON(state.executionOutput),
+      config?.enforcement,
+    );
   }
   if (state.validationResult !== null && state.validationResult !== undefined) {
-    await writeFile(path.join(dir, "validation.json"), toJSON(state.validationResult), "utf-8");
+    await enforcedWrite(
+      path.join(dir, "validation.json"),
+      toJSON(state.validationResult),
+      config?.enforcement,
+    );
   }
   if (state.alerts.length > 0) {
-    await writeFile(path.join(dir, "alerts.json"), toJSON(state.alerts), "utf-8");
+    await enforcedWrite(
+      path.join(dir, "alerts.json"),
+      toJSON(state.alerts),
+      config?.enforcement,
+    );
   }
 
   return dir;
@@ -108,14 +143,41 @@ export async function appendSharedLog(
 ): Promise<void> {
   const root = config?.root ?? DEFAULT_CONFIG.root;
   const dir = path.join(root, "shared");
-  await ensureDir(dir);
+  await ensureDir(dir, config?.enforcement);
 
   const filename = `${entry.type}s.jsonl`;
   const filePath = path.join(dir, filename);
   const line = JSON.stringify(entry) + "\n";
 
   const { appendFile } = await import("node:fs/promises");
-  await appendFile(filePath, line, "utf-8");
+  const context = resolveEnforcement(config?.enforcement);
+  try {
+    const enforced = await executeWithEnforcement(
+      {
+        agentId: context.agentId,
+        actionType: "write_file",
+        target: filePath,
+        clientId: context.clientId ?? null,
+      },
+      {
+        permissionLevel: context.permissionLevel,
+        ...(context.approval !== undefined ? { approval: context.approval } : {}),
+      },
+      async () => {
+        await appendFile(filePath, line, "utf-8");
+        return { ok: true };
+      },
+    );
+
+    if (enforced.status === "approval_required") {
+      throw new Error(`Shared memory append requires approval: ${enforced.enforcement.reason}`);
+    }
+  } catch (err: unknown) {
+    if (err instanceof EnforcementBlockedError) {
+      throw new Error(`Shared memory append blocked: ${err.message}`);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -144,6 +206,86 @@ function toJSON(data: unknown): string {
   return JSON.stringify(data, null, 2) + "\n";
 }
 
-async function ensureDir(dir: string): Promise<void> {
-  await mkdir(dir, { recursive: true });
+function resolveEnforcement(
+  context: SharedMemoryEnforcementContext | undefined,
+): SharedMemoryEnforcementContext {
+  const registryContext = resolveAgentContext(context?.agentId ?? "shared-memory");
+
+  return {
+    agentId: context?.agentId ?? registryContext.agentId,
+    permissionLevel: context?.permissionLevel ?? registryContext.permissionLevel,
+    ...(context?.clientId !== undefined ? { clientId: context.clientId } : {}),
+    ...(context?.approval !== undefined ? { approval: context.approval } : {}),
+  };
+}
+
+async function enforcedWrite(
+  filePath: string,
+  content: string,
+  contextInput: SharedMemoryEnforcementContext | undefined,
+): Promise<void> {
+  const context = resolveEnforcement(contextInput);
+
+  try {
+    const enforced = await executeWithEnforcement(
+      {
+        agentId: context.agentId,
+        actionType: "write_file",
+        target: filePath,
+        clientId: context.clientId ?? null,
+      },
+      {
+        permissionLevel: context.permissionLevel,
+        ...(context.approval !== undefined ? { approval: context.approval } : {}),
+      },
+      async () => {
+        await writeFile(filePath, content, "utf-8");
+        return { ok: true };
+      },
+    );
+
+    if (enforced.status === "approval_required") {
+      throw new Error(`Shared memory write requires approval: ${enforced.enforcement.reason}`);
+    }
+  } catch (err: unknown) {
+    if (err instanceof EnforcementBlockedError) {
+      throw new Error(`Shared memory write blocked: ${err.message}`);
+    }
+    throw err;
+  }
+}
+
+async function ensureDir(
+  dir: string,
+  contextInput: SharedMemoryEnforcementContext | undefined,
+): Promise<void> {
+  const context = resolveEnforcement(contextInput);
+
+  try {
+    const enforced = await executeWithEnforcement(
+      {
+        agentId: context.agentId,
+        actionType: "write_file",
+        target: dir,
+        clientId: context.clientId ?? null,
+      },
+      {
+        permissionLevel: context.permissionLevel,
+        ...(context.approval !== undefined ? { approval: context.approval } : {}),
+      },
+      async () => {
+        await mkdir(dir, { recursive: true });
+        return { ok: true };
+      },
+    );
+
+    if (enforced.status === "approval_required") {
+      throw new Error(`Shared memory directory creation requires approval: ${enforced.enforcement.reason}`);
+    }
+  } catch (err: unknown) {
+    if (err instanceof EnforcementBlockedError) {
+      throw new Error(`Shared memory directory creation blocked: ${err.message}`);
+    }
+    throw err;
+  }
 }
