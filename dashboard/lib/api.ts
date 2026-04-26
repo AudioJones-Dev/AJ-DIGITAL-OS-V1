@@ -201,3 +201,177 @@ export async function getAttributionEventsByRun(runId: string): Promise<Attribut
   const json = (await res.json()) as { ok: boolean; events: AttributionEvent[] };
   return json.events ?? [];
 }
+
+
+// ── Core Health + Metrics ─────────────────────────────────────────
+
+export async function getCoreHealth(): Promise<import("./types").CoreHealth | null> {
+  try {
+    const res = await fetch(\/core/health, { cache: "no-store" });
+    if (!res.ok) return null;
+    return res.json() as Promise<import("./types").CoreHealth>;
+  } catch { return null; }
+}
+
+export async function getMetrics(): Promise<import("./types").MetricsSnapshot | null> {
+  try {
+    const res = await fetch(\/core/metrics, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json() as { ok: boolean; metrics: import("./types").MetricsSnapshot };
+    return json.metrics ?? null;
+  } catch { return null; }
+}
+
+// ── System Events ─────────────────────────────────────────────────
+
+export async function getSystemEvents(params?: {
+  category?: string;
+  runId?: string;
+  tenantId?: string;
+  limit?: number;
+}): Promise<import("./types").SystemEvent[]> {
+  try {
+    const url = new URL(\/core/events);
+    if (params?.category) url.searchParams.set("category", params.category);
+    if (params?.runId) url.searchParams.set("runId", params.runId);
+    if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
+    if (params?.limit) url.searchParams.set("limit", String(params.limit));
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = await res.json() as { ok: boolean; events: import("./types").SystemEvent[] };
+    return json.events ?? [];
+  } catch { return []; }
+}
+
+// ── Cache ─────────────────────────────────────────────────────────
+
+export async function getCacheEntries(
+  namespace: import("./types").CacheNamespace,
+  tenantId?: string,
+): Promise<import("./types").CacheEntryMeta[]> {
+  try {
+    const url = new URL(\/cache/\);
+    if (tenantId) url.searchParams.set("tenantId", tenantId);
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = await res.json() as { ok: boolean; data: import("./types").CacheEntryMeta[] };
+    return json.data ?? [];
+  } catch { return []; }
+}
+
+export async function getCacheAuditLog(params?: {
+  namespace?: string;
+  limit?: number;
+}): Promise<import("./types").CacheAuditEvent[]> {
+  try {
+    const url = new URL(\/cache/audit);
+    if (params?.namespace) url.searchParams.set("namespace", params.namespace);
+    if (params?.limit) url.searchParams.set("limit", String(params.limit));
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = await res.json() as { ok: boolean; events: import("./types").CacheAuditEvent[] };
+    return json.events ?? [];
+  } catch { return []; }
+}
+
+// ── BEL v4 DAG ───────────────────────────────────────────────────
+
+export async function getDagRuns(params?: {
+  status?: string;
+  tenantId?: string;
+  limit?: number;
+}): Promise<import("./types").BelDagRunState[]> {
+  try {
+    const url = new URL(\/dag/runs);
+    if (params?.status) url.searchParams.set("status", params.status);
+    if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
+    if (params?.limit) url.searchParams.set("limit", String(params.limit));
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = await res.json() as { ok: boolean; data: import("./types").BelDagRunState[] };
+    return json.data ?? [];
+  } catch { return []; }
+}
+
+export async function getDagRun(runId: string): Promise<import("./types").BelDagRunState | null> {
+  try {
+    const res = await fetch(
+      \/dag/runs/\,
+      { cache: "no-store" },
+    );
+    if (!res.ok) return null;
+    const json = await res.json() as { ok: boolean; data: import("./types").BelDagRunState };
+    return json.data ?? null;
+  } catch { return null; }
+}
+
+export async function getDagAudit(runId: string, limit?: number): Promise<import("./types").BelDagAuditEvent[]> {
+  try {
+    const url = new URL(\/dag/runs/\/audit);
+    if (limit) url.searchParams.set("limit", String(limit));
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = await res.json() as { ok: boolean; events: import("./types").BelDagAuditEvent[] };
+    return json.events ?? [];
+  } catch { return []; }
+}
+
+// ── Retrieval ─────────────────────────────────────────────────────
+
+export async function getRetrievalDocs(params?: {
+  namespace?: string;
+  tenantId?: string;
+  limit?: number;
+}): Promise<import("./types").RetrievalDocument[]> {
+  try {
+    const url = new URL(\/retrieval/documents);
+    if (params?.namespace) url.searchParams.set("namespace", params.namespace);
+    if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
+    if (params?.limit) url.searchParams.set("limit", String(params.limit));
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = await res.json() as { ok: boolean; data: import("./types").RetrievalDocument[] };
+    return json.data ?? [];
+  } catch { return []; }
+}
+
+export async function getRetrievalTraces(params?: {
+  tenantId?: string;
+  runId?: string;
+  limit?: number;
+}): Promise<import("./types").RetrievalTrace[]> {
+  try {
+    const url = new URL(\/retrieval/traces);
+    if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
+    if (params?.runId) url.searchParams.set("runId", params.runId);
+    if (params?.limit) url.searchParams.set("limit", String(params.limit));
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = await res.json() as { ok: boolean; data: import("./types").RetrievalTrace[] };
+    return json.data ?? [];
+  } catch { return []; }
+}
+
+// ── Decision Engine ───────────────────────────────────────────────
+
+export async function getMapEvaluations(limit?: number): Promise<import("./types").MapEvaluation[]> {
+  try {
+    const url = new URL(\/decision/map/evaluations);
+    if (limit) url.searchParams.set("limit", String(limit));
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = await res.json() as { ok: boolean; data: import("./types").MapEvaluation[] };
+    return json.data ?? [];
+  } catch { return []; }
+}
+
+export async function getCeraCycles(limit?: number): Promise<import("./types").CeraCycle[]> {
+  try {
+    const url = new URL(\/decision/cera/cycles);
+    if (limit) url.searchParams.set("limit", String(limit));
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = await res.json() as { ok: boolean; data: import("./types").CeraCycle[] };
+    return json.data ?? [];
+  } catch { return []; }
+}

@@ -300,3 +300,174 @@ export interface CacheAuditEvent {
   reason?: string;
   performedBy?: string;
 }
+
+
+// ── System Metrics ─────────────────────────────────────────────────
+export interface MetricsSnapshot {
+  run_created_count: number;
+  run_completed_count: number;
+  run_failed_count: number;
+  state_transition_count: number;
+  policy_allow_count: number;
+  policy_block_count: number;
+  approval_required_count: number;
+  idempotency_hit_count: number;
+  idempotency_conflict_count: number;
+  system_event_count: number;
+  attribution_emit_count: number;
+  attribution_failure_count: number;
+  [key: string]: number;
+}
+
+// ── Core Health ────────────────────────────────────────────────────
+export interface CoreHealth {
+  ok: boolean;
+  modules: Record<string, string>;
+  timestamp: string;
+}
+
+// ── System Events ──────────────────────────────────────────────────
+export type SystemEventCategory =
+  | "run" | "state" | "policy" | "approval" | "dag"
+  | "cache" | "retrieval" | "decision" | "attribution"
+  | "tool" | "error" | "dashboard";
+
+export interface SystemEvent {
+  eventId: string;
+  eventType: string;
+  category: SystemEventCategory;
+  tenantId?: string;
+  runId?: string;
+  nodeId?: string;
+  actorId?: string;
+  actorType?: string;
+  environment: string;
+  payload: Record<string, unknown>;
+  timestamp: string;
+  schemaVersion: string;
+  correlationId?: string;
+}
+
+// ── BEL v4 DAG ─────────────────────────────────────────────────────
+export type BelDagNodeStatus =
+  | "pending" | "running" | "completed" | "failed" | "skipped" | "waiting_for_approval";
+
+export type BelDagRunStatus =
+  | "pending" | "running" | "waiting_for_approval" | "completed" | "failed" | "cancelled";
+
+export interface BelDagNode {
+  nodeId: string;
+  type: string;
+  name: string;
+  status: BelDagNodeStatus;
+  riskLevel: string;
+  attempts: number;
+  maxAttempts: number;
+  startedAt?: string;
+  completedAt?: string;
+  error?: string;
+}
+
+export interface BelDagEdge {
+  from: string;
+  to: string;
+  condition?: string;
+}
+
+export interface BelDagRunState {
+  dagId: string;
+  runId: string;
+  tenantId?: string;
+  name?: string;
+  status: BelDagRunStatus;
+  nodes: BelDagNode[];
+  edges?: BelDagEdge[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BelDagAuditEvent {
+  eventId: string;
+  dagId: string;
+  runId: string;
+  nodeId?: string;
+  event: string;
+  fromStatus?: string;
+  toStatus?: string;
+  timestamp: string;
+  actor?: string;
+  error?: string;
+}
+
+// ── Retrieval ──────────────────────────────────────────────────────
+export type RetrievalNamespace =
+  | "system_docs" | "client_docs" | "brand_voice" | "workflow_docs"
+  | "content_assets" | "aeo_research" | "attribution_memory"
+  | "audit_memory" | "tool_docs";
+
+export interface RetrievalDocument {
+  documentId: string;
+  tenantId?: string;
+  namespace: RetrievalNamespace;
+  title: string;
+  sourceUri?: string;
+  sourceType: string;
+  version?: string;
+  hash: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RetrievalTrace {
+  traceId: string;
+  runId?: string;
+  tenantId?: string;
+  query: string;
+  namespaces: string[];
+  resultCount: number;
+  selectedChunkIds: string[];
+  createdAt: string;
+  actor?: string;
+  environment: string;
+}
+
+// ── MAP-CERA Decision Engine ───────────────────────────────────────
+export type MapDecisionBand = "strong_alignment" | "moderate_alignment" | "weak_alignment";
+export type MapDecision = "execute" | "improve" | "reconsider";
+export type CompoundDecisionPath = "scale" | "pivot" | "kill";
+
+export interface MapEvaluation {
+  evaluationId: string;
+  tenantId?: string;
+  runId?: string;
+  title: string;
+  description: string;
+  category: string;
+  meaningfulScore: number;
+  actionableScore: number;
+  profitableScore: number;
+  mapScore: number;
+  decisionBand: MapDecisionBand;
+  decision: MapDecision;
+  reasoning: string;
+  createdAt: string;
+  createdBy: string;
+  environment: string;
+  policyVersion: string;
+}
+
+export interface CeraCycle {
+  cycleId: string;
+  tenantId?: string;
+  evaluationId: string;
+  runId?: string;
+  captureSignals: string[];
+  extractedInsights: string[];
+  refinementActions: string[];
+  amplificationActions: string[];
+  ceraEfficiencyScore: number;
+  compoundScore: number;
+  decisionPath: CompoundDecisionPath;
+  createdAt: string;
+  updatedAt: string;
+}

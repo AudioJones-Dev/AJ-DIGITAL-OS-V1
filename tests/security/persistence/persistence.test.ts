@@ -1,4 +1,5 @@
-import { mkdir, rm } from "node:fs/promises";
+import os from "node:os";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -8,10 +9,23 @@ import { PersistentAuditStore } from "../../../src/security/audit/persistent-aud
 import type { ApprovalRequest } from "../../../src/security/approvals/approval-types.js";
 import type { TenantContext } from "../../../src/security/tenancy/tenant-types.js";
 
-const TMP_DIR = path.resolve("tests", "security", "persistence", ".tmp");
+// Each test gets its own isolated temp directory in os.tmpdir().
+// This avoids Windows ENOTEMPTY races on a shared .tmp directory.
+let tmpDir = "";
+
+beforeEach(async () => {
+  tmpDir = await mkdtemp(path.join(os.tmpdir(), "aj-persist-test-"));
+});
+
+afterEach(async () => {
+  if (tmpDir) {
+    await rm(tmpDir, { recursive: true, force: true });
+    tmpDir = "";
+  }
+});
 
 function tmpFile(name: string): string {
-  return path.join(TMP_DIR, name);
+  return path.join(tmpDir, name);
 }
 
 function makeApproval(overrides: Partial<ApprovalRequest> = {}): ApprovalRequest {
@@ -51,14 +65,6 @@ function makeTenant(overrides: Partial<TenantContext> = {}): TenantContext {
   };
 }
 
-beforeEach(async () => {
-  await mkdir(TMP_DIR, { recursive: true });
-});
-
-afterEach(async () => {
-  await rm(TMP_DIR, { recursive: true, force: true });
-});
-
 describe("PersistentApprovalStore", () => {
   it("persists approvals across store instances", async () => {
     const file = tmpFile("approvals.json");
@@ -88,7 +94,6 @@ describe("PersistentApprovalStore", () => {
 
   it("handles corrupt file safely", async () => {
     const file = tmpFile("approvals-corrupt.json");
-    const { writeFile } = await import("node:fs/promises");
     await writeFile(file, "not-valid-json", "utf-8");
 
     const store = new PersistentApprovalStore(file);
@@ -134,7 +139,6 @@ describe("PersistentTenantRegistry", () => {
 
   it("handles corrupt file safely", async () => {
     const file = tmpFile("tenants-corrupt.json");
-    const { writeFile } = await import("node:fs/promises");
     await writeFile(file, "{broken", "utf-8");
 
     const reg = new PersistentTenantRegistry(file);

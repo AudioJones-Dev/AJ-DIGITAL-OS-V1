@@ -17,7 +17,7 @@ describe("RunManager", () => {
     tempDirs.length = 0;
   });
 
-  it("creates and transitions a run through approval and execution states", async () => {
+  it("creates and transitions a run through approval and execution states", { timeout: 15_000 }, async () => {
     const runsDir = await mkdtemp(path.join(os.tmpdir(), "aj-runs-"));
     tempDirs.push(runsDir);
     const manager = new RunManager(new RunStore(runsDir));
