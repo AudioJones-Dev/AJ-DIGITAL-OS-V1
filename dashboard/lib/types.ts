@@ -471,3 +471,46 @@ export interface CeraCycle {
   createdAt: string;
   updatedAt: string;
 }
+
+// ── Connectors (L3) ────────────────────────────────────────────────
+export type ConnectorCapability =
+  | "read" | "write" | "delete" | "list" | "search"
+  | "send" | "create" | "update" | "execute" | "webhook";
+export type ConnectorRiskLevel = "low" | "medium" | "high" | "restricted";
+export type ConnectorAuthType = "oauth" | "api_key" | "service_account" | "local" | "none";
+
+export interface OSConnector {
+  id: string;
+  provider: string;
+  displayName: string;
+  capabilities: ConnectorCapability[];
+  authType: ConnectorAuthType;
+  riskLevel: ConnectorRiskLevel;
+  version: string;
+  enabled: boolean;
+}
+
+// ── Normalized Entities (L5) ───────────────────────────────────────
+export type NormalizedEntityType =
+  | "tenant"
+  | "contact"
+  | "lead"
+  | "offer"
+  | "asset"
+  | "workflow"
+  | "knowledge_document";
+
+export interface NormalizedEntitySummary {
+  entityId: string;
+  tenantId?: string;
+  updatedAt: string;
+  schemaVersion: string;
+  [key: string]: unknown;
+}
+
+export interface EntityListResponse {
+  ok: boolean;
+  entityType: NormalizedEntityType;
+  count: number;
+  data: NormalizedEntitySummary[];
+}

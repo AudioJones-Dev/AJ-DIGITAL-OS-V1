@@ -86,6 +86,8 @@ import {
   NormalizeEntityCommand,
   ListEntitiesCommand,
   GetEntityCommand,
+  TelegramStartCommand,
+  TelegramStatusCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -1203,6 +1205,20 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           const result = await new GetEntityCommand().run({
             entityType,
             entityId: entityIdFlag,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "telegram-start":
+        {
+          const result = await new TelegramStartCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "telegram-status":
+        {
+          const result = await new TelegramStatusCommand().run({
             json: hasFlag(parsed.flags, "json"),
           });
           return result.ok ? 0 : 1;

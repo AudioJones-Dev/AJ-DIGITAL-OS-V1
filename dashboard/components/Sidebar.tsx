@@ -15,9 +15,11 @@ const nav = [
   { divider: true, label: "Intelligence" },
   { href: "/decision", label: "Decision Engine", icon: "◎" },
   { href: "/opportunities", label: "Opportunities", icon: "◉" },
+  { href: "/entities", label: "Entities", icon: "◆" },
   { divider: true, label: "Memory" },
   { href: "/retrieval", label: "Retrieval", icon: "⊞" },
   { href: "/cache", label: "Cache", icon: "⊡" },
+  { href: "/connectors", label: "Connectors", icon: "⇄" },
   { divider: true, label: "Observability" },
   { href: "/events", label: "System Events", icon: "≡" },
 ];

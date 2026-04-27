@@ -166,6 +166,7 @@ import type {
   NormalizedEntity,
   NormalizedEntityType,
 } from "../normalization/index.js";
+import { getTelegramStatus as getTelegramBotStatus } from "../telegram/index.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -1484,6 +1485,53 @@ export function startHermesApi(port?: number): void {
       });
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, events }));
+      return;
+    }
+
+    // ── Telegram bot ──────────────────────────────────────────────────
+    if (req.url === "/telegram/status" && req.method === "GET") {
+      const status = getTelegramBotStatus();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: true,
+          configured: status.configured,
+          running: status.running,
+          ...(status.chatId !== undefined ? { chatId: status.chatId } : {}),
+          botToken: status.hasToken,
+          ...(status.lastPolledAt !== undefined ? { lastPolledAt: status.lastPolledAt } : {}),
+        }),
+      );
+      return;
+    }
+
+    // ── Normalization: list entities of a given type ──────────────────
+    const normalizationListMatch = req.url?.match(/^\/normalization\/([^/?]+)(?:\?(.*))?$/);
+    if (normalizationListMatch && req.method === "GET") {
+      const entityTypeRaw = decodeURIComponent(normalizationListMatch[1]!);
+      const validTypes = new Set([
+        "tenant",
+        "contact",
+        "lead",
+        "offer",
+        "asset",
+        "workflow",
+        "knowledge_document",
+      ]);
+      if (!validTypes.has(entityTypeRaw)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: `Unknown entity type: ${entityTypeRaw}` }));
+        return;
+      }
+      const params = new URLSearchParams(normalizationListMatch[2] ?? "");
+      const tenantParam = params.get("tenantId");
+      const limitRaw = params.get("limit");
+      const filter: { tenantId?: string; limit?: number } = {};
+      if (tenantParam) filter.tenantId = tenantParam;
+      if (limitRaw) filter.limit = Math.max(1, parseInt(limitRaw, 10) || 100);
+      const entities = listEntities(entityTypeRaw as NormalizedEntityType, filter);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, entityType: entityTypeRaw, count: entities.length, data: entities }));
       return;
     }
 
