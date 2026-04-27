@@ -9,6 +9,7 @@
  */
 
 import { createServer, type Server } from "node:http";
+import path from "node:path";
 import { getIntelligenceSnapshot } from "../intelligence/intelligence-engine.js";
 import { registry } from "../observability/metrics.js";
 import { getSchedulerStatus } from "./hermes-scheduler.js";
@@ -95,6 +96,17 @@ import {
   exportJsonSchema,
 } from "../core/schemas/schema-registry.js";
 import { checkIdempotency } from "../core/idempotency/idempotency-store.js";
+import { readLogs } from "../security/persistence/jsonl-log-store.js";
+import {
+  listConnectors as listConnectorsReg,
+  getConnector as getConnectorReg,
+  enableConnector as enableConnectorReg,
+  disableConnector as disableConnectorReg,
+  initDefaultConnectors,
+} from "../connectors/connector-registry.js";
+import { executeConnector } from "../connectors/connector-executor.js";
+import { DEFAULT_CONNECTORS } from "../connectors/adapters/index.js";
+import type { ConnectorCapability } from "../connectors/connector-types.js";
 import { getMetricSnapshot } from "../core/observability/metrics-store.js";
 import {
   lookupCache as cacheLookup,
@@ -1442,6 +1454,74 @@ export function startHermesApi(port?: number): void {
       });
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, events }));
+      return;
+    }
+
+    // ── Operating Core: health ─────────────────────────────────────────
+    // ── Connectors ────────────────────────────────────────────────────
+    if (req.url === "/connectors" && req.method === "GET") {
+      initDefaultConnectors(DEFAULT_CONNECTORS);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: listConnectorsReg() }));
+      return;
+    }
+
+    if (req.url === "/connectors/audit" && req.method === "GET") {
+      const auditPath = path.resolve("runtime", "connectors", "audit.jsonl");
+      readLogs(auditPath).then((events) => {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, events }));
+      }).catch(() => {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, events: [] }));
+      });
+      return;
+    }
+
+    const connectorPathMatch = req.url?.match(/^\/connectors\/([^/]+)(?:\/(enable|disable|execute))?$/);
+    if (connectorPathMatch && req.method === "GET" && !connectorPathMatch[2]) {
+      initDefaultConnectors(DEFAULT_CONNECTORS);
+      const c = getConnectorReg(connectorPathMatch[1]!);
+      if (!c) { res.writeHead(404, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: false, error: "Connector not found" })); return; }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: c }));
+      return;
+    }
+
+    if (connectorPathMatch && req.method === "POST" && connectorPathMatch[2] === "enable") {
+      initDefaultConnectors(DEFAULT_CONNECTORS);
+      enableConnectorReg(connectorPathMatch[1]!);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, id: connectorPathMatch[1] }));
+      return;
+    }
+
+    if (connectorPathMatch && req.method === "POST" && connectorPathMatch[2] === "disable") {
+      initDefaultConnectors(DEFAULT_CONNECTORS);
+      disableConnectorReg(connectorPathMatch[1]!);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, id: connectorPathMatch[1] }));
+      return;
+    }
+
+    if (connectorPathMatch && req.method === "POST" && connectorPathMatch[2] === "execute") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const result = await executeConnector({
+            connectorId: connectorPathMatch[1]!,
+            action: String(body["action"] ?? "read") as ConnectorCapability,
+            payload: (body["payload"] as Record<string, unknown>) ?? {},
+            ...(body["tenantId"] !== undefined ? { tenantId: String(body["tenantId"]) } : {}),
+            ...(body["actorId"] !== undefined ? { actorId: String(body["actorId"]) } : {}),
+          });
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
       return;
     }
 

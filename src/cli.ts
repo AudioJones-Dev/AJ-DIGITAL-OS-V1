@@ -65,6 +65,11 @@ import {
   CacheListCommand,
   CacheAuditCommand,
   CacheStatsCommand,
+  ConnectorListCommand,
+  ConnectorEnableCommand,
+  ConnectorDisableCommand,
+  ConnectorExecuteCommand,
+  ConnectorAuditCommand,
   DagCreateCommand,
   DagListCommand,
   DagInspectCommand,
@@ -909,6 +914,43 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
             ...(getStringFlag(parsed.flags, "namespace") !== undefined ? { namespace: getStringFlag(parsed.flags, "namespace")! } : {}),
             json: hasFlag(parsed.flags, "json"),
           });
+          return result.ok ? 0 : 1;
+        }
+      case "connector-list":
+        {
+          const result = await new ConnectorListCommand().run({ json: hasFlag(parsed.flags, "json"), enabledOnly: hasFlag(parsed.flags, "enabled-only") });
+          return result.ok ? 0 : 1;
+        }
+      case "connector-enable":
+        {
+          const idFlag = getStringFlag(parsed.flags, "id");
+          const result = await new ConnectorEnableCommand().run({ json: hasFlag(parsed.flags, "json"), ...(idFlag !== undefined ? { id: idFlag } : {}) });
+          return result.ok ? 0 : 1;
+        }
+      case "connector-disable":
+        {
+          const idFlag = getStringFlag(parsed.flags, "id");
+          const result = await new ConnectorDisableCommand().run({ json: hasFlag(parsed.flags, "json"), ...(idFlag !== undefined ? { id: idFlag } : {}) });
+          return result.ok ? 0 : 1;
+        }
+      case "connector-execute":
+        {
+          const idFlag = getStringFlag(parsed.flags, "id");
+          const actionFlag = getStringFlag(parsed.flags, "action");
+          const payloadFlag = getStringFlag(parsed.flags, "payload");
+          const result = await new ConnectorExecuteCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(idFlag !== undefined ? { id: idFlag } : {}),
+            ...(actionFlag !== undefined ? { action: actionFlag } : {}),
+            ...(payloadFlag !== undefined ? { payload: payloadFlag } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "connector-audit":
+        {
+          const limitRaw = getStringFlag(parsed.flags, "limit");
+          const result = await new ConnectorAuditCommand().run({ json: hasFlag(parsed.flags, "json"), ...(limitRaw !== undefined ? { limit: parseInt(limitRaw, 10) } : {}) });
           return result.ok ? 0 : 1;
         }
       case "dag-create":
