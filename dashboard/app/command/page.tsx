@@ -375,6 +375,8 @@ export default async function CommandPage() {
               { href: "/retrieval", label: "RAG Layer", desc: `${rdocs.length} documents` },
               { href: "/cache", label: "CAG Cache", desc: "5 namespaces" },
               { href: "/events", label: "Event Ledger", desc: `${events.length} events` },
+              { href: "/governance", label: "Governance", desc: "Policies & rules" },
+              { href: "/apps", label: "Applications", desc: "Offer · Diagnostic · Content" },
             ].map((link) => (
               <a
                 key={link.href}

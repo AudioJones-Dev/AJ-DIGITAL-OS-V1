@@ -514,3 +514,45 @@ export interface EntityListResponse {
   count: number;
   data: NormalizedEntitySummary[];
 }
+
+
+// ── Application Layer entity types ───────────────────────────────
+
+export interface NormalizedOffer {
+  entityId: string;
+  tenantId?: string;
+  title: string;
+  type: string;
+  tier: string;
+  price: number;
+  currency: string;
+  billingCycle?: string;
+  deliverables: string[];
+  timeline?: string;
+  scope?: string;
+  guarantees: string[];
+  status: string;
+  governanceStatus?: string;
+  mapScore?: number;
+  createdAt: string;
+  updatedAt: string;
+  schemaVersion: string;
+}
+
+export interface NormalizedAsset {
+  entityId: string;
+  tenantId?: string;
+  title: string;
+  type: string;
+  format: string;
+  contentHash?: string;
+  sourceUri?: string;
+  publishedUri?: string;
+  status: string;
+  tags: string[];
+  wordCount?: number;
+  channel?: string;
+  createdAt: string;
+  updatedAt: string;
+  schemaVersion: string;
+}

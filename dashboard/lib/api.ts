@@ -438,3 +438,41 @@ export async function getEntityList(
     return { count: 0, data: [] };
   }
 }
+
+
+// ── Governance policies ───────────────────────────────────────────
+
+export async function getGovernanceBrandVoicePolicy(): Promise<unknown> {
+  try {
+    const res = await fetch(\/governance/brand-voice/policy, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
+    return json.policy ?? json.data ?? json;
+  } catch { return null; }
+}
+
+export async function getGovernanceLegalPolicy(): Promise<unknown> {
+  try {
+    const res = await fetch(\/governance/legal/policy, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
+    return json.policy ?? json.data ?? json;
+  } catch { return null; }
+}
+
+export async function getGovernanceSopPolicy(workflowType: string): Promise<unknown> {
+  try {
+    const res = await fetch(\/governance/sop/\, { cache: "no-store" });
+    if (!res.ok) return null;
+    return res.json() as Promise<unknown>;
+  } catch { return null; }
+}
+
+export async function getGovernanceOfferPolicy(): Promise<unknown> {
+  try {
+    const res = await fetch(\/governance/offer/policy, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
+    return json.policy ?? json.data ?? json;
+  } catch { return null; }
+}
