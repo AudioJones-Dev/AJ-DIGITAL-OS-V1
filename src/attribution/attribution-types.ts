@@ -20,7 +20,11 @@ export type AttributionEventType =
   | "compound_score_created"
   | "decision_path_scale"
   | "decision_path_pivot"
-  | "decision_path_kill";
+  | "decision_path_kill"
+  | "governance_check_passed"
+  | "governance_check_blocked"
+  | "governance_check_warned"
+  | "governance_approval_required";
 
 export interface MAPScore {
   meaningful: boolean;

@@ -1,0 +1,58 @@
+{
+  "policy": "agent-behavior",
+  "version": "agent-behavior-v1",
+  "description": "Per-role allowed tools, forbidden actions, memory scope, and approval requirements for agents.",
+  "rules": {
+    "default": {
+      "allowedTools": ["read", "search", "summarize"],
+      "forbiddenActions": ["delete_tenant", "force_unlock", "deploy_production"],
+      "memoryScope": "session",
+      "maxConcurrentRuns": 3,
+      "requiredApprovals": []
+    },
+    "roles": {
+      "researcher": {
+        "allowedTools": ["read", "search", "summarize", "retrieval", "web_fetch"],
+        "forbiddenActions": ["publish", "delete", "deploy_production", "send_email"],
+        "memoryScope": "tenant",
+        "maxConcurrentRuns": 5,
+        "requiredApprovals": []
+      },
+      "writer": {
+        "allowedTools": ["read", "search", "summarize", "draft", "retrieval"],
+        "forbiddenActions": ["publish", "delete", "deploy_production"],
+        "memoryScope": "tenant",
+        "maxConcurrentRuns": 4,
+        "requiredApprovals": ["draft_external"]
+      },
+      "publisher": {
+        "allowedTools": ["read", "publish", "schedule", "distribute"],
+        "forbiddenActions": ["delete_tenant", "deploy_production"],
+        "memoryScope": "tenant",
+        "maxConcurrentRuns": 2,
+        "requiredApprovals": ["publish", "distribute"]
+      },
+      "orchestrator": {
+        "allowedTools": ["read", "search", "summarize", "draft", "delegate", "approve", "publish"],
+        "forbiddenActions": ["delete_tenant", "force_unlock"],
+        "memoryScope": "tenant",
+        "maxConcurrentRuns": 3,
+        "requiredApprovals": ["publish", "deploy"]
+      },
+      "operator": {
+        "allowedTools": ["read", "search", "summarize", "deploy", "approve", "rerun"],
+        "forbiddenActions": ["delete_tenant"],
+        "memoryScope": "global",
+        "maxConcurrentRuns": 5,
+        "requiredApprovals": ["deploy", "delete", "force_unlock"]
+      },
+      "client_agent": {
+        "allowedTools": ["read", "search", "summarize"],
+        "forbiddenActions": ["publish", "delete", "deploy_production", "approve", "force_unlock"],
+        "memoryScope": "tenant",
+        "maxConcurrentRuns": 2,
+        "requiredApprovals": ["draft_external", "send_email"]
+      }
+    }
+  }
+}

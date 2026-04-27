@@ -83,6 +83,16 @@ import {
 } from "../core/state/run-state-machine.js";
 import { VALID_RUN_STATE_TRANSITIONS, type RunState } from "../core/state/run-state-types.js";
 import { evaluateActionRisk } from "../core/policy/policy-engine.js";
+import { evaluateGovernance } from "../governance/governance-engine.js";
+import { getBrandVoicePolicy } from "../governance/brand-voice/brand-voice-policy.js";
+import { getLegalPolicy } from "../governance/legal/legal-policy.js";
+import { getSOPForWorkflow } from "../governance/sop/sop-policy.js";
+import { getOfferPolicy } from "../governance/offer/offer-policy.js";
+import { getAgentPolicy } from "../governance/agent-behavior/agent-behavior-policy.js";
+import type {
+  GovernanceRequest,
+  OfferInput,
+} from "../governance/governance-types.js";
 import {
   listSystemEvents,
   getEventsByRunId,
@@ -1646,6 +1656,93 @@ export function startHermesApi(port?: number): void {
     if (req.url === "/core/metrics" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, metrics: getMetricSnapshot() }));
+      return;
+    }
+
+    // ── Governance: full evaluation ───────────────────────────────────
+    if (req.url === "/governance/evaluate" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const request: GovernanceRequest = {};
+          if (typeof body["content"] === "string") request.content = body["content"];
+          if (typeof body["contentCategory"] === "string") request.contentCategory = body["contentCategory"];
+          if (typeof body["workflowType"] === "string") request.workflowType = body["workflowType"];
+          if (Array.isArray(body["workflowSteps"])) {
+            request.workflowSteps = (body["workflowSteps"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (typeof body["agentRole"] === "string") request.agentRole = body["agentRole"];
+          if (typeof body["action"] === "string") request.action = body["action"];
+          if (Array.isArray(body["tools"])) {
+            request.tools = (body["tools"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (body["offer"] && typeof body["offer"] === "object") {
+            request.offer = body["offer"] as OfferInput;
+          }
+          if (typeof body["tenantId"] === "string") request.tenantId = body["tenantId"];
+          const result = evaluateGovernance(request);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, ...result }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : "Bad request",
+            }),
+          );
+        });
+      return;
+    }
+
+    if (req.url === "/governance/brand-voice/policy" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, policy: getBrandVoicePolicy() }));
+      return;
+    }
+
+    if (req.url === "/governance/legal/policy" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, policy: getLegalPolicy() }));
+      return;
+    }
+
+    const sopMatch = req.url?.match(/^\/governance\/sop\/([^/?]+)$/);
+    if (sopMatch && req.method === "GET") {
+      const workflowType = decodeURIComponent(sopMatch[1]!);
+      const sop = getSOPForWorkflow(workflowType);
+      if (!sop) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: `Unknown workflow type: ${workflowType}` }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, sop }));
+      return;
+    }
+
+    if (req.url === "/governance/offer/policy" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, policy: getOfferPolicy() }));
+      return;
+    }
+
+    const agentRoleMatch = req.url?.match(/^\/governance\/agent\/([^/?]+)$/);
+    if (agentRoleMatch && req.method === "GET") {
+      const role = decodeURIComponent(agentRoleMatch[1]!);
+      const policy = getAgentPolicy(role);
+      if (!policy) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: `Unknown agent role: ${role}` }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, policy }));
       return;
     }
 
