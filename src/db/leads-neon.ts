@@ -174,7 +174,11 @@ export async function updateLead(
   params.push(id);
   const sql = `UPDATE leads SET ${setClauses.join(", ")} WHERE id = $${idx} RETURNING *`;
 
-  return leadsInsert<DbLead>(cfg, sql, params);
+  const result = await leadsInsert<DbLead>(cfg, sql, params);
+  if (result.ok && result.data === null) {
+    return { ok: false, data: null, error: `Lead not found: ${id}`, count: 0 };
+  }
+  return result;
 }
 
 export async function getLeadById(
@@ -187,7 +191,14 @@ export async function getLeadById(
   }
 
   const result = await leadsQuery<DbLead>(cfg, `SELECT * FROM leads WHERE id = $1`, [id]);
-  return { ok: result.ok, data: result.data?.[0] ?? null, error: result.error, count: result.count };
+  if (!result.ok) {
+    return { ok: false, data: null, error: result.error, count: null };
+  }
+  const row = result.data?.[0] ?? null;
+  if (!row) {
+    return { ok: false, data: null, error: `Lead not found: ${id}`, count: 0 };
+  }
+  return { ok: true, data: row, error: null, count: 1 };
 }
 
 export async function listLeads(

@@ -55,9 +55,11 @@ export function assertLeadStorageSafe(): void {
 // ── Mock Provider ──────────────────────────────────────────────────
 
 const mockStore: DbLead[] = [];
+let mockSeq = 0;
 
 function mockId(): string {
-  return `mock-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  mockSeq += 1;
+  return `mock-${mockSeq.toString().padStart(6, "0")}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 function mockNow(): string {
