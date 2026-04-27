@@ -56,9 +56,18 @@ function buildTextBody(lead: DbLead): string {
   ].join("\n");
 }
 
+function escapeHtmlValue(s: string | null | undefined): string {
+  if (!s) return "—";
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function buildHtmlBody(lead: DbLead): string {
   const row = (label: string, value: string | null | undefined) =>
-    `<tr><td style="padding:4px 12px 4px 0;font-weight:600;white-space:nowrap;vertical-align:top">${label}</td><td style="padding:4px 0">${fmt(value)}</td></tr>`;
+    `<tr><td style="padding:4px 12px 4px 0;font-weight:600;white-space:nowrap;vertical-align:top">${label}</td><td style="padding:4px 0">${escapeHtmlValue(value)}</td></tr>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -77,7 +86,7 @@ function buildHtmlBody(lead: DbLead): string {
     ${row("Property Type", lead.property_type)}
     ${row("Timeline", lead.timeline)}
   </table>
-  ${lead.message ? `<p style="margin-top:16px"><strong>Message:</strong><br>${lead.message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>` : ""}
+  ${lead.message ? `<p style="margin-top:16px"><strong>Message:</strong><br>${escapeHtmlValue(lead.message)}</p>` : ""}
   <hr style="border:none;border-top:1px solid #ddd;margin:16px 0">
   <table cellpadding="0" cellspacing="0" border="0" style="font-size:12px;color:#555">
     ${row("Source Page", lead.lead_source_page)}

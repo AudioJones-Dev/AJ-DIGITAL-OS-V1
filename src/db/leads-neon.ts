@@ -229,12 +229,18 @@ export async function getLeadStats(
   }
 
   const row = result.data[0];
+
+  function safeCount(raw: string): number {
+    const n = parseInt(raw, 10);
+    return isNaN(n) ? 0 : n;
+  }
+
   return {
     ok: true,
     data: {
-      total: parseInt(row.total, 10) || 0,
-      new_leads: parseInt(row.new_leads, 10) || 0,
-      urgent_leads: parseInt(row.urgent_leads, 10) || 0,
+      total: safeCount(row.total),
+      new_leads: safeCount(row.new_leads),
+      urgent_leads: safeCount(row.urgent_leads),
     },
     error: null,
     count: 1,

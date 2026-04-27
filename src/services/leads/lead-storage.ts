@@ -97,7 +97,10 @@ async function mockUpdate(id: string, updates: LeadUpdateInput): Promise<QueryRe
 
 async function mockGetById(id: string): Promise<QueryResult<DbLead>> {
   const row = mockStore.find((l) => l.id === id) ?? null;
-  return { ok: true, data: row, error: row ? null : `Lead not found: ${id}`, count: row ? 1 : 0 };
+  if (!row) {
+    return { ok: false, data: null, error: `Lead not found: ${id}`, count: 0 };
+  }
+  return { ok: true, data: row, error: null, count: 1 };
 }
 
 async function mockList(limit: number): Promise<QueryResult<DbLead[]>> {

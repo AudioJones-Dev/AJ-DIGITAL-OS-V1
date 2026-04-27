@@ -95,7 +95,7 @@ export async function handleLeadUpdate(
     return { statusCode: 422, body: { ok: false, data: null, errors } };
   }
 
-  if (!result.data.status && !result.data.priority && result.data.notes === undefined && result.data.assigned_to === undefined) {
+  if (result.data.status === undefined && result.data.priority === undefined && result.data.notes === undefined && result.data.assigned_to === undefined) {
     return { statusCode: 400, body: { ok: false, data: null, errors: ["At least one field must be provided"] } };
   }
 
@@ -108,14 +108,14 @@ export async function handleLeadUpdate(
   const updateResult = await patchLead(id, updatePayload);
 
   if (!updateResult.ok) {
-    console.error(`${TAG} Lead update failed id=${id}:`, updateResult.error);
+    console.error(TAG, "Lead update failed:", { error: updateResult.error });
     if (updateResult.error?.includes("not found") || updateResult.error?.includes("0 rows")) {
       return { statusCode: 404, body: { ok: false, data: null, errors: ["Lead not found"] } };
     }
     return { statusCode: 500, body: { ok: false, data: null, errors: ["Update failed"] } };
   }
 
-  console.log(`${TAG} lead updated — id=${id}`);
+  console.log(`${TAG} lead updated`);
   return { statusCode: 200, body: { ok: true, data: updateResult.data, errors: [] } };
 }
 

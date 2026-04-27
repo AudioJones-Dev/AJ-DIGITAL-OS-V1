@@ -99,6 +99,9 @@ function buildInsertLead(d: LeadSubmitInput): InsertLead {
     first_name: firstName ?? null,
     last_name: lastName ?? null,
     name: fullName ?? null,
+    // email is required by the DB schema (NOT NULL); the Zod refine above ensures
+    // at least email or phone is present; when only phone is given, email is stored
+    // as empty string to satisfy the NOT NULL constraint.
     email: normaliseEmail(d.email) ?? "",
     phone: normalisePhone(d.phone),
     county: d.county ?? null,

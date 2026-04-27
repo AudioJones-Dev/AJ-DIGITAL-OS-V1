@@ -1668,7 +1668,7 @@ export function startHermesApi(port?: number): void {
     }
 
     // ── Lead Pipeline: update lead (CRM action) ─────────────────────
-    const leadPatchMatch = req.url?.match(/^\/api\/leads\/([^/?]+)(?:\?(.*))?$/);
+    const leadPatchMatch = req.url?.match(/^\/api\/leads\/([0-9a-f-]{36}|mock-[0-9a-z-]+)(?:\?(.*))?$/i);
     if (leadPatchMatch && req.method === "PATCH") {
       const leadId = decodeURIComponent(leadPatchMatch[1]!);
       const qs = new URLSearchParams(leadPatchMatch[2] ?? "");
