@@ -108,6 +108,7 @@ import {
 import { checkIdempotency } from "../core/idempotency/idempotency-store.js";
 import { readLogs } from "../security/persistence/jsonl-log-store.js";
 import { createOffer } from "../apps/offer-engine/offer-engine.js";
+import { runLeadToOfferWorkflow } from "../workflows/lead-to-offer.workflow.js";
 import type { CreateOfferInput } from "../apps/offer-engine/offer-engine-types.js";
 import { runDiagnosis } from "../apps/diagnostic-engine/diagnostic-engine.js";
 import type { DiagnosticInput, DiagnosticCategory } from "../apps/diagnostic-engine/diagnostic-engine-types.js";
@@ -1542,6 +1543,30 @@ export function startHermesApi(port?: number): void {
     }
 
     // ── Operating Core: health ─────────────────────────────────────────
+    // ── Workflows ─────────────────────────────────────────────────────
+    if (req.url === "/workflows/lead-to-offer" && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const result = await runLeadToOfferWorkflow({
+            ...(body["airtableRecordId"] !== undefined ? { airtableRecordId: String(body["airtableRecordId"]) } : {}),
+            ...(body["leadData"] !== null && body["leadData"] !== undefined ? { leadData: body["leadData"] as NonNullable<import("../workflows/lead-to-offer.types.js").LeadToOfferInput["leadData"]> } : {}),
+            ...(body["offerType"] !== undefined ? { offerType: String(body["offerType"]) as "audit" | "retainer" | "consulting" } : {}),
+            ...(body["offerTitle"] !== undefined ? { offerTitle: String(body["offerTitle"]) } : {}),
+            ...(body["tenantId"] !== undefined ? { tenantId: String(body["tenantId"]) } : {}),
+            ...(body["createdBy"] !== undefined ? { createdBy: String(body["createdBy"]) } : {}),
+            environment: String(body["environment"] ?? "local"),
+          });
+          res.writeHead(result.ok ? 200 : 207, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
     // ── Connectors ────────────────────────────────────────────────────
     if (req.url === "/connectors" && req.method === "GET") {
       initDefaultConnectors(DEFAULT_CONNECTORS);

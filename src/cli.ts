@@ -83,6 +83,7 @@ import {
   DagSkipNodeCommand,
   DagAuditCommand,
   DagOutputsCommand,
+  LeadToOfferCommand,
   NormalizeEntityCommand,
   ListEntitiesCommand,
   GetEntityCommand,
@@ -1220,6 +1221,22 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
         {
           const result = await new TelegramStatusCommand().run({
             json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "lead-to-offer":
+        {
+          const result = await new LeadToOfferCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(getStringFlag(parsed.flags, "firstName") !== undefined ? { firstName: getStringFlag(parsed.flags, "firstName")! } : {}),
+            ...(getStringFlag(parsed.flags, "lastName") !== undefined ? { lastName: getStringFlag(parsed.flags, "lastName")! } : {}),
+            ...(getStringFlag(parsed.flags, "email") !== undefined ? { email: getStringFlag(parsed.flags, "email")! } : {}),
+            ...(getStringFlag(parsed.flags, "company") !== undefined ? { company: getStringFlag(parsed.flags, "company")! } : {}),
+            ...(getStringFlag(parsed.flags, "source") !== undefined ? { source: getStringFlag(parsed.flags, "source")! } : {}),
+            ...(getStringFlag(parsed.flags, "offerType") !== undefined ? { offerType: getStringFlag(parsed.flags, "offerType")! } : {}),
+            ...(getStringFlag(parsed.flags, "offerTitle") !== undefined ? { offerTitle: getStringFlag(parsed.flags, "offerTitle")! } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(getStringFlag(parsed.flags, "airtableRecordId") !== undefined ? { airtableRecordId: getStringFlag(parsed.flags, "airtableRecordId")! } : {}),
           });
           return result.ok ? 0 : 1;
         }

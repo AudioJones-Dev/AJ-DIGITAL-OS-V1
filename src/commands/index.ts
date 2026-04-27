@@ -453,3 +453,7 @@ export type {
   TelegramStatusCommandInput,
   TelegramStatusCommandResult,
 } from "./telegram.commands.js";
+
+
+export { LeadToOfferCommand } from "./lead-to-offer.command.js";
+export type { LeadToOfferCommandInput, LeadToOfferCommandResult } from "./lead-to-offer.command.js";
