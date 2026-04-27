@@ -166,6 +166,21 @@ import type {
   NormalizedEntity,
   NormalizedEntityType,
 } from "../normalization/index.js";
+import { createOffer } from "../apps/offer-engine/index.js";
+import type { CreateOfferInput } from "../apps/offer-engine/index.js";
+import { runDiagnosis } from "../apps/diagnostic-engine/index.js";
+import type {
+  DiagnosticCategory,
+  DiagnosticInput,
+} from "../apps/diagnostic-engine/index.js";
+import {
+  createContentBrief,
+  publishContent,
+} from "../apps/content-engine/index.js";
+import type {
+  ContentBriefInput,
+  ContentBriefType,
+} from "../apps/content-engine/index.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -1843,6 +1858,171 @@ export function startHermesApi(port?: number): void {
       }
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, policy }));
+      return;
+    }
+
+    if (req.url === "/apps/offer-engine/create" && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const input: CreateOfferInput = {
+            title: String(body["title"] ?? ""),
+            type: String(body["type"] ?? ""),
+            price: Number(body["price"] ?? 0),
+            currency: String(body["currency"] ?? "USD"),
+            deliverables: Array.isArray(body["deliverables"])
+              ? (body["deliverables"] as unknown[]).filter(
+                  (v): v is string => typeof v === "string",
+                )
+              : [],
+            createdBy: String(body["createdBy"] ?? "hermes-api"),
+          };
+          if (Array.isArray(body["guarantees"])) {
+            input.guarantees = (body["guarantees"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (typeof body["timeline"] === "string") input.timeline = body["timeline"];
+          if (typeof body["scope"] === "string") input.scope = body["scope"];
+          if (typeof body["tenantId"] === "string") input.tenantId = body["tenantId"];
+          if (typeof body["meaningfulScore"] === "number") input.meaningfulScore = body["meaningfulScore"];
+          if (typeof body["actionableScore"] === "number") input.actionableScore = body["actionableScore"];
+          if (typeof body["profitableScore"] === "number") input.profitableScore = body["profitableScore"];
+
+          const result = await createOffer(input);
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : "Bad request",
+            }),
+          );
+        });
+      return;
+    }
+
+    if (req.url === "/apps/diagnostic-engine/diagnose" && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const validCategories = [
+            "lead_gen",
+            "content",
+            "conversion",
+            "operations",
+            "offer",
+            "general",
+          ] as const;
+          const categoryRaw = String(body["category"] ?? "general");
+          const category = (validCategories as readonly string[]).includes(categoryRaw)
+            ? (categoryRaw as DiagnosticCategory)
+            : "general";
+          const input: DiagnosticInput = {
+            description: String(body["description"] ?? ""),
+            category,
+          };
+          if (Array.isArray(body["keywords"])) {
+            input.keywords = (body["keywords"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (Array.isArray(body["proposedActions"])) {
+            input.proposedActions = (body["proposedActions"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (typeof body["tenantId"] === "string") input.tenantId = body["tenantId"];
+          if (typeof body["createdBy"] === "string") input.createdBy = body["createdBy"];
+
+          const result = await runDiagnosis(input);
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : "Bad request",
+            }),
+          );
+        });
+      return;
+    }
+
+    if (req.url === "/apps/content-engine/brief" && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const validTypes = [
+            "blog_post",
+            "social_post",
+            "email",
+            "landing_page",
+            "case_study",
+            "whitepaper",
+          ] as const;
+          const typeRaw = String(body["contentType"] ?? "blog_post");
+          const contentType = (validTypes as readonly string[]).includes(typeRaw)
+            ? (typeRaw as ContentBriefType)
+            : "blog_post";
+          const input: ContentBriefInput = {
+            title: String(body["title"] ?? ""),
+            description: String(body["description"] ?? ""),
+            contentType,
+            channel: String(body["channel"] ?? "blog"),
+            createdBy: String(body["createdBy"] ?? "hermes-api"),
+          };
+          if (Array.isArray(body["tags"])) {
+            input.tags = (body["tags"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (typeof body["tenantId"] === "string") input.tenantId = body["tenantId"];
+
+          const result = await createContentBrief(input);
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : "Bad request",
+            }),
+          );
+        });
+      return;
+    }
+
+    const contentPublishMatch = req.url?.match(/^\/apps\/content-engine\/publish\/([^/?]+)$/);
+    if (contentPublishMatch && req.method === "POST") {
+      const briefId = decodeURIComponent(contentPublishMatch[1]!);
+      collectBody(req)
+        .then(async (raw) => {
+          const body = raw.trim() ? (JSON.parse(raw) as Record<string, unknown>) : {};
+          const patch: Parameters<typeof publishContent>[1] = {};
+          if (typeof body["publishedUri"] === "string") patch.publishedUri = body["publishedUri"];
+          if (typeof body["sourceUri"] === "string") patch.sourceUri = body["sourceUri"];
+
+          const result = await publishContent(briefId, patch);
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : "Bad request",
+            }),
+          );
+        });
       return;
     }
 

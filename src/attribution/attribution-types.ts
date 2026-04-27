@@ -30,7 +30,12 @@ export type AttributionEventType =
   | "governance_check_passed"
   | "governance_check_warned"
   | "governance_check_blocked"
-  | "governance_approval_required";
+  | "governance_approval_required"
+  | "offer_engine_created"
+  | "offer_engine_blocked"
+  | "diagnostic_run"
+  | "content_brief_created"
+  | "content_published";
 
 export interface MAPScore {
   meaningful: boolean;

@@ -86,6 +86,10 @@ import {
   NormalizeEntityCommand,
   ListEntitiesCommand,
   GetEntityCommand,
+  OfferCreateCommand,
+  DiagnoseCommand,
+  ContentBriefCommand,
+  ContentPublishCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -1205,6 +1209,158 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
             entityId: entityIdFlag,
             json: hasFlag(parsed.flags, "json"),
           });
+          return result.ok ? 0 : 1;
+        }
+      case "offer-create":
+        {
+          const title = getStringFlag(parsed.flags, "title");
+          const type = getStringFlag(parsed.flags, "type");
+          const priceRaw = getStringFlag(parsed.flags, "price");
+          const currency = getStringFlag(parsed.flags, "currency") ?? "USD";
+          const deliverablesRaw = getStringFlag(parsed.flags, "deliverables");
+          const guaranteesRaw = getStringFlag(parsed.flags, "guarantees");
+          const timeline = getStringFlag(parsed.flags, "timeline");
+          const scope = getStringFlag(parsed.flags, "scope");
+          const tenantIdFlag = getStringFlag(parsed.flags, "tenantId");
+          const createdBy = getStringFlag(parsed.flags, "createdBy") ?? "cli-user";
+          const meaningfulRaw = getStringFlag(parsed.flags, "meaningful");
+          const actionableRaw = getStringFlag(parsed.flags, "actionable");
+          const profitableRaw = getStringFlag(parsed.flags, "profitable");
+          if (!title || !type || !priceRaw) {
+            console.error(
+              "Usage: offer-create --title <t> --type <type> --price <n> [--currency USD] [--deliverables d1,d2] [--timeline <t>] [--scope <s>] [--tenantId <id>] [--createdBy <user>] [--meaningful 0-3] [--actionable 0-3] [--profitable 0-3] [--json]",
+            );
+            return 1;
+          }
+          const price = parseFloat(priceRaw);
+          if (Number.isNaN(price)) {
+            console.error("price must be numeric");
+            return 1;
+          }
+          const deliverables = deliverablesRaw
+            ? deliverablesRaw.split(",").map((s) => s.trim()).filter(Boolean)
+            : [];
+          const input: Parameters<OfferCreateCommand["run"]>[0] = {
+            title,
+            type,
+            price,
+            currency,
+            deliverables,
+            createdBy,
+            json: hasFlag(parsed.flags, "json"),
+          };
+          if (guaranteesRaw) {
+            input.guarantees = guaranteesRaw.split(",").map((s) => s.trim()).filter(Boolean);
+          }
+          if (timeline !== undefined) input.timeline = timeline;
+          if (scope !== undefined) input.scope = scope;
+          if (tenantIdFlag !== undefined) input.tenantId = tenantIdFlag;
+          if (meaningfulRaw !== undefined) input.meaningfulScore = parseInt(meaningfulRaw, 10);
+          if (actionableRaw !== undefined) input.actionableScore = parseInt(actionableRaw, 10);
+          if (profitableRaw !== undefined) input.profitableScore = parseInt(profitableRaw, 10);
+          const result = await new OfferCreateCommand().run(input);
+          return result.ok ? 0 : 1;
+        }
+      case "diagnose":
+        {
+          const description = getStringFlag(parsed.flags, "description");
+          const categoryRaw = getStringFlag(parsed.flags, "category");
+          const keywordsRaw = getStringFlag(parsed.flags, "keywords");
+          const proposedRaw = getStringFlag(parsed.flags, "proposedActions");
+          const tenantIdFlag = getStringFlag(parsed.flags, "tenantId");
+          const createdBy = getStringFlag(parsed.flags, "createdBy") ?? "cli-user";
+          if (!description || !categoryRaw) {
+            console.error(
+              "Usage: diagnose --description <d> --category <lead_gen|content|conversion|operations|offer|general> [--keywords k1,k2] [--proposedActions a1,a2] [--tenantId <id>] [--createdBy <user>] [--json]",
+            );
+            return 1;
+          }
+          const validCategories = [
+            "lead_gen",
+            "content",
+            "conversion",
+            "operations",
+            "offer",
+            "general",
+          ] as const;
+          if (!(validCategories as readonly string[]).includes(categoryRaw)) {
+            console.error(`Invalid category: ${categoryRaw}`);
+            return 1;
+          }
+          const input: Parameters<DiagnoseCommand["run"]>[0] = {
+            description,
+            category: categoryRaw as (typeof validCategories)[number],
+            createdBy,
+            json: hasFlag(parsed.flags, "json"),
+          };
+          if (keywordsRaw) {
+            input.keywords = keywordsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+          }
+          if (proposedRaw) {
+            input.proposedActions = proposedRaw.split(",").map((s) => s.trim()).filter(Boolean);
+          }
+          if (tenantIdFlag !== undefined) input.tenantId = tenantIdFlag;
+          const result = await new DiagnoseCommand().run(input);
+          return result.ok ? 0 : 1;
+        }
+      case "content-brief":
+        {
+          const title = getStringFlag(parsed.flags, "title");
+          const description = getStringFlag(parsed.flags, "description");
+          const contentTypeRaw = getStringFlag(parsed.flags, "contentType");
+          const channel = getStringFlag(parsed.flags, "channel") ?? "blog";
+          const tagsRaw = getStringFlag(parsed.flags, "tags");
+          const tenantIdFlag = getStringFlag(parsed.flags, "tenantId");
+          const createdBy = getStringFlag(parsed.flags, "createdBy") ?? "cli-user";
+          if (!title || !description || !contentTypeRaw) {
+            console.error(
+              "Usage: content-brief --title <t> --description <d> --contentType <blog_post|social_post|email|landing_page|case_study|whitepaper> [--channel <c>] [--tags t1,t2] [--tenantId <id>] [--createdBy <user>] [--json]",
+            );
+            return 1;
+          }
+          const validTypes = [
+            "blog_post",
+            "social_post",
+            "email",
+            "landing_page",
+            "case_study",
+            "whitepaper",
+          ] as const;
+          if (!(validTypes as readonly string[]).includes(contentTypeRaw)) {
+            console.error(`Invalid contentType: ${contentTypeRaw}`);
+            return 1;
+          }
+          const input: Parameters<ContentBriefCommand["run"]>[0] = {
+            title,
+            description,
+            contentType: contentTypeRaw as (typeof validTypes)[number],
+            channel,
+            createdBy,
+            json: hasFlag(parsed.flags, "json"),
+          };
+          if (tagsRaw) {
+            input.tags = tagsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+          }
+          if (tenantIdFlag !== undefined) input.tenantId = tenantIdFlag;
+          const result = await new ContentBriefCommand().run(input);
+          return result.ok ? 0 : 1;
+        }
+      case "content-publish":
+        {
+          const briefIdFlag = getStringFlag(parsed.flags, "briefId");
+          const publishedUri = getStringFlag(parsed.flags, "publishedUri");
+          if (!briefIdFlag) {
+            console.error(
+              "Usage: content-publish --briefId <id> [--publishedUri <url>] [--json]",
+            );
+            return 1;
+          }
+          const input: Parameters<ContentPublishCommand["run"]>[0] = {
+            briefId: briefIdFlag,
+            json: hasFlag(parsed.flags, "json"),
+          };
+          if (publishedUri !== undefined) input.publishedUri = publishedUri;
+          const result = await new ContentPublishCommand().run(input);
           return result.ok ? 0 : 1;
         }
       default:

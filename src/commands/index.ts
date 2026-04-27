@@ -445,3 +445,17 @@ export type {
   ListEntitiesCommandInput, ListEntitiesCommandResult,
   GetEntityCommandInput, GetEntityCommandResult,
 } from "./normalization.commands.js";
+
+
+export {
+  OfferCreateCommand,
+  DiagnoseCommand,
+  ContentBriefCommand,
+  ContentPublishCommand,
+} from "./apps.commands.js";
+export type {
+  OfferCreateCommandInput, OfferCreateCommandResult,
+  DiagnoseCommandInput, DiagnoseCommandResult,
+  ContentBriefCommandInput, ContentBriefCommandResult,
+  ContentPublishCommandInput, ContentPublishCommandResult,
+} from "./apps.commands.js";
