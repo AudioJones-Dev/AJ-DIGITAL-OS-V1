@@ -445,3 +445,11 @@ export type {
   ListEntitiesCommandInput, ListEntitiesCommandResult,
   GetEntityCommandInput, GetEntityCommandResult,
 } from "./normalization.commands.js";
+
+export { TelegramStartCommand, TelegramStatusCommand } from "./telegram.commands.js";
+export type {
+  TelegramStartCommandInput,
+  TelegramStartCommandResult,
+  TelegramStatusCommandInput,
+  TelegramStatusCommandResult,
+} from "./telegram.commands.js";
