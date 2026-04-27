@@ -107,6 +107,12 @@ import {
 } from "../core/schemas/schema-registry.js";
 import { checkIdempotency } from "../core/idempotency/idempotency-store.js";
 import { readLogs } from "../security/persistence/jsonl-log-store.js";
+import { createOffer } from "../apps/offer-engine/offer-engine.js";
+import type { CreateOfferInput } from "../apps/offer-engine/offer-engine-types.js";
+import { runDiagnosis } from "../apps/diagnostic-engine/diagnostic-engine.js";
+import type { DiagnosticInput, DiagnosticCategory } from "../apps/diagnostic-engine/diagnostic-engine-types.js";
+import { createContentBrief, publishContent } from "../apps/content-engine/content-engine.js";
+import type { ContentBriefInput, ContentBriefType } from "../apps/content-engine/content-engine-types.js";
 import {
   listConnectors as listConnectorsReg,
   getConnector as getConnectorReg,
