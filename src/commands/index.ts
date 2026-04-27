@@ -437,3 +437,11 @@ export type {
   ConnectorExecuteCommandInput, ConnectorExecuteCommandResult,
   ConnectorAuditCommandInput, ConnectorAuditCommandResult,
 } from "./connector.commands.js";
+
+
+export { NormalizeEntityCommand, ListEntitiesCommand, GetEntityCommand } from "./normalization.commands.js";
+export type {
+  NormalizeEntityCommandInput, NormalizeEntityCommandResult,
+  ListEntitiesCommandInput, ListEntitiesCommandResult,
+  GetEntityCommandInput, GetEntityCommandResult,
+} from "./normalization.commands.js";

@@ -23,7 +23,14 @@ export type AttributionEventType =
   | "decision_path_kill"
   | "connector_executed"
   | "connector_blocked"
-  | "connector_failed";
+  | "connector_failed"
+  | "entity_normalized"
+  | "entity_normalization_failed"
+  | "entity_updated"
+  | "governance_check_passed"
+  | "governance_check_warned"
+  | "governance_check_blocked"
+  | "governance_approval_required";
 
 export interface MAPScore {
   meaningful: boolean;
