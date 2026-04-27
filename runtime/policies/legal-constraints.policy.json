@@ -1,0 +1,36 @@
+{
+  "policy": "legal-constraints",
+  "version": "legal-v1",
+  "description": "Legal constraints — restricted categories, prohibited claim patterns, required disclaimers.",
+  "rules": {
+    "restrictedCategories": [
+      "financial_advice",
+      "medical_advice",
+      "legal_advice",
+      "earnings_claim",
+      "investment_advice"
+    ],
+    "approvalRequiredCategories": [
+      "earnings_claim",
+      "investment_advice",
+      "medical_advice"
+    ],
+    "prohibitedPatterns": [
+      { "pattern": "guaranteed (results|income|return|earnings|profit)", "severity": "block" },
+      { "pattern": "100% (success|guaranteed|risk[- ]?free|no[- ]?risk)", "severity": "block" },
+      { "pattern": "no risk", "severity": "block" },
+      { "pattern": "risk[- ]?free", "severity": "block" },
+      { "pattern": "(make|earn) \\$[0-9,]+ (per|a) (day|week|month)", "severity": "block" },
+      { "pattern": "double your (money|income|revenue)", "severity": "warn" },
+      { "pattern": "passive income guaranteed", "severity": "block" },
+      { "pattern": "cure(s|d)? (cancer|diabetes|covid)", "severity": "block" }
+    ],
+    "requiredDisclaimers": {
+      "financial_advice": "This content is for informational purposes only and does not constitute financial advice. Consult a licensed advisor.",
+      "earnings_claim": "Earnings results are not typical. Individual results vary based on effort, skill, and market conditions.",
+      "medical_advice": "This content is not medical advice. Consult a licensed medical professional.",
+      "legal_advice": "This content is not legal advice. Consult a qualified attorney.",
+      "investment_advice": "This is not investment advice. Investments carry risk including loss of principal."
+    }
+  }
+}

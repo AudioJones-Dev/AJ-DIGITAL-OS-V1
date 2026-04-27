@@ -340,6 +340,26 @@ export type {
   MetricsSnapshotCommandResult,
 } from "./core.commands.js";
 
+export {
+  GovernanceBrandCheckCommand,
+  GovernanceLegalCheckCommand,
+  GovernanceSopValidateCommand,
+  GovernanceOfferCheckCommand,
+  GovernanceEvaluateCommand,
+} from "./governance.commands.js";
+export type {
+  GovernanceBrandCheckInput,
+  GovernanceBrandCheckResult,
+  GovernanceLegalCheckInput,
+  GovernanceLegalCheckResult,
+  GovernanceSopValidateInput,
+  GovernanceSopValidateResult,
+  GovernanceOfferCheckInput,
+  GovernanceOfferCheckResult,
+  GovernanceEvaluateInput,
+  GovernanceEvaluateResult,
+} from "./governance.commands.js";
+
 
 export { CacheLookupCommand } from "./cache-lookup.command.js";
 export type {

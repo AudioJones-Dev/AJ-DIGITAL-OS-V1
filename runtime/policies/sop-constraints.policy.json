@@ -1,0 +1,58 @@
+{
+  "policy": "sop-constraints",
+  "version": "sop-v1",
+  "description": "Standard Operating Procedures per workflow type — required steps, forbidden steps, approvals, retries, timeouts.",
+  "rules": {
+    "workflows": {
+      "content_creation": {
+        "requiredSteps": ["brief_intake", "research", "draft", "review", "publish"],
+        "forbiddenSteps": ["skip_review", "auto_publish_without_approval"],
+        "requiredApprovals": ["publish"],
+        "maxRetries": 3,
+        "timeoutSeconds": 3600
+      },
+      "client_onboarding": {
+        "requiredSteps": ["intake", "kyc_check", "agreement_sign", "kickoff"],
+        "forbiddenSteps": ["skip_kyc", "skip_agreement"],
+        "requiredApprovals": ["agreement_sign"],
+        "maxRetries": 2,
+        "timeoutSeconds": 7200
+      },
+      "offer_generation": {
+        "requiredSteps": ["scope_intake", "pricing", "compliance_check", "generate", "review"],
+        "forbiddenSteps": ["skip_compliance_check", "skip_review"],
+        "requiredApprovals": ["review"],
+        "maxRetries": 3,
+        "timeoutSeconds": 1800
+      },
+      "lead_qualification": {
+        "requiredSteps": ["capture", "enrich", "score", "route"],
+        "forbiddenSteps": ["auto_close_without_review"],
+        "requiredApprovals": [],
+        "maxRetries": 3,
+        "timeoutSeconds": 900
+      },
+      "report_generation": {
+        "requiredSteps": ["data_pull", "validate", "render", "review"],
+        "forbiddenSteps": ["publish_without_review"],
+        "requiredApprovals": ["review"],
+        "maxRetries": 3,
+        "timeoutSeconds": 1800
+      },
+      "deployment": {
+        "requiredSteps": ["pre_check", "build", "test", "approval", "deploy", "verify"],
+        "forbiddenSteps": ["skip_test", "skip_approval", "force_deploy"],
+        "requiredApprovals": ["approval"],
+        "maxRetries": 1,
+        "timeoutSeconds": 3600
+      },
+      "data_export": {
+        "requiredSteps": ["scope_check", "tenant_check", "extract", "approval", "deliver"],
+        "forbiddenSteps": ["skip_tenant_check", "export_without_approval"],
+        "requiredApprovals": ["approval"],
+        "maxRetries": 2,
+        "timeoutSeconds": 1800
+      }
+    }
+  }
+}
