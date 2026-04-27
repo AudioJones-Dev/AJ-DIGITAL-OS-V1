@@ -146,6 +146,26 @@ import {
   getNodeOutputs,
 } from "../bel/dag/dag-store.js";
 import type { BelDagPlan } from "../bel/dag/dag-types.js";
+import {
+  normalizeAsset,
+  normalizeContact,
+  normalizeKnowledgeDocument,
+  normalizeLead,
+  normalizeOffer,
+  normalizeTenant,
+  normalizeWorkflow,
+  saveEntity,
+  getEntity,
+  listEntities,
+  appendNormalizationAudit,
+  getNormalizationAuditEvents,
+  emitEntityNormalized,
+  emitEntityNormalizationFailed,
+} from "../normalization/index.js";
+import type {
+  NormalizedEntity,
+  NormalizedEntityType,
+} from "../normalization/index.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
