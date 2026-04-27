@@ -73,6 +73,9 @@ import {
   DagSkipNodeCommand,
   DagAuditCommand,
   DagOutputsCommand,
+  NormalizeEntityCommand,
+  ListEntitiesCommand,
+  GetEntityCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -1003,6 +1006,57 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
             runId: runIdFlag,
             json: hasFlag(parsed.flags, "json"),
             ...(nodeIdFlag !== undefined ? { nodeId: nodeIdFlag } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "normalize-entity":
+        {
+          const entityType = getStringFlag(parsed.flags, "entityType");
+          const data = getStringFlag(parsed.flags, "data");
+          const file = getStringFlag(parsed.flags, "file");
+          if (!entityType) {
+            console.error(
+              "Usage: normalize-entity --entityType <type> (--data '<json>' | --file <path>) [--json]",
+            );
+            return 1;
+          }
+          const result = await new NormalizeEntityCommand().run({
+            entityType,
+            ...(data !== undefined ? { data } : {}),
+            ...(file !== undefined ? { file } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "list-entities":
+        {
+          const entityType = getStringFlag(parsed.flags, "entityType");
+          const tenantIdFlag = getStringFlag(parsed.flags, "tenantId");
+          const limitRaw = getStringFlag(parsed.flags, "limit");
+          if (!entityType) {
+            console.error("Usage: list-entities --entityType <type> [--tenantId <id>] [--limit <n>] [--json]");
+            return 1;
+          }
+          const result = await new ListEntitiesCommand().run({
+            entityType,
+            ...(tenantIdFlag !== undefined ? { tenantId: tenantIdFlag } : {}),
+            ...(limitRaw !== undefined ? { limit: parseInt(limitRaw, 10) } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "get-entity":
+        {
+          const entityType = getStringFlag(parsed.flags, "entityType");
+          const entityIdFlag = getStringFlag(parsed.flags, "entityId");
+          if (!entityType || !entityIdFlag) {
+            console.error("Usage: get-entity --entityType <type> --entityId <id> [--json]");
+            return 1;
+          }
+          const result = await new GetEntityCommand().run({
+            entityType,
+            entityId: entityIdFlag,
+            json: hasFlag(parsed.flags, "json"),
           });
           return result.ok ? 0 : 1;
         }

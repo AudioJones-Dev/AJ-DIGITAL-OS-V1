@@ -124,6 +124,26 @@ import {
   getNodeOutputs,
 } from "../bel/dag/dag-store.js";
 import type { BelDagPlan } from "../bel/dag/dag-types.js";
+import {
+  normalizeAsset,
+  normalizeContact,
+  normalizeKnowledgeDocument,
+  normalizeLead,
+  normalizeOffer,
+  normalizeTenant,
+  normalizeWorkflow,
+  saveEntity,
+  getEntity,
+  listEntities,
+  appendNormalizationAudit,
+  getNormalizationAuditEvents,
+  emitEntityNormalized,
+  emitEntityNormalizationFailed,
+} from "../normalization/index.js";
+import type {
+  NormalizedEntity,
+  NormalizedEntityType,
+} from "../normalization/index.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -1646,6 +1666,134 @@ export function startHermesApi(port?: number): void {
     if (req.url === "/core/metrics" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, metrics: getMetricSnapshot() }));
+      return;
+    }
+
+    // ── L5 Normalization: audit log ───────────────────────────────────
+    if ((req.url === "/normalization/audit" || req.url?.startsWith("/normalization/audit?")) && req.method === "GET") {
+      const urlObj = new URL(req.url ?? "/normalization/audit", "http://localhost");
+      const entityType = urlObj.searchParams.get("entityType") as NormalizedEntityType | null;
+      const tenantId = urlObj.searchParams.get("tenantId");
+      const limitParam = urlObj.searchParams.get("limit");
+      const events = getNormalizationAuditEvents({
+        ...(entityType ? { entityType } : {}),
+        ...(tenantId ? { tenantId } : {}),
+        ...(limitParam ? { limit: parseInt(limitParam, 10) } : {}),
+      });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, events }));
+      return;
+    }
+
+    // ── L5 Normalization: list entities ────────────────────────────────
+    const normListMatch = req.url?.match(/^\/normalization\/([^/?]+)(?:\?(.*))?$/);
+    if (normListMatch && req.method === "GET" && normListMatch[1] !== "audit") {
+      const entityType = normListMatch[1] as NormalizedEntityType;
+      const urlObj = new URL(req.url ?? `/normalization/${entityType}`, "http://localhost");
+      const tenantId = urlObj.searchParams.get("tenantId");
+      const limitParam = urlObj.searchParams.get("limit");
+      try {
+        const entities = listEntities(entityType, {
+          ...(tenantId ? { tenantId } : {}),
+          ...(limitParam ? { limit: parseInt(limitParam, 10) } : {}),
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, entityType, entities }));
+      } catch (err: unknown) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "List failed" }));
+      }
+      return;
+    }
+
+    // ── L5 Normalization: get specific entity ─────────────────────────
+    const normGetMatch = req.url?.match(/^\/normalization\/([^/?]+)\/([^/?]+)$/);
+    if (normGetMatch && req.method === "GET" && normGetMatch[1] !== "audit") {
+      const entityType = normGetMatch[1] as NormalizedEntityType;
+      const entityId = decodeURIComponent(normGetMatch[2]!);
+      try {
+        const entity = getEntity(entityType, entityId);
+        if (!entity) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "Entity not found" }));
+          return;
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, entityType, entity }));
+      } catch (err: unknown) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Get failed" }));
+      }
+      return;
+    }
+
+    // ── L5 Normalization: normalize raw entity ────────────────────────
+    const normPostMatch = req.url?.match(/^\/normalization\/([^/?]+)$/);
+    if (normPostMatch && req.method === "POST" && normPostMatch[1] !== "audit") {
+      const entityType = normPostMatch[1] as NormalizedEntityType;
+      collectBody(req)
+        .then((raw) => {
+          let body: Record<string, unknown>;
+          try {
+            body = JSON.parse(raw) as Record<string, unknown>;
+          } catch {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: "Invalid JSON body" }));
+            return;
+          }
+          try {
+            const entity: NormalizedEntity = (() => {
+              switch (entityType) {
+                case "tenant":
+                  return normalizeTenant(body);
+                case "contact":
+                  return normalizeContact(body);
+                case "lead":
+                  return normalizeLead(body);
+                case "offer":
+                  return normalizeOffer(body);
+                case "asset":
+                  return normalizeAsset(body);
+                case "workflow":
+                  return normalizeWorkflow(body);
+                case "knowledge_document":
+                  return normalizeKnowledgeDocument(body);
+                default:
+                  throw new Error(`Unknown entityType: ${entityType}`);
+              }
+            })();
+            saveEntity(entityType, entity as never);
+            appendNormalizationAudit({
+              eventType: "entity_normalized",
+              entityType,
+              entityId: entity.entityId,
+              ...(entity.tenantId !== undefined ? { tenantId: entity.tenantId } : {}),
+              payload: { schemaVersion: entity.schemaVersion },
+            });
+            emitEntityNormalized(entityType, entity);
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: true, entityType, entity }));
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Normalization failed";
+            appendNormalizationAudit({
+              eventType: "entity_normalization_failed",
+              entityType,
+              payload: { reason: message },
+            });
+            emitEntityNormalizationFailed(entityType, message);
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: false, error: message }));
+          }
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : "Bad request",
+            }),
+          );
+        });
       return;
     }
 

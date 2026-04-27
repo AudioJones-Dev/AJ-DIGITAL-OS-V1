@@ -232,6 +232,174 @@ const AttributionEventZ = z.object({
   metadata: z.record(z.unknown()).optional(),
 });
 
+// ── Normalized Entity schemas (L5) ──────────────────────────────────────
+
+const NormalizedTenantZ = z.object({
+  entityId: z.string(),
+  tenantId: z.string(),
+  companyName: z.string().min(1),
+  industry: z.string().optional(),
+  tier: z.enum(["starter", "growth", "scale", "enterprise"]),
+  primaryContact: z.object({
+    name: z.string().min(1),
+    email: z.string().min(1),
+    phone: z.string().optional(),
+  }),
+  billingEmail: z.string().optional(),
+  timezone: z.string(),
+  currency: z.enum(["USD", "GBP", "EUR", "CAD", "AUD"]),
+  status: z.enum(["active", "trial", "suspended", "churned"]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  schemaVersion: z.string(),
+});
+
+const NormalizedContactZ = z.object({
+  entityId: z.string(),
+  tenantId: z.string().optional(),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().min(1),
+  phone: z.string().optional(),
+  company: z.string().optional(),
+  title: z.string().optional(),
+  source: z.enum(["manual", "form", "crm", "import", "webhook", "agent"]),
+  tags: z.array(z.string()),
+  status: z.enum(["active", "unsubscribed", "bounced", "unknown"]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  schemaVersion: z.string(),
+});
+
+const NormalizedLeadZ = z.object({
+  entityId: z.string(),
+  tenantId: z.string().optional(),
+  contactId: z.string().optional(),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().min(1),
+  company: z.string().optional(),
+  source: z.enum(["organic", "paid", "referral", "outbound", "event", "unknown"]),
+  score: z.number().min(0).max(100).optional(),
+  stage: z.enum([
+    "new",
+    "contacted",
+    "qualified",
+    "proposal",
+    "negotiation",
+    "won",
+    "lost",
+  ]),
+  estimatedValue: z.number().optional(),
+  currency: z.enum(["USD", "GBP", "EUR", "CAD", "AUD"]).optional(),
+  assignedTo: z.string().optional(),
+  notes: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  schemaVersion: z.string(),
+});
+
+const NormalizedOfferZ = z.object({
+  entityId: z.string(),
+  tenantId: z.string().optional(),
+  title: z.string().min(1),
+  type: z.enum(["retainer", "project", "audit", "workshop", "consulting", "product"]),
+  tier: z.enum(["starter", "growth", "scale", "enterprise", "custom"]),
+  price: z.number().positive(),
+  currency: z.enum(["USD", "GBP", "EUR", "CAD", "AUD"]),
+  billingCycle: z.enum(["once", "monthly", "quarterly", "annually"]).optional(),
+  deliverables: z.array(z.string()),
+  timeline: z.string().optional(),
+  scope: z.string().optional(),
+  guarantees: z.array(z.string()),
+  status: z.enum(["draft", "active", "archived", "deprecated"]),
+  governanceStatus: z.enum(["pending", "approved", "rejected"]).optional(),
+  mapScore: z.number().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  schemaVersion: z.string(),
+});
+
+const NormalizedAssetZ = z.object({
+  entityId: z.string(),
+  tenantId: z.string().optional(),
+  title: z.string().min(1),
+  type: z.enum([
+    "blog_post",
+    "social_post",
+    "email",
+    "landing_page",
+    "video_script",
+    "case_study",
+    "whitepaper",
+    "report",
+    "template",
+    "image",
+    "other",
+  ]),
+  format: z.enum([
+    "markdown",
+    "html",
+    "pdf",
+    "docx",
+    "json",
+    "image",
+    "video",
+    "audio",
+    "other",
+  ]),
+  contentHash: z.string().optional(),
+  sourceUri: z.string().optional(),
+  publishedUri: z.string().optional(),
+  status: z.enum(["draft", "review", "approved", "published", "archived"]),
+  tags: z.array(z.string()),
+  wordCount: z.number().optional(),
+  channel: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  schemaVersion: z.string(),
+});
+
+const WorkflowStepZ = z.object({
+  stepId: z.string(),
+  name: z.string(),
+  type: z.string(),
+  order: z.number(),
+  required: z.boolean(),
+});
+
+const NormalizedWorkflowZ = z.object({
+  entityId: z.string(),
+  tenantId: z.string().optional(),
+  name: z.string().min(1),
+  type: z.string().min(1),
+  executionModel: z.enum(["linear", "dag"]),
+  steps: z.array(WorkflowStepZ),
+  status: z.enum(["draft", "active", "paused", "archived"]),
+  sopValidated: z.boolean(),
+  governanceStatus: z.enum(["pending", "approved", "rejected"]).optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  schemaVersion: z.string(),
+});
+
+const NormalizedKnowledgeDocumentZ = z.object({
+  entityId: z.string(),
+  tenantId: z.string().optional(),
+  title: z.string().min(1),
+  namespace: z.string().min(1),
+  sourceType: z.enum(["markdown", "text", "json", "jsonl", "url", "manual"]),
+  contentHash: z.string().optional(),
+  chunkCount: z.number().optional(),
+  version: z.string().optional(),
+  tags: z.array(z.string()),
+  status: z.enum(["ingested", "indexing", "indexed", "stale", "archived"]),
+  retrievalDocumentId: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  schemaVersion: z.string(),
+});
+
 function initializeCoreSchemas(): void {
   registerSchema("Run", "1.0.0", RunZ);
   registerSchema("RunStateTransition", "1.0.0", RunStateTransitionZ);
@@ -240,6 +408,13 @@ function initializeCoreSchemas(): void {
   registerSchema("CommandEnvelope", "1.0.0", CommandEnvelopeZ);
   registerSchema("IdempotencyRecord", "1.0.0", IdempotencyRecordZ);
   registerSchema("AttributionEvent", "1.0.0", AttributionEventZ);
+  registerSchema("NormalizedTenant", "1.0.0", NormalizedTenantZ);
+  registerSchema("NormalizedContact", "1.0.0", NormalizedContactZ);
+  registerSchema("NormalizedLead", "1.0.0", NormalizedLeadZ);
+  registerSchema("NormalizedOffer", "1.0.0", NormalizedOfferZ);
+  registerSchema("NormalizedAsset", "1.0.0", NormalizedAssetZ);
+  registerSchema("NormalizedWorkflow", "1.0.0", NormalizedWorkflowZ);
+  registerSchema("NormalizedKnowledgeDocument", "1.0.0", NormalizedKnowledgeDocumentZ);
 }
 
 initializeCoreSchemas();

@@ -401,3 +401,17 @@ export type { DagAuditCommandInput, DagAuditCommandResult } from "./dag-audit.co
 
 export { DagOutputsCommand } from "./dag-outputs.command.js";
 export type { DagOutputsCommandInput, DagOutputsCommandResult } from "./dag-outputs.command.js";
+
+export {
+  NormalizeEntityCommand,
+  ListEntitiesCommand,
+  GetEntityCommand,
+} from "./normalization.commands.js";
+export type {
+  NormalizeEntityCommandInput,
+  NormalizeEntityCommandResult,
+  ListEntitiesCommandInput,
+  ListEntitiesCommandResult,
+  GetEntityCommandInput,
+  GetEntityCommandResult,
+} from "./normalization.commands.js";
