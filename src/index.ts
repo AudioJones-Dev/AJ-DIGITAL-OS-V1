@@ -26,3 +26,7 @@ export * from "./types/workflow.types.js";
 export * from "./workflows/blog-authority.workflow.js";
 export * from "./workflows/transcript-to-content.workflow.js";
 export * from "./workflows/workflow-registry.js";
+export * from "./control-plane/telegram/telegram-listener.js";
+export * from "./control-plane/telegram/telegram-parser.js";
+export * from "./control-plane/router/task-router.js";
+export * from "./control-plane/auth/telegram-auth.js";

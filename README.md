@@ -149,3 +149,59 @@ npm run coverage
 ```
 
 Coverage thresholds are enforced in `vitest.config.ts` for core lifecycle and webhook modules.
+
+## Telegram Local Control Plane (Phase 1)
+
+This repository now includes a private local-first Telegram control plane for operator commands only.
+
+### Security model
+
+- Allowlist-only: both Telegram user ID and chat ID must be explicitly configured.
+- Fail-closed startup: the control plane will refuse to start if auth config or required bot token is missing.
+- Safe command policy: only `/help`, `/status`, `/ops dashboard`, `/ops pending`, and `/ops track <runId>` are supported.
+- No arbitrary shell execution is enabled.
+
+### Required environment variables
+
+Set these values before startup:
+
+```bash
+AJ_TELEGRAM_BOT_TOKEN=
+AJ_ALLOWED_TELEGRAM_USER_IDS=12345,67890
+AJ_ALLOWED_TELEGRAM_CHAT_IDS=11111,22222
+AJ_CONTROL_PLANE_POLL_INTERVAL_MS=5000
+```
+
+Optional:
+
+```bash
+AJ_LOCAL_MODEL_ROOT=F:\\AI_MODELS
+AJ_CONTROL_PLANE_AUDIT_LOG_PATH=./data/logs/control-plane-audit.jsonl
+```
+
+### Build and run locally
+
+```bash
+npm install
+npm run build
+npm run control-plane:start
+```
+
+The listener uses Telegram polling (`getUpdates`) and is intended for local/private use, not public web exposure.
+
+### Supported Telegram commands
+
+- `/help` — show commands
+- `/status` — show control plane and local environment status
+- `/ops dashboard` — show AJ OS dashboard summary
+- `/ops pending` — show pending approvals summary
+- `/ops track <runId>` — inspect a specific run
+
+### Audit logging
+
+Every request is logged to JSONL with request metadata, auth outcome, parse/route status, duration, and errors.
+By default, logs are written to:
+
+```text
+./data/logs/control-plane-audit.jsonl
+```
