@@ -1,0 +1,54 @@
+{
+  "case_id": "qual-growth-001",
+  "status": "evaluated",
+  "readiness_score": 72,
+  "demand_score": {
+    "score": 82,
+    "rationale": [
+      "Monthly lead volume is strong (100+).",
+      "Demand signal contributes 24 points.",
+      "Offer clarity score supports demand confidence."
+    ]
+  },
+  "economics_score": {
+    "score": 78,
+    "rationale": [
+      "Average customer value between 2000 and 4999 is strong."
+    ]
+  },
+  "process_maturity_score": {
+    "score": 60,
+    "rationale": [
+      "Sales process is defined.",
+      "Fulfillment capacity is defined.",
+      "SOP coverage between 0.3 and 0.6 is moderate."
+    ]
+  },
+  "data_maturity_score": {
+    "score": 80,
+    "rationale": [
+      "CRM is present.",
+      "Database size 500-4999 is viable."
+    ]
+  },
+  "attribution_readiness_score": {
+    "score": 35,
+    "rationale": [
+      "Attribution tracking is missing; score is capped.",
+      "CRM presence supports attribution continuity.",
+      "Lead source diversity contributes 15 points.",
+      "No tracking present; attribution readiness capped at 35."
+    ]
+  },
+  "deployment_tier": "growth",
+  "disqualifiers": [],
+  "required_fixes": [
+    "Establish attribution tracking",
+    "Document fulfillment SOPs"
+  ],
+  "recommended_next_step": "install_growth_os",
+  "notes": [
+    "Deterministic qualification engine v1 evaluation completed.",
+    "No external model calls were used."
+  ]
+}

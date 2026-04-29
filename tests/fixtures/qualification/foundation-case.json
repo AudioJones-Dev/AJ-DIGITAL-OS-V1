@@ -1,0 +1,18 @@
+{
+  "case_id": "qual-foundation-001",
+  "company": "Blue Harbor Advisors",
+  "industry": "consulting",
+  "inputs": {
+    "monthly_leads": 45,
+    "avg_customer_value": 1700,
+    "sales_process_present": true,
+    "crm_present": true,
+    "tracking_present": false,
+    "database_size": 300,
+    "lead_source_diversity": 0.4,
+    "fulfillment_capacity_defined": true,
+    "sop_coverage_ratio": 0.2,
+    "offer_clarity_score": 0.55,
+    "demand_signal_score": 0.5
+  }
+}
