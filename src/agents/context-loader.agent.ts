@@ -1,4 +1,4 @@
-﻿import { readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { AgentResponse } from "../types/agent.types.js";
@@ -92,7 +92,7 @@ const fileExists = async (filePath: string): Promise<boolean> => {
 
 const readJson = async (filePath: string): Promise<Record<string, unknown>> => {
   const raw = await readFile(filePath, "utf-8");
-  const parsed = JSON.parse(raw) as unknown;
+  const parsed = JSON.parse(raw.replace(/^\uFEFF/, "")) as unknown;
 
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error(`File "${filePath}" does not contain a JSON object.`);
