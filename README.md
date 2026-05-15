@@ -1,5 +1,16 @@
 # AJ Digital OS
 
+## Canonical Repo Structure
+
+| Concern | Canonical path | Notes |
+|---|---|---|
+| Web dashboard | `dashboard/` | Next.js 14 App Router. The earlier `ui/dashboard/` Vite app has been removed. |
+| Docker Compose stack | `compose/docker-compose.yml` | Full infra + observability stack. The earlier root `docker-compose.yml` is preserved in `docs/archive/docker-compose-app-legacy.yml`. |
+| Observability config | `monitoring/` | Prometheus, Alertmanager, Blackbox, Grafana dashboards and provisioning — mounted by the canonical compose. The earlier `ops/` tree has been removed. |
+| Heroku entry point | `Procfile` | `web: node dist/server.js` |
+| Product skills | `skills/*.skill.md` + `skills/supabase{,-postgres-best-practices}/` | Loadable at runtime via `skills-lock.json`. AI-tool config directories (`.adal/`, `.claude/`, `.windsurf/`, etc.) are local-only and `.gitignore`d — do not duplicate skills there. |
+| Runtime state | `data/`, `memory/`, `output/`, `sessions/`, `runtime/{dag,events,idempotency,observability}` | Regenerated locally on every run. **Never commit** — `.gitignore` enforces this; only `.gitkeep` markers, `runtime/policies/`, `data/n8n-workflows/`, and `memory/MEMORY.md` are tracked. |
+
 ## CLI Usage
 
 AJ Digital OS includes a terminal operator layer for system monitoring, run inspection, approval workflows, execution workflows, and recovery/debugging. The CLI is designed to stay thin on top of the command layer so operators can inspect and drive the system from terminal without bypassing lifecycle controls.

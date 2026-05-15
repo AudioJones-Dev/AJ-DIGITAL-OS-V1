@@ -1,29 +1,60 @@
+# ── Environment files ─────────────────────────────────────────
 .env
 env/.env
+*.tsbuildinfo
+*.log
 
-# Secrets and local runtime artifacts
+# ── Build / dependency output ─────────────────────────────────
+node_modules/
+dist/
+.npm-cache/
+backups/
+logs/
+dashboard/.next/
+dashboard/.env.local
+
+# ── Cryptographic material ────────────────────────────────────
 *.key
 *.pem
 *.p12
 *.pfx
 
-# Backup outputs (runtime data stays on F:\CACHE)
-backups/
-logs/
-node_modules/
-dist/
-.npm-cache/
-data/
-memory/
+# ── Runtime / generated state (regenerated locally, never commit) ──
+# data/ tree holds local file-backed stores; .gitkeep markers and
+# tracked workflow definitions are preserved.
+data/**
+!data/**/
+!data/**/.gitkeep
+!data/n8n-workflows/**
+
+# memory/ holds the runtime memory store; MEMORY.md is the live root index
+# read by src/memory/memory-index.ts and must remain tracked.
+memory/**
+!memory/**/
+!memory/**/.gitkeep
+!memory/MEMORY.md
+
+# Session captures and browser-export scratch outputs
 output/
 sessions/
-*.log
 
-# IDE / editor configs
+# runtime/ — policies are infra-as-code (tracked); everything else is generated.
+runtime/cache/
+runtime/control-runs.json
+runtime/dag/
+runtime/events/
+runtime/idempotency/
+runtime/observability/
+
+# ── Local tool / CLI caches ───────────────────────────────────
+.tools/
+supabase/.temp/
+
+# ── IDE / editor configs (do not commit personal MCP / launch files) ──
 .vscode/
 .idea/
 
-# Agent / AI tool configs (local-only)
+# ── Agent / AI tool config directories (local-only, never committed) ──
 .adal/
 .agents/
 .augment/
@@ -54,28 +85,3 @@ sessions/
 .vibe/
 .windsurf/
 .zencoder/
-
-# Local tools (not shipped)
-.tools/
-
-# Local skills cache (referenced, not shipped)
-skills/
-skills-lock.json
-
-# Ops scaffold is tracked as infrastructure code
-
-# Notes (local only)
-notes/
-
-# Supabase local config
-supabase/
-
-# Local caches
-*.tsbuildinfo
-
-# Cache Augmentation Layer runtime state (created on demand)
-runtime/cache/
-
-# Next.js dashboard build output
-dashboard/.next/
-dashboard/.env.local
