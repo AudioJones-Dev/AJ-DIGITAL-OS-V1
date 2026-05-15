@@ -7,7 +7,7 @@
 | 1 | Renamed `SUPABASE_ANON_KEY` → `SUPABASE_SERVICE_ROLE_KEY` everywhere | ✅ Done |
 | 2 | Added production config guards in `src/server.ts` (fail-fast on missing env vars) | ✅ Done |
 | 3 | Created `src/scripts/validate-production-ready.ts` + `npm run validate:production` | ✅ Done |
-| 4 | Verified Dockerfile, docker-compose.yml, Procfile, .dockerignore are current | ✅ Done |
+| 4 | Verified Dockerfile, compose/docker-compose.yml, Procfile, .dockerignore are current | ✅ Done |
 | 5 | Audited logging — no secrets printed to stdout/stderr | ✅ Done |
 | 6 | Added `npm run start:production-local` (build → validate → start) | ✅ Done |
 | 7 | This deployment handoff document | ✅ Done |
@@ -45,10 +45,10 @@ npm run start:full               # Build + start (no validation)
 ### Docker (recommended)
 
 ```bash
-docker compose up --build -d
+docker compose -f compose/docker-compose.yml up --build -d
 ```
 
-- `docker-compose.yml` sets `HERMES_BIND_HOST=0.0.0.0` and `NODE_ENV=production`
+- `compose/docker-compose.yml` is the canonical full-stack compose file (infra + observability)
 - Health check: `GET /status` on port 7420
 - Env vars loaded from `.env` file
 

@@ -103,7 +103,7 @@ check("Webhook secret format", whSecret.startsWith("whsec_"), whSecret.startsWit
 // ── 6. Deployment Files ────────────────────────────────────────────
 console.log(`\n${TAG} Checking deployment files...`);
 
-const deployFiles = ["Dockerfile", "docker-compose.yml", "Procfile", ".dockerignore"];
+const deployFiles = ["Dockerfile", "compose/docker-compose.yml", "Procfile", ".dockerignore"];
 for (const f of deployFiles) {
   const p = resolve(process.cwd(), f);
   check(f, existsSync(p), existsSync(p) ? "present" : "MISSING");

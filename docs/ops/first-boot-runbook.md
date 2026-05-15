@@ -29,7 +29,7 @@
 ## Common Failure Cases
 
 1. Docker not running: Docker Desktop is stopped or still initializing.
-2. Missing config mounts: expected files under `ops/` are absent or path is wrong.
+2. Missing config mounts: expected files under `monitoring/` are absent or path is wrong.
 3. Bad `.env`: missing required variables or malformed values.
 4. Port collisions: ports 3000, 3001, 4317, 5678, 7420, 9090 already in use.
 
