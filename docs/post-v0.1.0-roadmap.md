@@ -1,5 +1,11 @@
 # Post-v0.1.0 Roadmap
 
+> **Superseded by [`docs/ROADMAP.md`](./ROADMAP.md).** The canonical roadmap
+> is now `docs/ROADMAP.md`, which reflects current per-layer priorities
+> and is aligned with
+> `docs/architecture/AJ_DIGITAL_OS_LAYER_COVERAGE_INDEX.md`. This file is
+> retained as historical context from the post-0.1.0 release window.
+
 ## Recommended Next Priorities
 
 - Smoke tests for core CLI commands

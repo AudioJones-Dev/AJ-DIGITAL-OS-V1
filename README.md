@@ -1,5 +1,10 @@
 # AJ Digital OS
 
+> **New here?** Start with [`AGENTS.md`](AGENTS.md) (agent operating
+> contract), [`docs/PRD.md`](docs/PRD.md) (what the product is),
+> [`docs/DESIGN.md`](docs/DESIGN.md) (how it's built), and
+> [`docs/onboarding.md`](docs/onboarding.md) (first-run walkthrough).
+
 ## CLI Usage
 
 AJ Digital OS includes a terminal operator layer for system monitoring, run inspection, approval workflows, execution workflows, and recovery/debugging. The CLI is designed to stay thin on top of the command layer so operators can inspect and drive the system from terminal without bypassing lifecycle controls.
@@ -9,26 +14,15 @@ AJ Digital OS includes a terminal operator layer for system monitoring, run insp
 Build the project first so the compiled CLI is available under `dist/cli.js`.
 
 ```bash
+npm install
 npm run build
-npm run assistant:setup
-npm run assistant:doctor
-npm run assistant:start -- --brand aj-digital --task "Create a short operator brief for this week"
-npm run assistant:history
-npm run conversation:history
-npm run assistant:shell -- --brand audio-jones
-npm run ui:start
-npm run deliverables
-npm run deliverables:pending
-npm run memory:stats
-npm run memory:search -- --query "approval lifecycle"
-npm run tool-registry
-npm run integration-profiles
-npm run model-profiles
 npm run cli:help
-npm run cli:assistant -- --task "Create a short operator brief for this week"
-npm run cli:healthcheck
 npm run cli:dashboard
 npm run cli:console
+npm run cli:pending
+npm run cli:approved
+npm run cli:failed
+npm run cli:executed
 ```
 
 Generic CLI pattern:
@@ -36,6 +30,28 @@ Generic CLI pattern:
 ```bash
 npm run cli -- <command> [flags]
 ```
+
+### Planned / not yet implemented
+
+The following commands and scripts are referenced in older sections of
+this README and other docs but are **not yet wired into `package.json`**.
+Treat them as planned interface and use the generic `npm run cli -- ...`
+pattern in the meantime:
+
+- `npm run assistant:setup`, `assistant:doctor`, `assistant:start`,
+  `assistant:history`, `assistant:shell`
+- `npm run conversation:history`, `conversation:thread`
+- `npm run ui:start` (local web shell)
+- `npm run deliverables`, `deliverables:pending`
+- `npm run memory:stats`, `memory:search`, `memory:index`
+- `npm run tool-registry`, `integration-profiles`, `model-profiles`
+- `npm run cli:assistant`, `cli:healthcheck`, `cli:ollama-probe`
+- `npm run release:check`, `start:staging`, `smoke:ollama-provider`,
+  `link:local`
+
+Implemented commands are in `package.json` under `scripts`; see the
+`cli:*` shortcuts. The roadmap for promoting the planned commands lives
+in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ### Command Groups
 

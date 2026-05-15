@@ -7,13 +7,27 @@ The format is based on Keep a Changelog and uses Semantic Versioning principles.
 ## [Unreleased]
 
 ### Added
-- 
+- Control Plane v1 with run registry, audit log, and MAP attribution framework integrated to main.
+- Operating Core v1: command envelope, policy engine, idempotency, schema registry, system event ledger, file-backed metrics.
+- BEL v3 linear execution runtime; BEL v4 DAG execution layer with cycle detection, retry, and per-node audit.
+- Cache Augmentation Layer with five file-backed namespaces and policy engine.
+- Operational Retrieval Layer with document and chunk store, keyword search, and context-pack generator.
+- MAP / CERA decision engine for opportunity scoring and decision path.
+- Dashboard enforcement binding layer; Next.js command center dashboard v1.
+- Qualification engine v1 for deterministic business-readiness gating before deployment (PR #16).
+- Documentation review checklist consolidation (PR #14) and post-cycle commit review / mergeability assessment artifacts (PR #18, 2026-04-27).
+- Layer Coverage Index and Module Traceability Map for the 16-layer architecture model.
+- AJ Digital OS Layer Model Spec v1.0.
+- Foundational readiness docs: `AGENTS.md`, `CLAUDE.md`, `docs/PRD.md`, `docs/ROADMAP.md`, `docs/DESIGN.md`, `docs/SECURITY.md`, `docs/DEPLOYMENT.md`, `docs/DECISIONS.md`, root `SECURITY.md`.
 
 ### Changed
-- 
+- Approval service file persistence stabilized with race/ordering fixes for tests and file store interactions.
+- Control plane bound to the enforcement engine and approval system through `executeWithEnforcement`.
+- Security audit workflow now includes a gitleaks secret-scanning job alongside `npm audit`.
+- Removed temporary merge helper scripts after integration window closed.
 
 ### Fixed
-- 
+- Approval service persistence test reliability under concurrent state updates.
 
 ## [0.1.0] - 2026-04-02
 

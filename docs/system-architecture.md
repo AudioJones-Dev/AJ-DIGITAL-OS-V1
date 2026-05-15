@@ -1,5 +1,13 @@
 # AJ Digital OS - System Architecture
 
+> **Note:** [`docs/DESIGN.md`](./DESIGN.md) is the canonical design index
+> and the entry point for the 16-layer architecture model. This document
+> remains the operator-facing description of the core runtime
+> (run lifecycle, agent decomposition, services, CLI layout, end-to-end
+> data flow) and is kept current with the implementation. Read
+> `docs/DESIGN.md` first for layer-level pointers; come back here for the
+> implementation-level overview.
+
 ## 1. System Overview
 
 AJ Digital OS is a local-first AI workflow operating system built around deterministic execution, approval gating, resumable workflow control, and file-based observability.
