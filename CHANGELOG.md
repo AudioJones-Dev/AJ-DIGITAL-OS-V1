@@ -7,13 +7,24 @@ The format is based on Keep a Changelog and uses Semantic Versioning principles.
 ## [Unreleased]
 
 ### Added
-- 
+- Repository governance layer: `AGENTS.md`, `CLAUDE.md`, root `SECURITY.md`, `docs/PRD.md`, `docs/DESIGN.md`, `docs/ROADMAP.md`, `docs/DECISIONS.md`, `docs/SECURITY.md`, `docs/DEPLOYMENT.md`.
+- Qualification engine v1: deterministic five-dimension business-readiness scoring with tiered output (`not_ready`, `foundation`, `growth`, `scale`) under `docs/intelligence-layer/qualification-engine.md` and `docs/examples/qualification/`.
+- Command center dashboard v1 (`dashboard/`, Next.js workspace) for browser-based operator read views.
+- Map-CERA decision engine v1.
+- Operational retrieval layer v1.
+- BEL v4 DAG execution layer.
+- Security workflow hardening: gitleaks secret scanning and dependency-review on top of `npm audit`.
+- Local AI tool config directories (`.claude/`, `.codex/`, `.cursor/`, etc.) added to `.gitignore`.
 
 ### Changed
-- 
+- README reconciled against `package.json`: every documented command now resolves to an actual npm script or `npm run cli -- <subcommand>` invocation. Removed references to scripts that did not exist.
+- Approval service file persistence stabilized for race-free test execution.
+- Canonical compose location declared (`compose/docker-compose.yml`); root `docker-compose.yml` retained as legacy (see ADR-0007).
+- Canonical monitoring stack declared: Prometheus + Grafana + Alertmanager + Blackbox under `monitoring/` (see ADR-0006).
+- Canonical browser-based dashboard declared: Next.js workspace under `dashboard/` (see ADR-0008).
 
 ### Fixed
-- 
+- README script references that pointed to non-existent npm scripts (e.g., `assistant:setup`, `release:check`, `start:staging`, `ui:start`) corrected to the actual `npm run cli -- <subcommand>` form.
 
 ## [0.1.0] - 2026-04-02
 

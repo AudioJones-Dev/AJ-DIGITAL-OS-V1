@@ -1,3 +1,5 @@
+> **Status: Historical.** This document is an early architecture draft and is no longer authoritative. The canonical architecture lives under `docs/system/` and `docs/architecture/`. See [`docs/DESIGN.md`](docs/DESIGN.md) for navigation and [`docs/system/AJ_DIGITAL_OS_MASTER_ARCHITECTURE_SCHEMA.md`](docs/system/AJ_DIGITAL_OS_MASTER_ARCHITECTURE_SCHEMA.md) for the current schema.
+
 # AJ Digital Agent Architecture
 ## Based on Claude Code Principles, adapted for AJ Digital OS
 

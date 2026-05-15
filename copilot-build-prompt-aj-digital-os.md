@@ -1,3 +1,5 @@
+> **Status: Historical.** This is an early Copilot scaffold prompt preserved for reference. It is no longer authoritative. Current operating contract for agents lives in [`AGENTS.md`](AGENTS.md); architecture lives under `docs/system/` and `docs/architecture/`.
+
 # Copilot Prompt — AJ Digital OS Scaffold Build
 ## Paste into Copilot Chat in VS Code
 

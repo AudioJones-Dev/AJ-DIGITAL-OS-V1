@@ -1,404 +1,319 @@
 # AJ Digital OS
 
-## CLI Usage
+A local-first, approval-gated AI workflow operating system. The CLI is the primary operator surface; a local web shell and a Next.js command-center dashboard sit alongside it.
 
-AJ Digital OS includes a terminal operator layer for system monitoring, run inspection, approval workflows, execution workflows, and recovery/debugging. The CLI is designed to stay thin on top of the command layer so operators can inspect and drive the system from terminal without bypassing lifecycle controls.
+For agent operating contract see [`AGENTS.md`](AGENTS.md).
+For product definition see [`docs/PRD.md`](docs/PRD.md).
+For architecture navigation see [`docs/DESIGN.md`](docs/DESIGN.md).
+For deployment see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+For security policy see [`docs/SECURITY.md`](docs/SECURITY.md).
 
-### Build And Run
+---
 
-Build the project first so the compiled CLI is available under `dist/cli.js`.
+## Repository Structure
+
+```
+src/                  application source (TypeScript)
+dashboard/            Next.js command-center dashboard (separate workspace)
+docs/                 canonical documentation (PRD, DESIGN, ROADMAP, DECISIONS, SECURITY, DEPLOYMENT, system, architecture, ops)
+compose/              canonical docker-compose definition
+monitoring/           prometheus, grafana, alertmanager, blackbox configs
+ops/                  ops infrastructure scaffolds (otel, grafana, prometheus)
+scripts/              project-level scripts
+sql/                  schema + SQL artifacts
+supabase/             supabase project metadata
+tests/                test suites
+.github/              workflows + PR template
+skills/               markdown-defined skills
+```
+
+Runtime state (`data/`, `memory/`, `output/`, `sessions/`, `runtime/cache/`, `dist/`, `logs/`) is gitignored by design. See [`docs/SECURITY.md`](docs/SECURITY.md) for the runtime-state policy.
+
+---
+
+## Local-First Architecture
+
+- Run state, conversation history, semantic memory, deliverables, and outputs persist to the local filesystem.
+- Live model inference is Ollama-first; other providers (OpenAI, Anthropic, LM Studio) are scaffolded but not the supported live path for staging (see [`docs/DECISIONS.md`](docs/DECISIONS.md) ADR-0005).
+- Approval gating is mandatory for state-mutating actions.
+- The system is operable offline for advisory and local workflow execution.
+
+---
+
+## Build And Run
 
 ```bash
+npm install
 npm run build
-npm run assistant:setup
-npm run assistant:doctor
-npm run assistant:start -- --brand aj-digital --task "Create a short operator brief for this week"
-npm run assistant:history
-npm run conversation:history
-npm run assistant:shell -- --brand audio-jones
-npm run ui:start
-npm run deliverables
-npm run deliverables:pending
-npm run memory:stats
-npm run memory:search -- --query "approval lifecycle"
-npm run tool-registry
-npm run integration-profiles
-npm run model-profiles
-npm run cli:help
-npm run cli:assistant -- --task "Create a short operator brief for this week"
-npm run cli:healthcheck
-npm run cli:dashboard
-npm run cli:console
+npm run cli -- help
 ```
 
-Generic CLI pattern:
+The compiled CLI lands at `dist/cli.js`. The repo also exposes a `bin` entry of the same name for linked installs.
+
+### Available npm Scripts
+
+The package exposes a deliberately small set of npm scripts. Every CLI subcommand is reachable via `npm run cli -- <command>`.
 
 ```bash
-npm run cli -- <command> [flags]
+npm run build              # tsc → dist/
+npm run typecheck          # tsc --noEmit
+npm run cli                # node dist/cli.js
+npm run cli:help           # npm run cli -- help
+npm run cli:dashboard      # npm run cli -- dashboard
+npm run cli:console        # npm run cli -- operator-console
+npm run cli:pending        # npm run cli -- list-pending-approvals
+npm run cli:approved       # npm run cli -- list-approved-runs
+npm run cli:failed         # npm run cli -- list-failed-runs
+npm run cli:executed       # npm run cli -- list-executed-runs
+npm run cli:track          # npm run cli -- track-run
+npm run cli:summary        # npm run cli -- run-summary
+npm run cli:events         # npm run cli -- run-events
+npm run cli:approve        # npm run cli -- approve-run
+npm run cli:execute        # npm run cli -- execute-run
+npm run cli:resume         # npm run cli -- resume-run
+npm run control-plane:start  # node --import ./dist/env.js dist/control-plane/index.js
+npm run link:local         # npm run build && npm link
+npm run test               # vitest run
+npm run test:watch         # vitest
+npm run coverage           # vitest run --coverage
 ```
 
-### Command Groups
+### CLI Surface
+
+The CLI exposes many subcommands beyond the npm shortcuts above. They are invoked uniformly via `npm run cli -- <command>` or, after `npm link`, as `aj-digital-os <command>`.
 
 #### Overview
 
-- `assistant`: Run the local assistant runtime in advisory mode by default, or orchestrated mode when explicitly requested.
-- `assistant-start`: Verify assistant readiness, then launch the current single-task assistant path.
-- `assistant-history`: Inspect recent assistant task history from the local file-backed assistant session store.
-- `conversation-history`: Inspect persisted conversation threads separate from session metadata.
-- `deliverables`: Inspect the local file-backed deliverable registry and routed output paths.
-- `list-pending-deliverables`: Inspect deliverables currently waiting for explicit approval.
-- `memory-search`: Search the local semantic memory index over conversations, deliverables, and ingested knowledge.
-- `assistant-shell`: Run a terminal-native conversational shell over the existing assistant runtime.
-- `ui-start`: Start the local-first web/chat shell layered on top of the current runtime and file-backed stores.
-- `help`: Show available operator commands, categories, and example usage.
-- `healthcheck`: Validate runtime configuration, writable directories, and provider readiness.
-- `dashboard`: Show system-wide run metrics and recent activity.
-- `ollama-probe`: Probe the supported live Ollama JSON generation path for staging validation.
-- `operator-console`: Show the unified operator console with queues and summary sections.
+- `assistant` — run the local assistant runtime (advisory by default; orchestrated when explicitly requested)
+- `assistant-start` — verify readiness then launch the single-task assistant path
+- `assistant-history` — inspect recent assistant task history
+- `conversation-history` — inspect persisted conversation threads
+- `deliverables` — inspect the deliverable registry and routed output paths
+- `list-pending-deliverables` — inspect deliverables waiting for explicit approval
+- `memory-search` — search the local semantic memory index
+- `memory-stats` — semantic memory counts and storage paths
+- `memory-index` — rebuild or ingest the semantic memory index
+- `assistant-shell` — terminal-native conversational shell
+- `ui-start` — start the local-first web/chat shell
+- `help` — list operator commands
+- `healthcheck` — validate runtime configuration, writable directories, provider readiness
+- `dashboard` — system-wide run metrics
+- `ollama-probe` — probe the live Ollama JSON generation path
+- `operator-console` — unified operator console with queues and summary
 
 #### Inspection
 
-- `run-summary`: Inspect one run's lifecycle, approval state, outputs, warnings, and errors.
-- `run-events`: Inspect the raw event stream for a run.
-- `track-run`: Inspect both run summary and event history together.
+- `run-summary` — single-run lifecycle, approvals, outputs, warnings, errors
+- `run-events` — raw event stream for a run
+- `track-run` — combined summary + event history
 
 #### Queues
 
-- `list-pending-approvals`: Show runs awaiting human approval.
-- `list-approved-runs`: Show runs ready for execution.
-- `list-failed-runs`: Show failed runs needing attention.
-- `list-executed-runs`: Show recently executed runs and published outputs.
+- `list-pending-approvals` — runs awaiting human approval
+- `list-approved-runs` — runs ready for execution
+- `list-failed-runs` — failed runs needing attention
+- `list-executed-runs` — recently executed runs
 
 #### Actions
 
-- `approve-run`: Resolve a pending approval decision for a run.
-- `submit-for-approval`: Move a draft deliverable into the pending approval queue.
-- `approve-deliverable`: Move a pending deliverable into the approved state.
-- `publish-deliverable`: Publish an approved deliverable through the local-first publish path.
-- `execute-run`: Trigger execution for an approved run through the execution coordinator.
-- `resume-run`: Resume a run through the execution resumer.
+- `approve-run` — resolve a pending approval decision
+- `submit-for-approval` — move a draft deliverable into pending approval
+- `approve-deliverable` — move a pending deliverable into approved
+- `publish-deliverable` — publish an approved deliverable
+- `execute-run` — trigger execution for an approved run
+- `resume-run` — resume a run through the execution resumer
 
 #### Setup
 
-- `assistant-setup`: Initialize writable runtime directories and validate the local-first assistant install path.
-- `assistant-doctor`: Report whether the assistant is actually ready to use.
-- `seed-demo`: Generate a demo dataset covering all key run lifecycle states.
+- `assistant-setup` — initialize writable runtime directories
+- `assistant-doctor` — report assistant readiness
+- `seed-demo` — generate a demo dataset
 
 #### Architecture
 
-- `tool-registry`: Inspect the MCP-ready tool/provider/catalog scaffold and any local tool metadata manifests.
-- `integration-profiles`: Inspect file-backed API integration and provider profiles with secret references only.
-- `model-profiles`: Inspect file-backed model and fine-tune profile scaffolds with brand/task routing preferences.
-- `memory-index`: Rebuild or ingest the local semantic memory index.
-- `memory-stats`: Inspect semantic memory counts and local storage paths.
+- `tool-registry` — inspect MCP-ready tool/provider scaffolds
+- `integration-profiles` — inspect API integration/provider profiles (secret references only)
+- `model-profiles` — inspect model and fine-tune profile scaffolds
 
-### Example Usage
+For the full subcommand list see `npm run cli -- help`.
+
+### Example Operator Flow
 
 ```bash
-npm run assistant:setup
-npm run assistant:doctor
-npm run assistant:start -- --brand aj-digital --task "Draft a concise SEO brief for AJ Digital"
-npm run assistant:start -- --task "Repurpose this transcript into clips" --skill transcript-to-content --mode orchestrated --source "Transcript text here"
-npm run assistant:history
-npm run conversation:history
-npm run assistant:shell -- --brand audio-jones --label morning-ops
-npm run conversation:thread -- --threadId <thread-id>
-npm run ui:start
-npm run deliverables -- --brand aj-digital --status draft
-npm run memory:index -- --rebuild
-npm run memory:search -- --query "brand approval policy"
-npm run memory:index -- --text "Client positioning notes" --label "AJ positioning"
-npm run cli -- submit-for-approval --deliverableId <deliverable-id>
-npm run cli -- approve-deliverable --deliverableId <deliverable-id>
-npm run cli -- publish-deliverable --deliverableId <deliverable-id>
-npm run tool-registry
-npm run integration-profiles -- --brand aj-digital
-npm run model-profiles -- --brand aj-digital
-npm run cli:help
-npm run cli -- assistant --task "Draft a concise SEO brief for AJ Digital"
-npm run cli -- assistant --task "Repurpose this transcript into clips" --skill transcript-to-content --mode orchestrated --source "Transcript text here"
-npm run cli:healthcheck
-npm run cli:ollama-probe
-npm run cli:dashboard
+npm run cli -- assistant-setup
+npm run cli -- assistant-doctor
+npm run cli -- assistant-start --brand aj-digital --task "Draft a short operator brief"
+npm run cli -- assistant-history
+npm run cli -- deliverables --brand aj-digital
+npm run cli -- memory-search --query "approval lifecycle"
 npm run cli:console
-npm run cli -- run-summary --runId run_123
-npm run cli -- run-events --runId run_123 --reverse --limit 20
-npm run cli -- track-run --runId run_123 --view full
-npm run cli -- list-pending-approvals --limit 10
-npm run cli -- approve-run --runId run_123 --decision approve --actor Audio
-npm run cli -- execute-run --runId run_123 --target local
-npm run cli -- resume-run --runId run_123 --mode manual
 ```
 
 ### Recommended Operator Flow
 
-1. Run `operator-console` to inspect overall system state.
-2. Use `assistant` in advisory mode for local-first planning, briefs, and draft support.
-3. Use `assistant --mode orchestrated` only when the request clearly maps to a governed workflow.
-4. Use `list-pending-approvals` to identify runs awaiting approval.
-5. Resolve a decision with `approve-run`.
-6. Use `list-approved-runs` to inspect runs ready for execution.
-7. Trigger execution with `execute-run`.
-8. Inspect results with `run-summary` or `track-run`.
+1. `npm run cli:console` — inspect overall system state.
+2. `npm run cli -- assistant` in advisory mode for planning.
+3. `npm run cli -- assistant --mode orchestrated` only when the request maps to a governed workflow.
+4. `npm run cli:pending` — identify runs awaiting approval.
+5. `npm run cli:approve --runId <id> --decision approve --actor <name>` — resolve a decision.
+6. `npm run cli:approved` — inspect runs ready for execution.
+7. `npm run cli:execute --runId <id> --target local` — execute.
+8. `npm run cli:summary --runId <id>` — verify.
 
-### Assistant Runtime
+---
 
-The assistant runtime is the first dedicated business AI assistant layer on top of AJ Digital OS.
+## Assistant Runtime
 
-- `assistant` defaults to `advisory` mode and returns guidance without creating a run.
-- `assistant-start` is the preferred installed/local wrapper for current use. It checks readiness first, then delegates into the existing assistant runtime.
-- Assistant invocations are now recorded under `data/assistant/` so the local assistant has lightweight continuity across tasks.
-- Conversation threads and actual user/assistant turns are now stored separately under `data/conversations/`.
-- Semantic memory chunks, local embeddings, and index entries are now stored under `data/memory/`.
-- Assistant and workflow output intent is now recorded under `data/deliverables/registry/` and advisory drafts are written into brand-aware roots under `data/outputs/<brand-or-fallback>/drafts/`.
-- Deliverables now follow a local lifecycle through `draft`, `pending_approval`, `approved`, and `published`, with files routed into matching brand-aware output roots.
-- `assistant-shell` provides a terminal-native conversational loop using the same assistant runtime and persistence layer.
-- `ui-start` opens the first local web/chat shell with the same runtime, history, deliverables, brands, and scaffold registries.
-- `--threadId <id>` continues an existing conversation thread for `assistant`, `assistant-start`, `assistant-shell`, and the local web shell request path.
-- `--brand <brandId>` selects an explicit brand manifest when one exists locally. Without it, the runtime uses the default brand manifest if defined and otherwise proceeds without brand context.
-- `assistant --mode orchestrated` routes into the existing governed workflow/orchestration path when a workflow can be resolved.
-- Skills are loaded from local markdown files under `skills/`.
-- The assistant uses the existing prompt builder, memory retrieval, provider routing, and orchestration guardrails.
-- The assistant does not bypass approval flow, tool permission boundaries, or the run lifecycle.
-- The live provider scope for this stage is Ollama/local-first. Assistant advisory mode depends on a reachable local Ollama runtime.
-- Other provider integrations may exist as scaffolds in code, but they are not part of the supported internal staging launch path yet.
-- MCP-ready tool catalogs, API integration profiles, and model profile routing are now scaffolded for future UI and connector work, but they do not enable live MCP servers, OAuth flows, or fine-tuning jobs in this patch.
-- The local web shell is now available, but it remains a thin local-first control surface rather than a full production GUI.
-- Semantic memory retrieval is now local-first and deterministic. It is not a cloud vector database or provider-backed embedding system in this patch.
+The assistant runtime is the operator-facing AI assistant layer over the workflow runtime.
 
-### Tooling And Profiles
-
-The repo now includes architecture-first scaffolds for future external tool and provider management.
-
-- Tool/provider metadata can be inspected with `tool-registry`
-- API integration and provider profiles are loaded from local JSON under `data/integrations/profiles/`
-- Model and fine-tune profile metadata is loaded from local JSON under `data/model-profiles/`
-- Secret references for API keys and tokens remain metadata-only through the local secrets layer under `data/secrets/`
-- Raw secrets are still not persisted or read in plaintext by this scaffold
-
-### Local Web Shell
-
-The first local browser-based shell is started with:
-
-```bash
-npm run ui:start
-```
-
-What it includes:
-
-- left sidebar for sessions and navigation
-- top controls for brand, agent/model profile selection, and mode
-- main assistant chat panel with composer
-- right-side brand, run, deliverable, and warning/error panels
-- deliverable lifecycle badges plus thin submit/approve/publish actions
-- a Memory panel that shows retrieved semantic context sources for the current run
-- read-only settings views for tool registry, integration profiles, and model profiles
-
-What it does not yet do:
-
-- it does not replace the CLI
-- it does not implement live OAuth or external messaging runtimes
-- it does not provide transcript editing or thread management beyond simple continuation by thread id
+- `assistant` defaults to **advisory** mode; orchestrated mode runs only when explicitly requested.
+- `assistant-start` is the readiness-checked wrapper for installed/local use.
+- Assistant invocations are recorded under `data/assistant/`.
+- Conversation threads and turns are stored under `data/conversations/`.
+- Semantic memory chunks, embeddings, and the index live under `data/memory/`.
+- Deliverables route through `data/deliverables/registry/` with brand-aware output roots under `data/outputs/<brand>/{drafts,pending,approved,published}/`.
+- The assistant respects approval flow, tool permission boundaries, and run lifecycle.
+- The supported live provider scope is Ollama. Other provider scaffolds exist but are not part of the supported staging launch path (see [`docs/DECISIONS.md`](docs/DECISIONS.md) ADR-0005).
+- Skills are loaded from markdown files under `skills/`.
 
 ### Assistant Install And Start
 
 "Installed and configured" currently means:
 
-- the project has been built and `dist/cli.js` exists
-- Ollama is installed locally, or `OLLAMA_EXECUTABLE` is set to the local binary path
-- the Ollama server is reachable at `OLLAMA_BASE_URL` or the default local address
-- the expected local model is installed
-- runtime directories under `data/` and `memory/` are writable
-- the supported live provider scope remains Ollama/local-first
-- assistant task history is stored locally under `data/assistant/`
-- conversation threads, turns, and stitched context bundles are stored locally under `data/conversations/`
-- semantic memory chunks, embeddings, and index entries are stored locally under `data/memory/`
-- deliverable records are stored locally under `data/deliverables/registry/`
-- generated outputs are routed into `data/outputs/<brand>/drafts`, `data/outputs/<brand>/pending`, `data/outputs/<brand>/approved`, and `data/outputs/<brand>/published` when brand context is available, with a safe fallback root when it is not
-- tool metadata manifests can live under `data/tools/`
-- integration/provider profile manifests can live under `data/integrations/profiles/`
-- model/fine-tune profile manifests can live under `data/model-profiles/`
+- The project has been built and `dist/cli.js` exists.
+- Ollama is installed locally, or `OLLAMA_EXECUTABLE` is set.
+- The Ollama server is reachable at `OLLAMA_BASE_URL`.
+- The expected local model is installed.
+- Runtime directories under `data/` and `memory/` are writable (see [`docs/SECURITY.md`](docs/SECURITY.md) and `docs/deployment/production-readiness.md`).
 
 Recommended local assistant flow:
 
 ```bash
 npm install
-npm run assistant:setup
-npm run assistant:doctor
-npm run assistant:start -- --brand aj-digital --task "Summarize this transcript into a short operator advisory."
-npm run assistant:history
-npm run conversation:history
-npm run assistant:shell -- --brand audio-jones
-npm run ui:start
-npm run deliverables
-npm run deliverables:pending
-npm run memory:index -- --rebuild
-npm run memory:stats
+npm run build
+npm run cli -- assistant-setup
+npm run cli -- assistant-doctor
+npm run cli -- assistant-start --brand aj-digital --task "Summarize this transcript into a short operator advisory"
+npm run cli -- assistant-history
+npm run cli -- conversation-history
+npm run cli -- assistant-shell --brand audio-jones
+npm run cli -- ui-start
+npm run cli -- deliverables
+npm run cli -- list-pending-deliverables
+npm run cli -- memory-index --rebuild
+npm run cli -- memory-stats
 ```
 
-If readiness fails, `assistant-setup` and `assistant-doctor` print the exact next-step guidance needed to finish the local install path.
-
-Current assistant commands:
-
-```bash
-npm run assistant:setup
-npm run assistant:doctor
-npm run assistant:start -- --brand aj-digital --task "Draft a short operator brief"
-npm run assistant:start -- --task "Repurpose this transcript" --skill transcript-to-content --mode orchestrated --source "Transcript text here"
-npm run assistant:history
-npm run conversation:history
-npm run assistant:shell -- --brand audio-jones --label morning-ops
-npm run conversation:thread -- --threadId <thread-id>
-npm run ui:start
-npm run deliverables -- --brand aj-digital --json
-npm run cli -- list-pending-deliverables --json
-npm run memory:search -- --query "client brief" --json
-npm run memory:stats -- --json
-npm run cli -- submit-for-approval --deliverableId <deliverable-id>
-npm run cli -- approve-deliverable --deliverableId <deliverable-id> --actor operator
-npm run cli -- publish-deliverable --deliverableId <deliverable-id>
-npm run tool-registry -- --json
-npm run integration-profiles -- --json
-npm run model-profiles -- --json
-```
-
-History output includes the task timestamp, mode, selected brand, selected skill/workflow, provider/model route, success status, warnings/errors, and governed `runId` when orchestrated mode creates one.
-
-Conversation output includes the persisted thread id, actual user/assistant turns, and bounded stitched context metadata used by the runtime.
-
-Semantic memory output includes local chunk references, retrieval scores, and bounded semantic context stitched into assistant execution when relevant.
-
-Deliverable output includes the persisted brand-aware draft or published output path, run linkage when available, and registry status such as `draft`, `pending_approval`, `approved`, or `published`.
-
-Approval lifecycle commands:
-
-```bash
-npm run cli -- submit-for-approval --deliverableId <deliverable-id>
-npm run cli -- approve-deliverable --deliverableId <deliverable-id> --actor operator
-npm run cli -- publish-deliverable --deliverableId <deliverable-id>
-npm run cli -- list-pending-deliverables --json
-```
-
-Shell mode notes:
-
-- `assistant-shell` keeps one terminal session open for repeated prompts
-- each shell turn is still executed through the existing assistant runtime
-- shell turns are grouped in history with a shared shell session id
-- `--label <name>` adds a human-readable label to that shell session
-- `--brand <brandId>` pins the shell to an explicit brand manifest for all turns in that session
-- type `exit`, `quit`, or `/exit` to close the shell
+If readiness fails, `assistant-setup` and `assistant-doctor` print exact next-step guidance.
 
 ### JSON Mode
 
-Many commands support `--json` for machine-readable output.
+Many commands support `--json` for machine-readable output:
 
 ```bash
-npm run assistant:doctor -- --json
-npm run assistant:start -- --task "Draft a short operator brief" --json
+npm run cli -- assistant-doctor --json
+npm run cli -- assistant-start --task "Draft a short operator brief" --json
 npm run cli -- dashboard --json
 npm run cli -- run-summary --runId run_123 --json
 npm run cli -- list-pending-approvals --json
-npm run tool-registry -- --json
-npm run integration-profiles -- --json
-npm run model-profiles -- --json
-npm run ui:start
+npm run cli -- tool-registry --json
+npm run cli -- integration-profiles --json
+npm run cli -- model-profiles --json
 ```
 
-Use JSON mode for scripting, debugging, and future automation integrations.
+---
+
+## Local Web Shell
+
+The local browser shell is started with:
+
+```bash
+npm run cli -- ui-start
+```
+
+What it includes:
+
+- Left sidebar for sessions and navigation.
+- Top controls for brand, agent/model profile, and mode.
+- Main assistant chat panel with composer.
+- Right-side brand, run, deliverable, and warning/error panels.
+- Deliverable lifecycle badges with submit/approve/publish actions.
+- Memory panel showing retrieved semantic context.
+- Read-only views for tool registry, integration profiles, and model profiles.
+
+What it does not yet do:
+
+- It does not replace the CLI.
+- It does not implement live OAuth or external messaging runtimes.
+- It does not provide transcript editing or full thread management.
+
+---
 
 ## Deployment Readiness
 
-Use the runtime healthcheck before first deployment and during production startup validation.
+Run the runtime healthcheck before first deployment and during production startup:
 
 ```bash
 npm run cli -- healthcheck
 npm run cli -- healthcheck --json
-npm run release:check
 ```
 
-Runtime behavior remains local-first by default. For production-style validation, set:
+Runtime behavior is local-first by default. For production validation set:
 
-```bash
+```env
 AJ_OS_ENV=production
 ACTIVE_MODEL_PROVIDER=ollama
 ENABLED_MODEL_PROVIDERS=ollama
 MEMORY_ENABLED=true
 ```
 
-This stage is Ollama-first for live model-backed generation. Other provider scaffolds may exist in code, but internal staging validation should treat Ollama as the supported live path.
-
 The healthcheck verifies:
 
-- provider-specific required environment variables for enabled providers
-- writable runtime directories under `data/`
-- writable `memory/` when memory is enabled
+- Provider-specific required env vars for enabled providers
+- Writable runtime directories under `data/`
+- Writable `memory/` when memory is enabled
 
-Assistant-specific readiness can be checked separately with:
-
-```bash
-npm run assistant:doctor
-npm run assistant:doctor -- --json
-```
-
-See `docs/deployment/production-readiness.md` for the full startup checklist and deployment notes.
-
-### Production Release Gate
-
-Before a production deployment or production process start, run the release gate with production environment variables loaded:
+Assistant readiness can be checked with:
 
 ```bash
-npm run build
-npm run release:check
+npm run cli -- assistant-doctor
+npm run cli -- assistant-doctor --json
 ```
 
-`release:check` exits with code `0` when readiness passes and a non-zero exit code when production readiness fails.
+See `docs/deployment/production-readiness.md` for the full startup checklist and deployment notes, and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the deployment index.
 
 ### Staging Launch Path
 
-The current production-like staging start path is:
+The current production-like staging start path is documented in `docs/deployment/staging-runbook.md`. The repository does not yet ship a separate long-running web service entrypoint; the operator console in watch mode is the supported staging/production-like operational launch path.
 
 ```bash
-npm run start:staging
+npm run cli -- operator-console --watch
 ```
-
-This command composes:
-
-1. `npm run build`
-2. `npm run release:check`
-3. `node dist/cli.js operator-console --watch`
-
-There is not yet a separate long-running service entrypoint in this repository. The operator console watch mode is the current supported staging/production-like operational launch path.
-
-Use `docs/deployment/staging-runbook.md` for the exact preflight, startup, and post-start verification sequence.
 
 ### Ollama Model Notes
 
-The default routed model is `llama3.1:8b`. If your local install uses a different primary model tag, you can set:
+The default routed model is `llama3.1:8b`. Override with:
 
-```bash
+```env
 OLLAMA_MODEL=your-local-model-tag
 ```
 
-If your local model is slower to respond, you can also raise the provider timeouts:
+For slower local models, raise the timeouts:
 
-```bash
+```env
 OLLAMA_REQUEST_TIMEOUT_MS=300000
 OLLAMA_TAGS_TIMEOUT_MS=15000
 ```
 
-To validate that at least one real local model-backed JSON path is working before staging use:
+To validate the live provider path:
 
 ```bash
-npm run assistant:doctor
-npm run cli:ollama-probe
+npm run cli -- assistant-doctor
+npm run cli -- ollama-probe
 npm run cli -- ollama-probe --json
 ```
 
-For a deterministic provider-level smoke that does not require a live Ollama process, use:
-
-```bash
-npm run smoke:ollama-provider
-```
+---
 
 ## Installable CLI
 
@@ -412,39 +327,29 @@ aj-digital-os help
 aj-digital-os dashboard
 ```
 
-If you want a one-step local flow, use:
+One-step local flow:
 
 ```bash
 npm run link:local
 ```
 
-### Direct compiled usage
-
-```bash
-npm run assistant:doctor
-npm run assistant:start -- --task "Draft a short operator brief"
-npm run cli:help
-npm run cli -- dashboard
-npm run cli:console
-```
-
-### Direct executable note
-
-The package includes a `bin` entry pointing to `dist/cli.js`, so after building and linking or installing the package in a way that exposes the binary, direct usage can look like this:
+### Direct usage
 
 ```bash
 aj-digital-os help
 ```
 
-During local development, the supported fallback remains:
+During local development the supported fallback is:
 
 ```bash
 npm run cli -- help
 ```
 
-## Local preflight (mirrors CI)
+---
 
-Before opening a PR (or before pushing to `main`), run the same quality gates executed in GitHub Actions:
+## Local Preflight (mirrors CI)
+
+Before opening a PR or pushing to `main`, run the same gates CI runs:
 
 ```bash
 npm ci
@@ -455,9 +360,11 @@ npm run coverage
 npm audit --audit-level=high
 ```
 
-## Testing
+CI configuration: `.github/workflows/ci.yml` and `.github/workflows/security-audit.yml`.
 
-Run automated tests and coverage checks:
+---
+
+## Testing
 
 ```bash
 npm run test
@@ -467,9 +374,11 @@ npm run coverage
 
 Coverage thresholds are enforced in `vitest.config.ts` for core lifecycle and webhook modules.
 
+---
+
 ## Webhook Security Contract
 
-Approval and execution webhook handlers require signed requests and reject unsigned traffic by default.
+Approval and execution webhook handlers require signed requests and reject unsigned traffic.
 
 Required headers:
 
@@ -486,7 +395,28 @@ ${timestamp}.${nonce}.${rawBody}
 
 Behavior:
 
-- HMAC SHA-256 verification using `AJ_WEBHOOK_SECRET`
-- freshness enforcement via `AJ_WEBHOOK_MAX_SKEW_SECONDS` (default `300`)
-- replay rejection using nonce + webhook id with `AJ_WEBHOOK_REPLAY_TTL_SECONDS` (default `600`)
-- fail-closed behavior if verification cannot be completed or secret is missing
+- HMAC SHA-256 verification using `AJ_WEBHOOK_SECRET`.
+- Freshness enforcement via `AJ_WEBHOOK_MAX_SKEW_SECONDS` (default `300`).
+- Replay rejection using nonce + webhook id with `AJ_WEBHOOK_REPLAY_TTL_SECONDS` (default `600`).
+- Fail-closed if verification cannot be completed or the secret is missing.
+
+Full security policy: [`docs/SECURITY.md`](docs/SECURITY.md).
+
+---
+
+## Where to Go Next
+
+| Looking for…                          | Read…                                       |
+|---------------------------------------|---------------------------------------------|
+| Agent operating contract              | [`AGENTS.md`](AGENTS.md)                    |
+| Claude-specific overlay               | [`CLAUDE.md`](CLAUDE.md)                    |
+| Product definition                    | [`docs/PRD.md`](docs/PRD.md)                |
+| Architecture navigation               | [`docs/DESIGN.md`](docs/DESIGN.md)          |
+| Roadmap                               | [`docs/ROADMAP.md`](docs/ROADMAP.md)        |
+| Architectural decisions               | [`docs/DECISIONS.md`](docs/DECISIONS.md)    |
+| Security policy                       | [`docs/SECURITY.md`](docs/SECURITY.md)      |
+| Deployment index                      | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)  |
+| Daily operator workflow               | `docs/operator-playbook.md`                 |
+| Failure recovery                      | `docs/recovery-playbook.md`                 |
+| Production readiness                  | `docs/deployment/production-readiness.md`   |
+| Staging runbook                       | `docs/deployment/staging-runbook.md`        |

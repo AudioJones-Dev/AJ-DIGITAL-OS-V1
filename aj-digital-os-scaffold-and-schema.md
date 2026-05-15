@@ -1,3 +1,5 @@
+> **Status: Historical.** This document is the original scaffold/schema starter and is no longer authoritative. The canonical architecture lives under `docs/system/` and `docs/architecture/`. See [`docs/DESIGN.md`](docs/DESIGN.md) for navigation.
+
 # AJ Digital OS — Scaffold and Schema Starter
 ## OpenClaude-aligned repository scaffold for VS Code + Copilot build execution
 

@@ -1,3 +1,5 @@
+> **Status: Historical snapshot (2026-04-11).** Preserved as a build-history artifact. Current roadmap lives at [`docs/ROADMAP.md`](docs/ROADMAP.md); current layer coverage at [`docs/architecture/AJ_DIGITAL_OS_LAYER_COVERAGE_INDEX.md`](docs/architecture/AJ_DIGITAL_OS_LAYER_COVERAGE_INDEX.md).
+
 # AJ Digital OS — Build Progress (2026-04-11)
 
 ## Branch: `feat/cli-operator-upgrade`
