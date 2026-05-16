@@ -1,5 +1,45 @@
 # AJ Digital OS
 
+> **AJ Digital builds Founder Intelligence Systems for founder-led service businesses.**
+> Philosophy: *Signal Over Noise.*
+> Mission: help founder-led service businesses identify operational bottlenecks,
+> recover lost revenue, improve follow-up, increase attribution clarity, and
+> scale with operational intelligence.
+
+## Public Offer — Signal Revenue System™
+
+A diagnostic and operational intelligence system for founder-led service
+businesses. Five core functions:
+
+1. **Revenue Leak Diagnostic** — find where money is being lost.
+2. **Follow-Up Automation** — close the lead-to-response gap in the founder's voice.
+3. **Attribution Dashboard** — sourced, auditable channel attribution.
+4. **Weekly Executive Intelligence Reporting** — one short brief, generated from live data.
+5. **Persistent Business Memory** — institutional knowledge that compounds.
+
+Target market: founder-led service businesses (accessibility companies,
+contractors, home services, local operators, agencies, small operational teams)
+with existing lead flow, weak follow-up, unclear attribution, and founder
+bottlenecks.
+
+See:
+
+- [`STRATEGIC-DIRECTIVE.md`](./STRATEGIC-DIRECTIVE.md) — canonical strategic direction.
+- [`docs/positioning/signal-revenue-system.md`](./docs/positioning/signal-revenue-system.md) — public-facing offer description.
+
+## About This Repository (Internal Infrastructure)
+
+This repository is **AJ Digital OS** — the internal infrastructure we use to
+deploy the Signal Revenue System into client businesses. The runtime,
+orchestration layer, memory system, MCP / tool integrations, approval
+lifecycle, and CLI documented below are **deployment leverage**, not the
+public product. Clients buy operational intelligence and revenue outcomes —
+not an agent framework.
+
+The technical material that follows describes that internal infrastructure.
+
+---
+
 ## CLI Usage
 
 AJ Digital OS includes a terminal operator layer for system monitoring, run inspection, approval workflows, execution workflows, and recovery/debugging. The CLI is designed to stay thin on top of the command layer so operators can inspect and drive the system from terminal without bypassing lifecycle controls.
