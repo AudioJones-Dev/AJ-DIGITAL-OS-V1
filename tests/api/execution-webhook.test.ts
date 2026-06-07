@@ -52,6 +52,69 @@ describe("execution webhook", () => {
     expect(response.errors.some((error) => error.includes("runId"))).toBe(true);
   });
 
+  it("returns internal verification failures without parsing the payload", async () => {
+    const previousTtl = process.env.AJ_WEBHOOK_REPLAY_TTL_SECONDS;
+    process.env.AJ_WEBHOOK_REPLAY_TTL_SECONDS = "1";
+
+    try {
+      const response = await handleExecutionWebhook(
+        buildSignedRequest(JSON.stringify({ runId: "run_123", target: "local" }), {
+          "x-aj-nonce": "execution-config-error",
+          "x-aj-webhook-id": "execution-config-error-wh",
+        }),
+      );
+
+      expect(response.ok).toBe(false);
+      expect(response.statusCode).toBe(500);
+      expect(response.runId).toBe("unknown");
+    } finally {
+      if (previousTtl === undefined) {
+        delete process.env.AJ_WEBHOOK_REPLAY_TTL_SECONDS;
+      } else {
+        process.env.AJ_WEBHOOK_REPLAY_TTL_SECONDS = previousTtl;
+      }
+    }
+  });
+
+  it("rejects invalid JSON only after auth passes", async () => {
+    const response = await handleExecutionWebhook(buildSignedRequest("{"));
+
+    expect(response.ok).toBe(false);
+    expect(response.statusCode).toBe(422);
+    expect(response.runId).toBe("unknown");
+    expect(response.target).toBe("local");
+    expect(response.errors).toEqual(["root: Invalid JSON payload."]);
+  });
+
+  it("preserves fallback run and target fields on validation failure", async () => {
+    const response = await handleExecutionWebhook(
+      buildSignedRequest(JSON.stringify({ runId: "run_bad_target", target: "remote" }), {
+        "x-aj-nonce": "execution-invalid-target",
+        "x-aj-webhook-id": "execution-invalid-target-wh",
+      }),
+    );
+
+    expect(response.ok).toBe(false);
+    expect(response.statusCode).toBe(422);
+    expect(response.runId).toBe("run_bad_target");
+    expect(response.target).toBe("remote");
+    expect(response.errors.some((error) => error.includes("target"))).toBe(true);
+  });
+
+  it("uses unknown/local fallback fields for non-object payload validation failure", async () => {
+    const response = await handleExecutionWebhook(
+      buildSignedRequest(JSON.stringify([]), {
+        "x-aj-nonce": "execution-invalid-array",
+        "x-aj-webhook-id": "execution-invalid-array-wh",
+      }),
+    );
+
+    expect(response.ok).toBe(false);
+    expect(response.statusCode).toBe(422);
+    expect(response.runId).toBe("unknown");
+    expect(response.target).toBe("local");
+  });
+
   it("returns execution success for valid payload", async () => {
     vi.spyOn(ExecutionAgent.prototype, "execute").mockResolvedValue({
       ok: true,
@@ -81,6 +144,92 @@ describe("execution webhook", () => {
     expect(response.status).toBe("executed");
     expect(response.runId).toBe("run_123");
     expect(response.filesWritten).toEqual(["dist/published/run_123.md"]);
+  });
+
+  it("returns execution success without a published artifact and preserves source metadata", async () => {
+    vi.spyOn(ExecutionAgent.prototype, "execute").mockResolvedValue({
+      ok: true,
+      agent: "execution",
+      runId: "run_no_publish",
+      target: "local",
+      status: "executed",
+      filesWritten: [],
+      warnings: [],
+      errors: [],
+    });
+
+    const response = await handleExecutionWebhook(
+      buildSignedRequest(
+        JSON.stringify({
+          runId: "run_no_publish",
+          target: "local",
+          source: "system",
+          actor: "operator_2",
+        }),
+        {
+          "x-aj-nonce": "execution-no-publish-nonce",
+          "x-aj-webhook-id": "execution-no-publish-wh",
+        },
+      ),
+    );
+
+    expect(response.ok).toBe(true);
+    expect(response.statusCode).toBe(200);
+    expect(response.source).toBe("system");
+    expect(response.actor).toBe("operator_2");
+    expect(response.publishedPath).toBeUndefined();
+  });
+
+  it("returns failed execution results without a published artifact", async () => {
+    vi.spyOn(ExecutionAgent.prototype, "execute").mockResolvedValue({
+      ok: false,
+      agent: "execution",
+      runId: "run_failed",
+      target: "local",
+      status: "failed",
+      filesWritten: [],
+      warnings: ["manual review required"],
+      errors: ["execution blocked"],
+    });
+
+    const response = await handleExecutionWebhook(
+      buildSignedRequest(JSON.stringify({ runId: "run_failed", target: "local" }), {
+        "x-aj-nonce": "execution-failed-nonce",
+        "x-aj-webhook-id": "execution-failed-wh",
+      }),
+    );
+
+    expect(response.ok).toBe(false);
+    expect(response.statusCode).toBe(422);
+    expect(response.status).toBe("failed");
+    expect(response.warnings).toEqual(["manual review required"]);
+    expect(response.errors).toEqual(["execution blocked"]);
+  });
+
+  it("returns failed execution results with a published artifact path", async () => {
+    vi.spyOn(ExecutionAgent.prototype, "execute").mockResolvedValue({
+      ok: false,
+      agent: "execution",
+      runId: "run_failed_published",
+      target: "local",
+      status: "failed",
+      publishedPath: "dist/published/partial.md",
+      filesWritten: ["dist/published/partial.md"],
+      warnings: [],
+      errors: ["post-publish verification failed"],
+    });
+
+    const response = await handleExecutionWebhook(
+      buildSignedRequest(JSON.stringify({ runId: "run_failed_published", target: "local" }), {
+        "x-aj-nonce": "execution-failed-published-nonce",
+        "x-aj-webhook-id": "execution-failed-published-wh",
+      }),
+    );
+
+    expect(response.ok).toBe(false);
+    expect(response.statusCode).toBe(422);
+    expect(response.publishedPath).toBe("dist/published/partial.md");
+    expect(response.errors).toEqual(["post-publish verification failed"]);
   });
 
   it("rejects replayed webhook ids", async () => {

@@ -207,7 +207,7 @@ export async function getAttributionEventsByRun(runId: string): Promise<Attribut
 
 export async function getCoreHealth(): Promise<import("./types").CoreHealth | null> {
   try {
-    const res = await fetch(\/core/health, { cache: "no-store" });
+    const res = await fetch(`${HERMES_API_URL}/core/health`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json() as Promise<import("./types").CoreHealth>;
   } catch { return null; }
@@ -215,7 +215,7 @@ export async function getCoreHealth(): Promise<import("./types").CoreHealth | nu
 
 export async function getMetrics(): Promise<import("./types").MetricsSnapshot | null> {
   try {
-    const res = await fetch(\/core/metrics, { cache: "no-store" });
+    const res = await fetch(`${HERMES_API_URL}/core/metrics`, { cache: "no-store" });
     if (!res.ok) return null;
     const json = await res.json() as { ok: boolean; metrics: import("./types").MetricsSnapshot };
     return json.metrics ?? null;
@@ -231,7 +231,7 @@ export async function getSystemEvents(params?: {
   limit?: number;
 }): Promise<import("./types").SystemEvent[]> {
   try {
-    const url = new URL(\/core/events);
+    const url = new URL("/core/events", HERMES_API_URL);
     if (params?.category) url.searchParams.set("category", params.category);
     if (params?.runId) url.searchParams.set("runId", params.runId);
     if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
@@ -250,7 +250,7 @@ export async function getCacheEntries(
   tenantId?: string,
 ): Promise<import("./types").CacheEntryMeta[]> {
   try {
-    const url = new URL(\/cache/\);
+    const url = new URL(`/cache/${encodeURIComponent(namespace)}`, HERMES_API_URL);
     if (tenantId) url.searchParams.set("tenantId", tenantId);
     const res = await fetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
@@ -264,7 +264,7 @@ export async function getCacheAuditLog(params?: {
   limit?: number;
 }): Promise<import("./types").CacheAuditEvent[]> {
   try {
-    const url = new URL(\/cache/audit);
+    const url = new URL("/cache/audit", HERMES_API_URL);
     if (params?.namespace) url.searchParams.set("namespace", params.namespace);
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
     const res = await fetch(url.toString(), { cache: "no-store" });
@@ -282,7 +282,7 @@ export async function getDagRuns(params?: {
   limit?: number;
 }): Promise<import("./types").BelDagRunState[]> {
   try {
-    const url = new URL(\/dag/runs);
+    const url = new URL("/dag/runs", HERMES_API_URL);
     if (params?.status) url.searchParams.set("status", params.status);
     if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
@@ -296,7 +296,7 @@ export async function getDagRuns(params?: {
 export async function getDagRun(runId: string): Promise<import("./types").BelDagRunState | null> {
   try {
     const res = await fetch(
-      \/dag/runs/\,
+      `${HERMES_API_URL}/dag/runs/${encodeURIComponent(runId)}`,
       { cache: "no-store" },
     );
     if (!res.ok) return null;
@@ -307,7 +307,7 @@ export async function getDagRun(runId: string): Promise<import("./types").BelDag
 
 export async function getDagAudit(runId: string, limit?: number): Promise<import("./types").BelDagAuditEvent[]> {
   try {
-    const url = new URL(\/dag/runs/\/audit);
+    const url = new URL(`/dag/runs/${encodeURIComponent(runId)}/audit`, HERMES_API_URL);
     if (limit) url.searchParams.set("limit", String(limit));
     const res = await fetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
@@ -324,7 +324,7 @@ export async function getRetrievalDocs(params?: {
   limit?: number;
 }): Promise<import("./types").RetrievalDocument[]> {
   try {
-    const url = new URL(\/retrieval/documents);
+    const url = new URL("/retrieval/documents", HERMES_API_URL);
     if (params?.namespace) url.searchParams.set("namespace", params.namespace);
     if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
@@ -341,7 +341,7 @@ export async function getRetrievalTraces(params?: {
   limit?: number;
 }): Promise<import("./types").RetrievalTrace[]> {
   try {
-    const url = new URL(\/retrieval/traces);
+    const url = new URL("/retrieval/traces", HERMES_API_URL);
     if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
     if (params?.runId) url.searchParams.set("runId", params.runId);
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
@@ -356,7 +356,7 @@ export async function getRetrievalTraces(params?: {
 
 export async function getMapEvaluations(limit?: number): Promise<import("./types").MapEvaluation[]> {
   try {
-    const url = new URL(\/decision/map/evaluations);
+    const url = new URL("/decision/map/evaluations", HERMES_API_URL);
     if (limit) url.searchParams.set("limit", String(limit));
     const res = await fetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
@@ -367,7 +367,7 @@ export async function getMapEvaluations(limit?: number): Promise<import("./types
 
 export async function getCeraCycles(limit?: number): Promise<import("./types").CeraCycle[]> {
   try {
-    const url = new URL(\/decision/cera/cycles);
+    const url = new URL("/decision/cera/cycles", HERMES_API_URL);
     if (limit) url.searchParams.set("limit", String(limit));
     const res = await fetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];

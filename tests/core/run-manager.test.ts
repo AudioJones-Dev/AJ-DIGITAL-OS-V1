@@ -64,4 +64,52 @@ describe("RunManager", () => {
     expect(revised.approvalStatus).toBe("revision_requested");
     expect(revised.revisionCount).toBe(1);
   });
+
+  it("creates runs that do not require approval", async () => {
+    const runsDir = await mkdtemp(path.join(os.tmpdir(), "aj-runs-"));
+    tempDirs.push(runsDir);
+    const manager = new RunManager(new RunStore(runsDir));
+
+    const run = await manager.createRun({
+      workflowId: "monitoring",
+      taskType: "health_check",
+      clientId: "client_beta",
+      approvalRequired: false,
+    });
+
+    expect(run.approvalRequired).toBe(false);
+    expect(run.approvalStatus).toBe("not_required");
+  });
+
+  it("marks rejected runs without an approver", async () => {
+    const runsDir = await mkdtemp(path.join(os.tmpdir(), "aj-runs-"));
+    tempDirs.push(runsDir);
+    const manager = new RunManager(new RunStore(runsDir));
+
+    const run = await manager.createRun({
+      workflowId: "blog-authority",
+      taskType: "blog_post",
+      clientId: "client_alpha",
+    });
+
+    await manager.updateStatus(run.runId, "context_loaded");
+    await manager.updateStatus(run.runId, "in_progress");
+    await manager.updateStatus(run.runId, "draft_complete");
+    await manager.updateStatus(run.runId, "validation_passed");
+    await manager.markPendingApproval(run.runId);
+
+    const rejected = await manager.markRejected(run.runId);
+
+    expect(rejected.status).toBe("rejected");
+    expect(rejected.approvalStatus).toBe("rejected");
+    expect(rejected.approvedBy).toBeUndefined();
+  });
+
+  it("throws when requesting revision for a missing run", async () => {
+    const runsDir = await mkdtemp(path.join(os.tmpdir(), "aj-runs-"));
+    tempDirs.push(runsDir);
+    const manager = new RunManager(new RunStore(runsDir));
+
+    await expect(manager.markRevisionRequested("missing-run")).rejects.toThrow('Run "missing-run" was not found.');
+  });
 });
