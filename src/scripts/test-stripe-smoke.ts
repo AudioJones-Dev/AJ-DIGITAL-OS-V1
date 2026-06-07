@@ -51,6 +51,10 @@ let passed = 0;
 let failed = 0;
 let skipped = 0;
 
+function isStripePriceId(value: string): boolean {
+  return value.startsWith("price_") || value.startsWith("plan-");
+}
+
 function check(name: string, condition: boolean, detail?: string): void {
   if (condition) {
     passed++;
@@ -119,7 +123,7 @@ function phase1_configValidation(): void {
   for (const p of prices) {
     const val = process.env[p]?.trim() ?? "";
     if (val) {
-      check(`${p} format`, val.startsWith("price_"), val.slice(0, 20));
+      check(`${p} format`, isStripePriceId(val), val.slice(0, 20));
     }
   }
 

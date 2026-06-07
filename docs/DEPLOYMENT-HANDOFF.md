@@ -32,7 +32,7 @@
 
 ```bash
 npm run build                   # TypeScript → dist/
-npm run validate:supabase-schema # Check all 7 Supabase tables exist
+npm run validate:supabase-schema # Check all 8 Supabase tables exist
 npm run validate:production      # Full production readiness check
 npm run start:production-local   # Build + validate + start server
 npm run start:full               # Build + start (no validation)
@@ -78,7 +78,7 @@ These items **cannot** be done by Copilot and require manual action:
 
 - [ ] **Rotate all secrets** — Supabase service role key, Stripe keys, and webhook secret were exposed during development. Generate new ones before go-live.
 - [ ] **Configure Stripe webhook endpoint** — In Stripe Dashboard → Webhooks, create an endpoint pointing to `https://<your-domain>/api/stripe/webhook` listening for `checkout.session.completed`.
-- [ ] **Verify Supabase RLS policies** — Ensure service role key has write access to all 7 tables.
+- [ ] **Verify Supabase RLS policies** — Ensure service role key has write access to all 8 tables.
 - [ ] **Set DNS / domain** — Point your domain to the deployment host.
 - [ ] **Enable HTTPS** — Use a reverse proxy (nginx, Caddy) or platform-provided TLS.
 - [ ] **Run `npm run validate:production`** on the deployed environment to confirm all checks pass.
@@ -93,7 +93,7 @@ Client Browser → Stripe Checkout → Stripe Webhook → POST /api/stripe/webho
                                                 Hermes Server (port 7420)
                                                       ↓
                                               Supabase PostgREST
-                                              (7 tables via RLS)
+                                              (8 tables via RLS)
 ```
 
 **Routes:**
@@ -103,4 +103,4 @@ Client Browser → Stripe Checkout → Stripe Webhook → POST /api/stripe/webho
 - `GET /replay/:runRef` — Mission run replay
 - `GET /repairs` — Repair engine status
 
-**Tables:** `clients`, `subscriptions`, `client_agents`, `missions`, `mission_runs`, `deliverables`, `assets`
+**Tables:** `clients`, `subscriptions`, `client_agents`, `missions`, `mission_runs`, `deliverables`, `assets`, `stripe_events`

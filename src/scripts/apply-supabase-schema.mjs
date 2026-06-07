@@ -24,6 +24,18 @@ const DB_URL =
 const MIGRATIONS = [
   resolve(__dirname, "../../sql/supabase-schema.sql"),
   resolve(__dirname, "../../sql/002-saas-onboarding.sql"),
+  resolve(__dirname, "../../sql/006-stripe-events.sql"),
+];
+
+const EXPECTED_TABLES = [
+  "clients",
+  "subscriptions",
+  "client_agents",
+  "missions",
+  "mission_runs",
+  "deliverables",
+  "assets",
+  "stripe_events",
 ];
 
 async function main() {
@@ -52,22 +64,21 @@ async function main() {
     const { rows } = await client.query(`
       SELECT table_name FROM information_schema.tables
       WHERE table_schema = 'public'
-        AND table_name IN ('clients','subscriptions','client_agents','missions','mission_runs','deliverables','assets')
+        AND table_name = ANY($1)
       ORDER BY table_name;
-    `);
+    `, [EXPECTED_TABLES]);
 
-    console.log(`\n[MIGRATE] Verified ${rows.length}/7 tables in public schema:`);
+    console.log(`\n[MIGRATE] Verified ${rows.length}/${EXPECTED_TABLES.length} tables in public schema:`);
     for (const r of rows) console.log(`  ✓ ${r.table_name}`);
 
-    if (rows.length < 7) {
+    if (rows.length < EXPECTED_TABLES.length) {
       const found = new Set(rows.map((r) => r.table_name));
-      const expected = ["clients", "subscriptions", "client_agents", "missions", "mission_runs", "deliverables", "assets"];
-      const missing = expected.filter((t) => !found.has(t));
+      const missing = EXPECTED_TABLES.filter((t) => !found.has(t));
       console.error(`\n[MIGRATE] MISSING: ${missing.join(", ")}`);
       process.exit(1);
     }
 
-    console.log("\n[MIGRATE] All 7 tables confirmed. Schema deployment complete.");
+    console.log(`\n[MIGRATE] All ${EXPECTED_TABLES.length} tables confirmed. Schema deployment complete.`);
   } catch (err) {
     console.error("[MIGRATE] FAILED:", err.message);
     process.exit(1);

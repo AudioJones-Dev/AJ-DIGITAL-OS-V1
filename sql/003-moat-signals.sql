@@ -131,6 +131,7 @@ alter table execution_intelligence enable row level security;
 alter table client_schedules enable row level security;
 
 -- Service role full access
+drop policy if exists "service_full_access_stripe_events" on stripe_events;
 create policy "service_full_access_stripe_events" on stripe_events
   for all using (auth.role() = 'service_role');
 

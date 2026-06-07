@@ -21,6 +21,7 @@ const REQUIRED_TABLES = [
   "mission_runs",
   "deliverables",
   "assets",
+  "stripe_events",
 ] as const;
 
 type RequiredTable = (typeof REQUIRED_TABLES)[number];
