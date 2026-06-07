@@ -15,7 +15,7 @@ export interface RoleModelMapping {
 /**
  * Default mapping from agent role → model routing task type.
  *
- * planner   → openai (high IQ)
+ * planner   → local by default; paid API only when explicitly allowed
  * executor  → local / cheap model
  * validator → deterministic rules
  * monitor   → local / lightweight
@@ -32,10 +32,10 @@ export const DEFAULT_ROLE_ROUTES: RoleModelMapping = {
  * Keeps costs down for executor/monitor, strict format for validator.
  */
 export const DEFAULT_ROLE_CONSTRAINTS: Record<AgentRole, RoutingConstraints> = {
-  planner: {},
-  executor: { maxCostTier: 1 },
-  validator: { strictFormat: true },
-  monitor: { maxCostTier: 1 },
+  planner: { executionMode: "interactive" },
+  executor: { executionMode: "interactive", maxCostTier: 1 },
+  validator: { executionMode: "interactive", strictFormat: true },
+  monitor: { executionMode: "interactive", maxCostTier: 1 },
 };
 
 // ── Role Step ──────────────────────────────────────────────────────

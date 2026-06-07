@@ -34,6 +34,7 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@fallow-cli/beacon": "^0.5.1",
     "axios": "^1.11.0",
     "playwright": "^1.59.1",
     "prom-client": "^15.1.3",

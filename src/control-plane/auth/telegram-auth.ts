@@ -15,7 +15,9 @@ export class TelegramAuthService {
 
   private validateConfig(): void {
     if (!this.config.botToken || this.config.botToken.trim().length === 0) {
-      throw new Error("FATAL: AJ_TELEGRAM_BOT_TOKEN environment variable is not set. Control plane will not start.");
+      throw new Error(
+        "FATAL: AJ_TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN environment variable is not set. Control plane will not start."
+      );
     }
 
     if (!this.config.allowedUserIds || this.config.allowedUserIds.length === 0) {
@@ -67,7 +69,7 @@ export class TelegramAuthService {
 }
 
 export function createTelegramAuthService(): TelegramAuthService {
-  const botToken = process.env.AJ_TELEGRAM_BOT_TOKEN;
+  const botToken = process.env.AJ_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 
   const allowedUserIdsRaw = process.env.AJ_ALLOWED_TELEGRAM_USER_IDS;
   const allowedUserIds = allowedUserIdsRaw

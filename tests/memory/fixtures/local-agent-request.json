@@ -1,0 +1,17 @@
+{
+  "agentClient": "local_agent",
+  "agentId": "local-agent-aj-os",
+  "sessionId": "session-local-001",
+  "tenantId": "aj-digital",
+  "projectId": "agent-os",
+  "taskType": "local_automation",
+  "requestedTypes": ["decision", "sop", "working_context", "project"],
+  "queryText": "Prepare bounded local automation context",
+  "maxTokens": 900,
+  "requireCitations": true,
+  "structuredFilters": {
+    "scope": "tenant",
+    "surface": "local"
+  },
+  "createdAt": "2026-06-06T12:00:00.000Z"
+}

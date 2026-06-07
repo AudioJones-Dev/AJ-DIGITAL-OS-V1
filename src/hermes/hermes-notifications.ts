@@ -140,16 +140,22 @@ function getTelegramConfig(): { token: string; chatId: string } | null {
   return { token, chatId };
 }
 
+function escapeTelegramMarkdownV2(value: unknown): string {
+  return String(value).replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, "\\$&");
+}
+
 async function deliverTelegram(n: HermesNotification): Promise<void> {
   const tg = getTelegramConfig();
   if (!tg) return;
 
   const icon = n.severity === "critical" ? "🔴" : n.severity === "warning" ? "🟡" : "🟢";
   const metaLines = n.metadata && Object.keys(n.metadata).length > 0
-    ? "\n" + Object.entries(n.metadata).map(([k, v]) => `• *${k}:* ${String(v)}`).join("\n")
+    ? "\n" + Object.entries(n.metadata)
+        .map(([k, v]) => `• *${escapeTelegramMarkdownV2(k)}:* ${escapeTelegramMarkdownV2(v)}`)
+        .join("\n")
     : "";
 
-  const text = `${icon} *\\[${n.severity.toUpperCase()}\\]* ${n.title}\n${n.message}${metaLines}`;
+  const text = `${icon} *\\[${escapeTelegramMarkdownV2(n.severity.toUpperCase())}\\]* ${escapeTelegramMarkdownV2(n.title)}\n${escapeTelegramMarkdownV2(n.message)}${metaLines}`;
 
   try {
     const res = await fetch(`https://api.telegram.org/bot${tg.token}/sendMessage`, {

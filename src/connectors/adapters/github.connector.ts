@@ -5,7 +5,7 @@ const META: OSConnector = {
   provider: "github",
   displayName: "GitHub",
   capabilities: ["read", "write", "list", "search", "create"],
-  authType: "api_key",
+  authType: "github_app",
   riskLevel: "high",
   version: "1.0.0",
   enabled: false,
@@ -15,7 +15,9 @@ export const GitHubConnector: ConnectorAdapter = {
   connector: META,
   async execute(action, payload, environment) {
     const base = { connectorId: META.id, action, executedAt: new Date().toISOString() };
-    if (environment !== "local") return { ok: false, error: "not configured — set GITHUB_TOKEN", ...base };
+    if (environment !== "local") {
+      return { ok: false, error: "not configured — install GitHub App or complete OAuth session", ...base };
+    }
     if (action === "list") {
       return { ok: true, data: [{ id: 1, name: "AJ-DIGITAL-OS", full_name: "AudioJones-Dev/AJ-DIGITAL-OS", private: true }], ...base };
     }

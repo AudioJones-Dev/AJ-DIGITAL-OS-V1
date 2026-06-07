@@ -25,12 +25,21 @@ export type TaskType =
   | "structured_output"
   | "low_priority";
 
+export type ExecutionMode =
+  | "interactive"
+  | "background_job"
+  | "production_workflow"
+  | "client_facing_automation";
+
 export interface RoutingConstraints {
   offline?: boolean | undefined;
   privacySensitive?: boolean | undefined;
   mustBeLocal?: boolean | undefined;
   strictFormat?: boolean | undefined;
   maxCostTier?: number | undefined;
+  executionMode?: ExecutionMode | undefined;
+  apiBillingAllowed?: boolean | undefined;
+  apiBillingReason?: string | undefined;
 }
 
 export interface ModelTaskRequest<T = unknown> {

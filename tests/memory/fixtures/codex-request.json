@@ -1,0 +1,17 @@
+{
+  "agentClient": "codex",
+  "agentId": "codex-aj-os",
+  "sessionId": "session-codex-001",
+  "tenantId": "aj-digital",
+  "projectId": "agent-os",
+  "taskType": "implementation",
+  "requestedTypes": ["sop", "project", "mistake", "research"],
+  "queryText": "Implement memory router boundary tests",
+  "maxTokens": 1200,
+  "requireCitations": true,
+  "structuredFilters": {
+    "scope": "tenant",
+    "surface": "repo"
+  },
+  "createdAt": "2026-06-06T12:00:00.000Z"
+}

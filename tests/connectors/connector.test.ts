@@ -138,6 +138,7 @@ describe("stub adapters", () => {
 
   it("10. github adapter riskLevel is high", () => {
     expect(GitHubConnector.connector.riskLevel).toBe("high");
+    expect(GitHubConnector.connector.authType).toBe("github_app");
   });
 
   it("11. airtable stub returns records in local env", async () => {

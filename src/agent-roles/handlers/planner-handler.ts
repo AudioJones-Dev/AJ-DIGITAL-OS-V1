@@ -22,8 +22,8 @@ export interface PlannerOutput {
 }
 
 /**
- * Planner role handler — uses high-intelligence model (OpenAI)
- * to decompose an objective into executable steps.
+ * Planner role handler — local/session-first by default.
+ * Paid API routing requires explicit non-interactive billing constraints.
  */
 export function createPlannerHandler(): RoleHandler<PlannerInput, PlannerOutput> {
   return {
@@ -46,6 +46,7 @@ export function createPlannerHandler(): RoleHandler<PlannerInput, PlannerOutput>
           taskType: "planner",
           task: payload.objective,
           context: payload,
+          constraints: { executionMode: "interactive" },
           allowEscalation: true,
         },
         {

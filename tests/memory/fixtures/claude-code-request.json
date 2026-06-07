@@ -1,0 +1,17 @@
+{
+  "agentClient": "claude_code",
+  "agentId": "claude-code-aj-os",
+  "sessionId": "session-claude-001",
+  "tenantId": "aj-digital",
+  "projectId": "agent-os",
+  "taskType": "code_review",
+  "requestedTypes": ["sop", "project", "decision", "research"],
+  "queryText": "Review memory router implementation boundaries",
+  "maxTokens": 1200,
+  "requireCitations": true,
+  "structuredFilters": {
+    "scope": "tenant",
+    "surface": "repo"
+  },
+  "createdAt": "2026-06-06T12:00:00.000Z"
+}

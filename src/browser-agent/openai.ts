@@ -59,6 +59,7 @@ export async function requestNextAction(input: OpenAiReasoningInput): Promise<Ag
       taskType: "planner",
       task: "Decide next browser automation action",
       context: input,
+      constraints: { executionMode: "interactive" },
       allowEscalation: true,
     },
     {

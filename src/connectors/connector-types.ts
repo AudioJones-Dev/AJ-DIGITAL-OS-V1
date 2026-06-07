@@ -8,7 +8,7 @@ export type ConnectorCapability =
   | "send" | "create" | "update" | "execute" | "webhook";
 
 export type ConnectorRiskLevel = "low" | "medium" | "high" | "restricted";
-export type ConnectorAuthType = "oauth" | "api_key" | "service_account" | "local" | "none";
+export type ConnectorAuthType = "oauth" | "github_app" | "api_key" | "service_account" | "local" | "none";
 
 export interface OSConnector {
   id: string;

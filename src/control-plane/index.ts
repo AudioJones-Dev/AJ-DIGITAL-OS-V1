@@ -163,7 +163,7 @@ async function main(): Promise<void> {
 
     // Initialize auth service (will throw if env vars are missing)
     const authService = createTelegramAuthService();
-    botToken = process.env.AJ_TELEGRAM_BOT_TOKEN || "";
+    botToken = process.env.AJ_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || "";
 
     const pollInterval = Number(process.env.AJ_CONTROL_PLANE_POLL_INTERVAL_MS) || 1000;
     const parser = new TelegramParser();

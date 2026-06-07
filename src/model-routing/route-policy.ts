@@ -15,14 +15,14 @@ export interface RouteDecision {
  * Does NOT handle escalation — that is the router's responsibility.
  */
 const DEFAULT_ROUTES: Record<TaskType, ProviderRoute> = {
-  planner: "openai",
+  planner: "local",
   transform: "local",
   format: "deterministic",
   local_agent: "local",
-  retrieval_augmented_answer: "openai",
-  research: "perplexity",
-  validation: "perplexity",
-  structured_output: "openai",
+  retrieval_augmented_answer: "local",
+  research: "local",
+  validation: "local",
+  structured_output: "local",
   low_priority: "local",
 };
 
@@ -32,6 +32,7 @@ export function resolveRoute(
   preferredProvider?: string,
 ): RouteDecision {
   let provider = DEFAULT_ROUTES[taskType];
+  const preferredCloudProvider = preferredProvider && isValidRoute(preferredProvider) && isCloudProvider(preferredProvider);
 
   // Preferred provider override (if it's a recognized route)
   if (preferredProvider && isValidRoute(preferredProvider)) {
@@ -85,6 +86,19 @@ export function resolveRoute(
     }
   }
 
+  if (isCloudProvider(provider) && !isPaidApiRouteAllowed(constraints)) {
+    if (preferredCloudProvider) {
+      return {
+        provider,
+        blocked: true,
+        blockedReason:
+          "Paid API route requires apiBillingAllowed=true and a non-interactive executionMode.",
+      };
+    }
+
+    provider = downgradeCloudRoute(taskType);
+  }
+
   return { provider, blocked: false, blockedReason: null };
 }
 
@@ -92,18 +106,34 @@ function isValidRoute(value: string): value is ProviderRoute {
   return value === "openai" || value === "local" || value === "deterministic" || value === "perplexity";
 }
 
+export function isCloudProvider(provider: ProviderRoute): boolean {
+  return provider === "openai" || provider === "perplexity";
+}
+
+export function isPaidApiRouteAllowed(constraints?: RoutingConstraints): boolean {
+  return (
+    constraints?.apiBillingAllowed === true &&
+    constraints.executionMode !== undefined &&
+    constraints.executionMode !== "interactive"
+  );
+}
+
+function downgradeCloudRoute(taskType: TaskType): ProviderRoute {
+  return taskType === "format" ? "deterministic" : "local";
+}
+
 /**
  * Determine the escalation target for a given provider.
  * Returns null if no escalation path exists.
  */
-export function getEscalationTarget(current: ProviderRoute): ProviderRoute | null {
+export function getEscalationTarget(current: ProviderRoute, constraints?: RoutingConstraints): ProviderRoute | null {
   switch (current) {
     case "perplexity":
-      return "openai";
+      return isPaidApiRouteAllowed(constraints) ? "openai" : null;
     case "deterministic":
       return "local";
     case "local":
-      return "openai";
+      return isPaidApiRouteAllowed(constraints) ? "openai" : null;
     case "openai":
       return null; // No further escalation
   }

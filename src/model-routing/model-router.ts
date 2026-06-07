@@ -1,6 +1,12 @@
 import type { ModelTaskRequest, ModelRoutingResult } from "./result-shape.js";
 import { createResult } from "./result-shape.js";
-import { resolveRoute, getEscalationTarget, type ProviderRoute } from "./route-policy.js";
+import {
+  resolveRoute,
+  getEscalationTarget,
+  isCloudProvider,
+  isPaidApiRouteAllowed,
+  type ProviderRoute,
+} from "./route-policy.js";
 import { callOpenAi } from "./providers/openai-provider.js";
 import { callLocal } from "./providers/local-provider.js";
 import { callDeterministic } from "./providers/deterministic-provider.js";
@@ -9,7 +15,7 @@ import type { PerplexityCallOptions } from "./providers/perplexity-provider.js";
 import type { RetrievedContext } from "../memory-runtime/retrieval.js";
 
 /**
- * OpenAI-specific call options passed through for planner tasks.
+ * OpenAI-specific call options passed through for paid API-approved tasks.
  */
 export interface OpenAiCallOptions {
   systemPrompt: string;
@@ -83,9 +89,11 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
   } else if (isHeavyTask(task)) {
     if (constraints?.offline) {
       decisionReason = "offline-mode";
-    } else {
+    } else if (isPaidApiRouteAllowed(constraints)) {
       effectivePreferredProvider = "openai";
       decisionReason = "heavy-task-detected";
+    } else {
+      decisionReason = "heavy-task-local-default";
     }
   } else if (constraints?.offline) {
     decisionReason = "offline-mode";
@@ -122,7 +130,7 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
 
   // Step 3: Escalation if primary failed and escalation is allowed
   if (!result.ok && allowEscalation !== false) {
-    const escalationTarget = getEscalationTarget(route.provider);
+    const escalationTarget = getEscalationTarget(route.provider, constraints);
 
     if (escalationTarget) {
       // Check if escalation is blocked by constraints
@@ -130,6 +138,8 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
         result.warnings.push("Escalation to OpenAI blocked by offline constraint.");
       } else if (constraints?.mustBeLocal && escalationTarget === "openai") {
         result.warnings.push("Escalation to OpenAI blocked by mustBeLocal constraint.");
+      } else if (isCloudProvider(escalationTarget) && !isPaidApiRouteAllowed(constraints)) {
+        result.warnings.push("Escalation to paid API provider blocked by auth/model-cost policy.");
       } else {
         logRouting(taskType, escalationTarget, false, null, true);
         if (escalationTarget === "openai" || escalationTarget === "perplexity") {
