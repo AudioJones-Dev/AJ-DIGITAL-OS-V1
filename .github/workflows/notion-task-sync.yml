@@ -1,0 +1,29 @@
+name: Notion Task Sync
+
+# On every push, read each new commit's Task:/Task-Status: trailers and update
+# the matching task in the Notion "Build Command Center" board. Cloud-native —
+# keeps Notion current even when the local dashboard server is off.
+
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 100
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Sync Task/Task-Status trailers to Notion
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: node .github/scripts/notion-task-sync.mjs
