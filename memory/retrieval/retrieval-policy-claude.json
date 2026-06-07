@@ -1,0 +1,36 @@
+{
+  "policy_id": "claude",
+  "description": "Retrieval policy for documentation, control-room, and system design tasks.",
+  "allowed_memory_types": [
+    "working_context",
+    "decision",
+    "sop",
+    "project",
+    "brand_memory",
+    "research",
+    "agent_profile"
+  ],
+  "max_total_tokens": 9000,
+  "max_tokens_per_memory_type": {
+    "working_context": 1500,
+    "decision": 2200,
+    "sop": 1200,
+    "project": 1600,
+    "brand_memory": 1200,
+    "research": 1600,
+    "agent_profile": 700
+  },
+  "freshness_cutoff_days": 365,
+  "minimum_confidence": "medium",
+  "citations_required": true,
+  "tenant_isolation_required": true,
+  "retrieval_order": [
+    "working_context",
+    "decision",
+    "project",
+    "brand_memory",
+    "sop",
+    "research",
+    "agent_profile"
+  ]
+}

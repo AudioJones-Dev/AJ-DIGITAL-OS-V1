@@ -1,0 +1,36 @@
+{
+  "policy_id": "hermes",
+  "description": "Retrieval policy for Hermes runtime orchestration and operator-facing status surfaces.",
+  "allowed_memory_types": [
+    "working_context",
+    "decision",
+    "sop",
+    "project",
+    "run_log",
+    "mistake",
+    "agent_profile"
+  ],
+  "max_total_tokens": 7000,
+  "max_tokens_per_memory_type": {
+    "working_context": 1200,
+    "decision": 1200,
+    "sop": 1400,
+    "project": 1200,
+    "run_log": 1000,
+    "mistake": 1000,
+    "agent_profile": 600
+  },
+  "freshness_cutoff_days": 90,
+  "minimum_confidence": "medium",
+  "citations_required": true,
+  "tenant_isolation_required": true,
+  "retrieval_order": [
+    "working_context",
+    "project",
+    "decision",
+    "sop",
+    "run_log",
+    "mistake",
+    "agent_profile"
+  ]
+}

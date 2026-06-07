@@ -1,0 +1,36 @@
+{
+  "policy_id": "codex",
+  "description": "Retrieval policy for repo execution, code review, validation, and implementation tasks.",
+  "allowed_memory_types": [
+    "working_context",
+    "decision",
+    "sop",
+    "project",
+    "mistake",
+    "agent_profile",
+    "research"
+  ],
+  "max_total_tokens": 10000,
+  "max_tokens_per_memory_type": {
+    "working_context": 1800,
+    "decision": 2000,
+    "sop": 2000,
+    "project": 1800,
+    "mistake": 1400,
+    "agent_profile": 800,
+    "research": 1200
+  },
+  "freshness_cutoff_days": 365,
+  "minimum_confidence": "medium",
+  "citations_required": true,
+  "tenant_isolation_required": true,
+  "retrieval_order": [
+    "working_context",
+    "decision",
+    "project",
+    "sop",
+    "mistake",
+    "agent_profile",
+    "research"
+  ]
+}

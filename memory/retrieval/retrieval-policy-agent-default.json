@@ -1,0 +1,36 @@
+{
+  "policy_id": "agent-default",
+  "description": "Default bounded retrieval policy for AJ Digital OS agents.",
+  "allowed_memory_types": [
+    "working_context",
+    "decision",
+    "sop",
+    "project",
+    "mistake",
+    "brand_memory",
+    "research"
+  ],
+  "max_total_tokens": 8000,
+  "max_tokens_per_memory_type": {
+    "working_context": 1500,
+    "decision": 1500,
+    "sop": 1500,
+    "project": 1200,
+    "mistake": 1000,
+    "brand_memory": 800,
+    "research": 1000
+  },
+  "freshness_cutoff_days": 180,
+  "minimum_confidence": "medium",
+  "citations_required": true,
+  "tenant_isolation_required": true,
+  "retrieval_order": [
+    "working_context",
+    "decision",
+    "project",
+    "sop",
+    "mistake",
+    "brand_memory",
+    "research"
+  ]
+}
