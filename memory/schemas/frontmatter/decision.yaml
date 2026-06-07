@@ -1,0 +1,16 @@
+type: decision
+status: draft
+version: 1
+scope: system
+tenant_id: aj-digital
+project_id: aj-digital-os
+agent_id: null
+source:
+  kind: operator_decision
+  uri: null
+confidence: high
+created_at: null
+updated_at: null
+approved_by: null
+deprecated_at: null
+tags: []

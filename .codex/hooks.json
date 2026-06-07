@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "python \"C:\\dev\\AJ-DIGITAL-OS\\.codex\\hooks\\repo_policy.py\""
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "type": "command",
+        "command": "python \"C:\\dev\\AJ-DIGITAL-OS\\.codex\\hooks\\repo_policy.py\""
+      }
+    ]
+  }
+}

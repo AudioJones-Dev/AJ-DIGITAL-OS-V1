@@ -230,7 +230,7 @@ interface OSConnector {
   id: string;
   provider: string;
   capabilities: string[];
-  authType: "oauth" | "api_key" | "service_account" | "local";
+  authType: "oauth" | "github_app" | "api_key" | "service_account" | "local";
   riskLevel: "low" | "medium" | "high";
   execute(input: unknown): Promise<unknown>;
 }

@@ -1,0 +1,16 @@
+type: project
+status: draft
+version: 1
+scope: project
+tenant_id: null
+project_id: null
+agent_id: null
+source:
+  kind: project_context
+  uri: null
+confidence: medium
+created_at: null
+updated_at: null
+approved_by: null
+deprecated_at: null
+tags: []

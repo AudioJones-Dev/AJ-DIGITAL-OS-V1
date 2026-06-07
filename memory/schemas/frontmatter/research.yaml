@@ -1,0 +1,16 @@
+type: research
+status: draft
+version: 1
+scope: system
+tenant_id: aj-digital
+project_id: null
+agent_id: null
+source:
+  kind: research_source
+  uri: null
+confidence: medium
+created_at: null
+updated_at: null
+approved_by: null
+deprecated_at: null
+tags: []
