@@ -13,8 +13,28 @@ logs/
 node_modules/
 dist/
 .npm-cache/
-data/
-memory/
+/data/
+memory/*
+!memory/MEMORY.md
+!memory/BUILD-REPORT-memory-layer-foundation.md
+!memory/BUILD-REPORT-memory-router-readonly-v0.md
+!memory/BUILD-REPORT-memory-router-integration-boundary-v0.md
+!memory/BUILD-REPORT-memory-source-adapter-v0.md
+!memory/*/
+memory/*/*
+!memory/*/README.md
+!memory/exports/
+!memory/exports/approved-markdown/
+memory/exports/approved-markdown/*
+!memory/exports/approved-markdown/.gitkeep
+!memory/working-context/working-context.md
+!memory/decisions/2026-06-05-agent-os-memory-layer-architecture.md
+!memory/decisions/2026-06-06-sprint-minus-1-stabilization.md
+!memory/retrieval/retrieval-policy-*.json
+!memory/schemas/postgres-memory-schema.sql
+!memory/schemas/frontmatter/
+memory/schemas/frontmatter/*
+!memory/schemas/frontmatter/*.yaml
 output/
 sessions/
 *.log
@@ -59,7 +79,7 @@ sessions/
 .tools/
 
 # Local skills cache (referenced, not shipped)
-skills/
+/skills/
 skills-lock.json
 
 # Ops scaffold is tracked as infrastructure code
@@ -68,7 +88,7 @@ skills-lock.json
 notes/
 
 # Supabase local config
-supabase/
+supabase/.temp/
 
 # Local caches
 *.tsbuildinfo
@@ -79,3 +99,5 @@ runtime/cache/
 # Next.js dashboard build output
 dashboard/.next/
 dashboard/.env.local
+src/data/runs/
+src/data/reports/runs/
