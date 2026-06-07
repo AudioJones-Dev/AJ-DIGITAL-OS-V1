@@ -1,10 +1,13 @@
-// GitHub Action: parse Task:/Task-Status: trailers from pushed commits and
-// patch the matching Notion task page. Node 20+ (global fetch). No dependencies.
+// GitHub Action: parse Task:/Task-Status:/Task-Note: trailers from pushed commits
+// and update the matching Notion task page (status) and/or append a comment to its
+// activity log. Node 20+ (global fetch). No dependencies.
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
 const TOKEN = process.env.NOTION_TOKEN;
 if (!TOKEN) { console.log('NOTION_TOKEN not set — skipping Notion sync.'); process.exit(0); }
+const V = '2022-06-28';
+const H = { Authorization: 'Bearer ' + TOKEN, 'Notion-Version': V, 'Content-Type': 'application/json' };
 
 const map = JSON.parse(fs.readFileSync(new URL('./notion-task-map.json', import.meta.url), 'utf8'));
 const norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -41,18 +44,24 @@ function pushedCommits() {
 function parseTrailers(msg) {
   const task = (msg.match(/^[ \t]*Task:[ \t]*(.+)$/im) || [])[1];
   const status = (msg.match(/^[ \t]*Task-Status:[ \t]*(.+)$/im) || [])[1];
-  return task && status ? { task: task.trim(), status: status.trim() } : null;
+  const note = (msg.match(/^[ \t]*Task-Note:[ \t]*(.+)$/im) || [])[1];
+  if (!task || (!status && !note)) return null;
+  return { task: task.trim(), status: status && status.trim(), note: note && note.trim() };
 }
 
-async function patch(id, status) {
+async function patchStatus(id, status) {
   const properties = { Status: { select: { name: status } } };
   if (status === 'Done') properties['Next?'] = { checkbox: false };
-  const r = await fetch('https://api.notion.com/v1/pages/' + id.replace(/-/g, ''), {
-    method: 'PATCH',
-    headers: { Authorization: 'Bearer ' + TOKEN, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ properties }),
+  const r = await fetch('https://api.notion.com/v1/pages/' + id.replace(/-/g, ''), { method: 'PATCH', headers: H, body: JSON.stringify({ properties }) });
+  return r.ok ? { ok: true } : { ok: false, status: r.status };
+}
+
+async function appendLog(id, text) {
+  const r = await fetch('https://api.notion.com/v1/blocks/' + id.replace(/-/g, '') + '/children', {
+    method: 'PATCH', headers: H,
+    body: JSON.stringify({ children: [{ object: 'block', type: 'bulleted_list_item', bulleted_list_item: { rich_text: [{ type: 'text', text: { content: String(text).slice(0, 1900) } }] } }] }),
   });
-  return r.ok ? { ok: true } : { ok: false, status: r.status, body: await r.text() };
+  return r.ok ? { ok: true } : { ok: false, status: r.status };
 }
 
 const commits = pushedCommits();
@@ -62,8 +71,8 @@ for (const c of commits) {
   if (!tr) continue;
   const m = matchTitle(tr.task);
   if (!m) { console.log(`· no roadmap match for "${tr.task}" (${c.sha.slice(0, 7)})`); continue; }
-  const res = await patch(m.id, tr.status);
-  console.log(`${res.ok ? '✓' : '✗'} ${m.title} -> ${tr.status} (${c.sha.slice(0, 7)})${res.ok ? '' : ' ' + JSON.stringify(res)}`);
+  if (tr.status) { const r = await patchStatus(m.id, tr.status); console.log(`${r.ok ? '✓' : '✗'} status ${m.title} -> ${tr.status} (${c.sha.slice(0, 7)})`); }
+  if (tr.note) { const r = await appendLog(m.id, `${c.sha.slice(0, 7)} · ${tr.status || 'note'}: ${tr.note}`); console.log(`${r.ok ? '✓' : '✗'} note  ${m.title} (${c.sha.slice(0, 7)})`); }
   n++;
 }
 console.log(`Notion task sync: ${n} task event(s) from ${commits.length} commit(s).`);
