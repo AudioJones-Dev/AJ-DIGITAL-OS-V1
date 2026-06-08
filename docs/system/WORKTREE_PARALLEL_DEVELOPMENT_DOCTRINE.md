@@ -158,6 +158,7 @@ Parallel execution is allowed only when ownership boundaries are clear. Shared f
 - Merge happens only after review.
 - If conflicts exist, pause and report.
 - Do not force-push, squash, rebase, or delete branches unless authorized.
+- Pushing a branch to a remote requires human/operator approval unless the task explicitly authorized publication.
 - No agent may merge its own work without human/operator approval.
 
 Review is the integration gate. Passing local checks does not automatically authorize merge.
@@ -169,6 +170,7 @@ Review is the integration gate. Passing local checks does not automatically auth
 - Do not delete active, pinned, or unresolved worktrees.
 - Do not run destructive cleanup from a worktree unless authorized.
 - Cleanup must preserve unresolved reports, diffs, and branch references.
+- Periodic review should include disk usage, stale generated artifacts, dependency caches, build outputs, and whether the worktree still has an active owner.
 
 Cleanup is a governed action, not a convenience step. If the state is unclear, report before acting.
 
