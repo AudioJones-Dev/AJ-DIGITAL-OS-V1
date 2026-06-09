@@ -45,6 +45,36 @@ Semantic retrieval is stitched into the existing bounded context bundle.
 - the same stitched character cap still applies
 - included versus truncated sources remain visible in metadata
 
+## Optional Graphify Discovery Layer
+
+Graphify may be used as an optional local-only discovery layer unless separate operator approval expands its scope.
+
+Graphify is an indexing and discovery aid, not canonical memory. Its generated output must never be treated as source of truth. Agents may use Graphify to discover likely relevant files, relationships, and clusters, but must verify conclusions against canonical source files before making claims, recommendations, or edits.
+
+Canonical truth remains in approved source files:
+
+- architecture specs
+- doctrine
+- registers
+- memory docs
+- project docs
+- approved vault notes
+
+Generated Graphify artifacts must not be committed unless a future governance decision explicitly allows it.
+
+Do not index:
+
+- secrets
+- `.env` files
+- credentials
+- client-private data
+- generated outputs
+- cache directories
+- build outputs
+- dependency folders
+
+Do not index the vault or client folders without explicit operator approval.
+
 ## CLI Surface
 
 - `memory-index`
