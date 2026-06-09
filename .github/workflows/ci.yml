@@ -24,24 +24,82 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect docs/policy-only changes
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+
+          changed_files="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed_files"
+
+          docs_policy_only="true"
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            case "$file" in
+              AGENTS.md|*/AGENTS.md|*.md|docs/**|.codex/**|.github/pull_request_template.md|.github/workflows/ci.yml)
+                ;;
+              *)
+                docs_policy_only="false"
+                ;;
+            esac
+          done <<< "$changed_files"
+
+          echo "docs_policy_only=$docs_policy_only" >> "$GITHUB_OUTPUT"
+
+      - name: Validate docs/policy changes
+        if: steps.changes.outputs.docs_policy_only == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+
+          git diff --check "$base" "$head"
+          if [[ -f .codex/validation.json ]]; then
+            node -e "JSON.parse(require('fs').readFileSync('.codex/validation.json','utf8')); console.log('validation.json ok')"
+          fi
 
       - name: Setup Node.js
+        if: steps.changes.outputs.docs_policy_only != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
 
       - name: Install dependencies
+        if: steps.changes.outputs.docs_policy_only != 'true'
         run: npm ci
 
       - name: Typecheck
+        if: steps.changes.outputs.docs_policy_only != 'true'
         run: npm run typecheck
 
       - name: Build
+        if: steps.changes.outputs.docs_policy_only != 'true'
         run: npm run build
 
       - name: Test
+        if: steps.changes.outputs.docs_policy_only != 'true'
         run: npm run test
 
       - name: Coverage
+        if: steps.changes.outputs.docs_policy_only != 'true'
         run: npm run coverage

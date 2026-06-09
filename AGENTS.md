@@ -42,6 +42,7 @@ After meaningful changes, run a DOX pass before final response:
 
 - `.codex/AGENTS.md` - repo-local Codex policy, validation registry, and hook proposals.
 - `docs/AGENTS.md` - canonical policy docs, specs, runbooks, release notes, and operational documentation.
+- `.github/AGENTS.md` - GitHub Actions, pull request templates, and repository automation checks.
 - `runtime/AGENTS.md` - runtime state surfaces, local execution artifacts, connector state, and generated operational data.
 - `src/AGENTS.md` - TypeScript source, CLI, Hermes, BEL, MCP, security, services, and application modules.
 - `tests/AGENTS.md` - test suites, fixtures, and validation coverage.
