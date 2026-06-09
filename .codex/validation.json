@@ -1,0 +1,187 @@
+{
+  "$schema": "https://ajdigital.local/schemas/codex-validation.v1.json",
+  "version": 1,
+  "repo": "AJ-DIGITAL-OS",
+  "purpose": "Repo-local validation command registry for Codex and agent handoffs. Commands are declared here for review and optional execution; this file does not run anything by itself.",
+  "notes": [
+    "Use the smallest validation set that matches the changed files.",
+    "Do not run deploy, push, merge, rebase, install, or destructive commands from this config without explicit approval.",
+    "Root TypeScript can be run through npm scripts, but if tsc hangs in this environment use the repo-approved local workaround before reporting failure."
+  ],
+  "sets": {
+    "docs_only": {
+      "description": "For Markdown and policy/config documentation changes only.",
+      "commands": [
+        {
+          "name": "git_status_short",
+          "command": "git status --short",
+          "required": true,
+          "note": "Confirms changed and untracked files before handoff."
+        },
+        {
+          "name": "git_diff_name_only",
+          "command": "git diff --name-only",
+          "required": true,
+          "note": "Confirms the tracked diff is limited to intended files."
+        },
+        {
+          "name": "git_diff_check",
+          "command": "git diff --check",
+          "required": true,
+          "note": "Checks for whitespace errors in tracked diffs."
+        },
+        {
+          "name": "markdown_lint",
+          "command": null,
+          "required": false,
+          "note": "No repo-local Markdown lint script is currently defined."
+        }
+      ]
+    },
+    "config_only": {
+      "description": "For repo-local policy/config files that do not affect runtime code.",
+      "commands": [
+        {
+          "name": "git_status_short",
+          "command": "git status --short",
+          "required": true,
+          "note": "Confirms changed and untracked files before handoff."
+        },
+        {
+          "name": "git_diff_name_only",
+          "command": "git diff --name-only",
+          "required": true,
+          "note": "Confirms the tracked diff is limited to intended files."
+        },
+        {
+          "name": "git_diff_check",
+          "command": "git diff --check",
+          "required": true,
+          "note": "Checks for whitespace errors in tracked diffs."
+        },
+        {
+          "name": "json_parse",
+          "command": "node -e \"JSON.parse(require('fs').readFileSync('.codex/validation.json','utf8')); console.log('validation.json ok')\"",
+          "required": true,
+          "note": "Validates this JSON config without installing packages."
+        }
+      ]
+    },
+    "app": {
+      "description": "For root TypeScript application, CLI, Hermes, runtime, and testable source changes.",
+      "commands": [
+        {
+          "name": "typecheck",
+          "command": "npm run typecheck",
+          "required": true,
+          "note": "Uses the root package.json script."
+        },
+        {
+          "name": "test",
+          "command": "npm test",
+          "required": true,
+          "note": "Uses Vitest through the root package.json script."
+        },
+        {
+          "name": "build",
+          "command": "npm run build",
+          "required": true,
+          "note": "Uses the root TypeScript build script."
+        }
+      ]
+    },
+    "dashboard": {
+      "description": "For dashboard work. Choose the matching dashboard surface based on changed files.",
+      "commands": [
+        {
+          "name": "next_dashboard_lint",
+          "command": "npm --prefix dashboard run lint",
+          "required": false,
+          "note": "Only for changes under dashboard/. Requires dependencies already installed."
+        },
+        {
+          "name": "next_dashboard_build",
+          "command": "npm --prefix dashboard run build",
+          "required": true,
+          "note": "Only for changes under dashboard/. Requires dependencies already installed."
+        },
+        {
+          "name": "vite_dashboard_build",
+          "command": "npm --prefix ui/dashboard run build",
+          "required": true,
+          "note": "Only for changes under ui/dashboard/. Requires dependencies already installed."
+        },
+        {
+          "name": "vite_dashboard_lint",
+          "command": null,
+          "required": false,
+          "note": "No ui/dashboard lint script is currently defined."
+        }
+      ]
+    },
+    "full": {
+      "description": "For broad source changes after approval. Do not use for docs-only work by default.",
+      "commands": [
+        {
+          "name": "root_typecheck",
+          "command": "npm run typecheck",
+          "required": true,
+          "note": "Root TypeScript validation."
+        },
+        {
+          "name": "root_test",
+          "command": "npm test",
+          "required": true,
+          "note": "Root Vitest suite."
+        },
+        {
+          "name": "root_build",
+          "command": "npm run build",
+          "required": true,
+          "note": "Root TypeScript build."
+        },
+        {
+          "name": "next_dashboard_build",
+          "command": "npm --prefix dashboard run build",
+          "required": false,
+          "note": "Run when dashboard/ may be affected."
+        },
+        {
+          "name": "vite_dashboard_build",
+          "command": "npm --prefix ui/dashboard run build",
+          "required": false,
+          "note": "Run when ui/dashboard/ may be affected."
+        }
+      ]
+    },
+    "forbidden_without_approval": {
+      "description": "Commands and action classes agents must not run unless explicit approval is granted.",
+      "commands": [
+        {
+          "name": "merge_rebase_push_deploy_release",
+          "command": null,
+          "required": false,
+          "note": "Includes git merge, git rebase, git push, deploy commands, release tags, and PR merge actions."
+        },
+        {
+          "name": "destructive_git_or_filesystem",
+          "command": null,
+          "required": false,
+          "note": "Includes git reset --hard, git clean, recursive delete, force push, and mass move/rename."
+        },
+        {
+          "name": "dependency_install_or_lockfile_change",
+          "command": null,
+          "required": false,
+          "note": "Includes npm install, npm update, package manager migration, and lockfile updates."
+        },
+        {
+          "name": "secret_or_global_config_work",
+          "command": null,
+          "required": false,
+          "note": "Includes .env value handling, global Codex/Claude/MCP/skill settings, and hook activation."
+        }
+      ]
+    }
+  }
+}
