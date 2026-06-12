@@ -20,7 +20,22 @@ export type AttributionEventType =
   | "compound_score_created"
   | "decision_path_scale"
   | "decision_path_pivot"
-  | "decision_path_kill";
+  | "decision_path_kill"
+  | "connector_executed"
+  | "connector_blocked"
+  | "connector_failed"
+  | "entity_normalized"
+  | "entity_normalization_failed"
+  | "entity_updated"
+  | "governance_check_passed"
+  | "governance_check_warned"
+  | "governance_check_blocked"
+  | "governance_approval_required"
+  | "offer_engine_created"
+  | "offer_engine_blocked"
+  | "diagnostic_run"
+  | "content_brief_created"
+  | "content_published";
 
 export interface MAPScore {
   meaningful: boolean;

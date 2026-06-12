@@ -51,6 +51,11 @@ import {
   StateValidateCommand,
   StateTransitionsCommand,
   PolicyEvaluateCommand,
+  GovernanceBrandCheckCommand,
+  GovernanceLegalCheckCommand,
+  GovernanceSopValidateCommand,
+  GovernanceOfferCheckCommand,
+  GovernanceEvaluateCommand,
   EventsListCommand,
   EventsRunCommand,
   EventsTenantCommand,
@@ -65,6 +70,11 @@ import {
   CacheListCommand,
   CacheAuditCommand,
   CacheStatsCommand,
+  ConnectorListCommand,
+  ConnectorEnableCommand,
+  ConnectorDisableCommand,
+  ConnectorExecuteCommand,
+  ConnectorAuditCommand,
   DagCreateCommand,
   DagListCommand,
   DagInspectCommand,
@@ -73,6 +83,12 @@ import {
   DagSkipNodeCommand,
   DagAuditCommand,
   DagOutputsCommand,
+  LeadToOfferCommand,
+  NormalizeEntityCommand,
+  ListEntitiesCommand,
+  GetEntityCommand,
+  TelegramStartCommand,
+  TelegramStatusCommand,
   SeedDemoCommand,
   SubmitForApprovalCommand,
   ToolRegistryCommand,
@@ -742,6 +758,106 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           });
           return result.ok ? 0 : 1;
         }
+      case "governance-brand-check":
+        {
+          const text = getStringFlag(parsed.flags, "text");
+          const category = getStringFlag(parsed.flags, "category");
+          if (!text) {
+            console.error("Usage: governance-brand-check --text <text> [--category <cat>]");
+            return 1;
+          }
+          const result = await new GovernanceBrandCheckCommand().run({
+            text,
+            ...(category ? { category } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok && result.result.compliant ? 0 : 1;
+        }
+      case "governance-legal-check":
+        {
+          const content = getStringFlag(parsed.flags, "content");
+          const category = getStringFlag(parsed.flags, "category");
+          if (!content || !category) {
+            console.error("Usage: governance-legal-check --content <text> --category <cat>");
+            return 1;
+          }
+          const result = await new GovernanceLegalCheckCommand().run({
+            content,
+            category,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok && result.result.compliant ? 0 : 1;
+        }
+      case "governance-sop-validate":
+        {
+          const workflowType = getStringFlag(parsed.flags, "workflowType");
+          const stepsRaw = getStringFlag(parsed.flags, "steps");
+          if (!workflowType) {
+            console.error("Usage: governance-sop-validate --workflowType <type> --steps <s1,s2,...>");
+            return 1;
+          }
+          const steps = stepsRaw ? stepsRaw.split(",").map((s) => s.trim()).filter(Boolean) : [];
+          const result = await new GovernanceSopValidateCommand().run({
+            workflowType,
+            steps,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok && result.result.valid ? 0 : 1;
+        }
+      case "governance-offer-check":
+        {
+          const offerJson = getStringFlag(parsed.flags, "offer");
+          if (!offerJson) {
+            console.error("Usage: governance-offer-check --offer '<json>'");
+            return 1;
+          }
+          let offer: Parameters<GovernanceOfferCheckCommand["run"]>[0]["offer"];
+          try {
+            offer = JSON.parse(offerJson) as Parameters<GovernanceOfferCheckCommand["run"]>[0]["offer"];
+          } catch (err) {
+            console.error(`Invalid offer JSON: ${err instanceof Error ? err.message : String(err)}`);
+            return 1;
+          }
+          const result = await new GovernanceOfferCheckCommand().run({
+            offer,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok && result.result.compliant ? 0 : 1;
+        }
+      case "governance-evaluate":
+        {
+          const content = getStringFlag(parsed.flags, "content");
+          const contentCategory = getStringFlag(parsed.flags, "category");
+          const workflowType = getStringFlag(parsed.flags, "workflowType");
+          const stepsRaw = getStringFlag(parsed.flags, "steps");
+          const agentRole = getStringFlag(parsed.flags, "agentRole");
+          const action = getStringFlag(parsed.flags, "action");
+          const toolsRaw = getStringFlag(parsed.flags, "tools");
+          const offerJson = getStringFlag(parsed.flags, "offer");
+          const tenantIdFlag = getStringFlag(parsed.flags, "tenantId");
+          const input: Parameters<GovernanceEvaluateCommand["run"]>[0] = {
+            json: hasFlag(parsed.flags, "json"),
+          };
+          if (content) input.content = content;
+          if (contentCategory) input.contentCategory = contentCategory;
+          if (workflowType) input.workflowType = workflowType;
+          if (stepsRaw) input.workflowSteps = stepsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+          if (agentRole) input.agentRole = agentRole;
+          if (action) input.action = action;
+          if (toolsRaw) input.tools = toolsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+          if (tenantIdFlag) input.tenantId = tenantIdFlag;
+          if (offerJson) {
+            try {
+              const parsedOffer = JSON.parse(offerJson) as Parameters<GovernanceEvaluateCommand["run"]>[0]["offer"];
+              if (parsedOffer) input.offer = parsedOffer;
+            } catch (err) {
+              console.error(`Invalid offer JSON: ${err instanceof Error ? err.message : String(err)}`);
+              return 1;
+            }
+          }
+          const result = await new GovernanceEvaluateCommand().run(input);
+          return result.ok && result.result.overall !== "block" ? 0 : 1;
+        }
       case "events-list":
         {
           const categoryFlag = getStringFlag(parsed.flags, "category");
@@ -911,6 +1027,43 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           });
           return result.ok ? 0 : 1;
         }
+      case "connector-list":
+        {
+          const result = await new ConnectorListCommand().run({ json: hasFlag(parsed.flags, "json"), enabledOnly: hasFlag(parsed.flags, "enabled-only") });
+          return result.ok ? 0 : 1;
+        }
+      case "connector-enable":
+        {
+          const idFlag = getStringFlag(parsed.flags, "id");
+          const result = await new ConnectorEnableCommand().run({ json: hasFlag(parsed.flags, "json"), ...(idFlag !== undefined ? { id: idFlag } : {}) });
+          return result.ok ? 0 : 1;
+        }
+      case "connector-disable":
+        {
+          const idFlag = getStringFlag(parsed.flags, "id");
+          const result = await new ConnectorDisableCommand().run({ json: hasFlag(parsed.flags, "json"), ...(idFlag !== undefined ? { id: idFlag } : {}) });
+          return result.ok ? 0 : 1;
+        }
+      case "connector-execute":
+        {
+          const idFlag = getStringFlag(parsed.flags, "id");
+          const actionFlag = getStringFlag(parsed.flags, "action");
+          const payloadFlag = getStringFlag(parsed.flags, "payload");
+          const result = await new ConnectorExecuteCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(idFlag !== undefined ? { id: idFlag } : {}),
+            ...(actionFlag !== undefined ? { action: actionFlag } : {}),
+            ...(payloadFlag !== undefined ? { payload: payloadFlag } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "connector-audit":
+        {
+          const limitRaw = getStringFlag(parsed.flags, "limit");
+          const result = await new ConnectorAuditCommand().run({ json: hasFlag(parsed.flags, "json"), ...(limitRaw !== undefined ? { limit: parseInt(limitRaw, 10) } : {}) });
+          return result.ok ? 0 : 1;
+        }
       case "dag-create":
       case "dag:create":
         {
@@ -1003,6 +1156,87 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
             runId: runIdFlag,
             json: hasFlag(parsed.flags, "json"),
             ...(nodeIdFlag !== undefined ? { nodeId: nodeIdFlag } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "normalize-entity":
+        {
+          const entityType = getStringFlag(parsed.flags, "entityType");
+          const data = getStringFlag(parsed.flags, "data");
+          const file = getStringFlag(parsed.flags, "file");
+          if (!entityType) {
+            console.error(
+              "Usage: normalize-entity --entityType <type> (--data '<json>' | --file <path>) [--json]",
+            );
+            return 1;
+          }
+          const result = await new NormalizeEntityCommand().run({
+            entityType,
+            ...(data !== undefined ? { data } : {}),
+            ...(file !== undefined ? { file } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "list-entities":
+        {
+          const entityType = getStringFlag(parsed.flags, "entityType");
+          const tenantIdFlag = getStringFlag(parsed.flags, "tenantId");
+          const limitRaw = getStringFlag(parsed.flags, "limit");
+          if (!entityType) {
+            console.error("Usage: list-entities --entityType <type> [--tenantId <id>] [--limit <n>] [--json]");
+            return 1;
+          }
+          const result = await new ListEntitiesCommand().run({
+            entityType,
+            ...(tenantIdFlag !== undefined ? { tenantId: tenantIdFlag } : {}),
+            ...(limitRaw !== undefined ? { limit: parseInt(limitRaw, 10) } : {}),
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "get-entity":
+        {
+          const entityType = getStringFlag(parsed.flags, "entityType");
+          const entityIdFlag = getStringFlag(parsed.flags, "entityId");
+          if (!entityType || !entityIdFlag) {
+            console.error("Usage: get-entity --entityType <type> --entityId <id> [--json]");
+            return 1;
+          }
+          const result = await new GetEntityCommand().run({
+            entityType,
+            entityId: entityIdFlag,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "telegram-start":
+        {
+          const result = await new TelegramStartCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "telegram-status":
+        {
+          const result = await new TelegramStatusCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "lead-to-offer":
+        {
+          const result = await new LeadToOfferCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(getStringFlag(parsed.flags, "firstName") !== undefined ? { firstName: getStringFlag(parsed.flags, "firstName")! } : {}),
+            ...(getStringFlag(parsed.flags, "lastName") !== undefined ? { lastName: getStringFlag(parsed.flags, "lastName")! } : {}),
+            ...(getStringFlag(parsed.flags, "email") !== undefined ? { email: getStringFlag(parsed.flags, "email")! } : {}),
+            ...(getStringFlag(parsed.flags, "company") !== undefined ? { company: getStringFlag(parsed.flags, "company")! } : {}),
+            ...(getStringFlag(parsed.flags, "source") !== undefined ? { source: getStringFlag(parsed.flags, "source")! } : {}),
+            ...(getStringFlag(parsed.flags, "offerType") !== undefined ? { offerType: getStringFlag(parsed.flags, "offerType")! } : {}),
+            ...(getStringFlag(parsed.flags, "offerTitle") !== undefined ? { offerTitle: getStringFlag(parsed.flags, "offerTitle")! } : {}),
+            ...(getStringFlag(parsed.flags, "tenantId") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
+            ...(getStringFlag(parsed.flags, "airtableRecordId") !== undefined ? { airtableRecordId: getStringFlag(parsed.flags, "airtableRecordId")! } : {}),
           });
           return result.ok ? 0 : 1;
         }
