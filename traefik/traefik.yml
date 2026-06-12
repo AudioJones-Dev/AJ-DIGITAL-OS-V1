@@ -1,0 +1,17 @@
+# Traefik static (install) config — AJ Digital OS edge
+api:
+  dashboard: true
+  insecure: true        # dashboard on :8080 — LOCAL DEV ONLY; secure before any exposure
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true          # hot-reload routing without restarting Traefik
+
+log:
+  level: INFO
+accessLog: {}

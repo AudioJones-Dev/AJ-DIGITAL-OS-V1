@@ -1,0 +1,18 @@
+{
+  "case_id": "qual-not-ready-001",
+  "company": "EarlySpark Labs",
+  "industry": "services",
+  "inputs": {
+    "monthly_leads": 6,
+    "avg_customer_value": 220,
+    "sales_process_present": false,
+    "crm_present": false,
+    "tracking_present": false,
+    "database_size": 0,
+    "lead_source_diversity": 0.1,
+    "fulfillment_capacity_defined": false,
+    "sop_coverage_ratio": 0.1,
+    "offer_clarity_score": 0.2,
+    "demand_signal_score": 0.2
+  }
+}

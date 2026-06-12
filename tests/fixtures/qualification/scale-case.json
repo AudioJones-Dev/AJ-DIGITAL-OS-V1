@@ -1,0 +1,18 @@
+{
+  "case_id": "qual-scale-001",
+  "company": "Summit Expansion Group",
+  "industry": "multi-location services",
+  "inputs": {
+    "monthly_leads": 360,
+    "avg_customer_value": 6200,
+    "sales_process_present": true,
+    "crm_present": true,
+    "tracking_present": true,
+    "database_size": 9200,
+    "lead_source_diversity": 0.8,
+    "fulfillment_capacity_defined": true,
+    "sop_coverage_ratio": 0.82,
+    "offer_clarity_score": 0.9,
+    "demand_signal_score": 0.88
+  }
+}

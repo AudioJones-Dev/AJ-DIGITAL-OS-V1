@@ -1,0 +1,54 @@
+# Traefik dynamic (routing) config — hot-reloaded.
+# Routes hostnames -> live containers on aj-digital-os_aj-os-net (by container name + internal port).
+http:
+  routers:
+    home:
+      rule: "Host(`home.agentos.local`) || Host(`agentos.local`) || Host(`home.ajdigital.app`)"
+      entryPoints: [web]
+      service: homepage
+    control-plane:
+      rule: "Host(`os.agentos.local`)"
+      entryPoints: [web]
+      service: aj-os
+    chat:
+      rule: "Host(`chat.agentos.local`)"
+      entryPoints: [web]
+      service: open-webui
+    flows:
+      rule: "Host(`flows.agentos.local`)"
+      entryPoints: [web]
+      service: n8n
+    metrics:
+      rule: "Host(`metrics.agentos.local`)"
+      entryPoints: [web]
+      service: grafana
+    prom:
+      rule: "Host(`prom.agentos.local`)"
+      entryPoints: [web]
+      service: prometheus
+
+  services:
+    homepage:
+      loadBalancer:
+        servers:
+          - url: "http://homepage:3000"
+    aj-os:
+      loadBalancer:
+        servers:
+          - url: "http://aj-digital-os:7420"
+    open-webui:
+      loadBalancer:
+        servers:
+          - url: "http://open-webui:8080"
+    n8n:
+      loadBalancer:
+        servers:
+          - url: "http://n8n:5678"
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://grafana:3000"
+    prometheus:
+      loadBalancer:
+        servers:
+          - url: "http://prometheus:9090"
