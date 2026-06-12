@@ -76,6 +76,17 @@ supabase/
 # Cache Augmentation Layer runtime state (created on demand)
 runtime/cache/
 
+# Graphify local discovery artifacts (generated, not source of truth)
+/graphify-out
+/graphify-out/
+/graph.html
+/graph.json
+/GRAPH_REPORT.md
+/.graphify
+/.graphify/
+/.graphify-cache
+/.graphify-cache/
+
 # Next.js dashboard build output
 dashboard/.next/
 dashboard/.env.local

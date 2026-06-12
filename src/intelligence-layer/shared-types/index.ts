@@ -206,3 +206,56 @@ export type ArchetypeId =
   | "capacity_mismatch"
   | "coordination_breakdown"
   | "compounding_decay";
+
+export interface QualificationRequest {
+  case_id: string;
+  company: string;
+  industry?: string;
+  business_model?: string;
+  niche?: string;
+  micro_niche?: string;
+  offer_type?: string;
+  inputs: {
+    monthly_leads?: number;
+    avg_customer_value?: number;
+    sales_process_present?: boolean;
+    crm_present?: boolean;
+    tracking_present?: boolean;
+    database_size?: number;
+    lead_source_diversity?: number;
+    fulfillment_capacity_defined?: boolean;
+    sop_coverage_ratio?: number;
+    offer_clarity_score?: number;
+    demand_signal_score?: number;
+  };
+}
+
+export interface QualificationScoreDetail {
+  score: number;
+  rationale: string[];
+}
+
+export type DeploymentTier = "not_ready" | "foundation" | "growth" | "scale";
+
+export type QualificationNextStep =
+  | "reject"
+  | "fix_foundation"
+  | "install_foundation_layer"
+  | "install_growth_os"
+  | "install_scale_os";
+
+export interface QualificationResult {
+  case_id: string;
+  status: "evaluated";
+  readiness_score: number;
+  demand_score: QualificationScoreDetail;
+  economics_score: QualificationScoreDetail;
+  process_maturity_score: QualificationScoreDetail;
+  data_maturity_score: QualificationScoreDetail;
+  attribution_readiness_score: QualificationScoreDetail;
+  deployment_tier: DeploymentTier;
+  disqualifiers: string[];
+  required_fixes: string[];
+  recommended_next_step: QualificationNextStep;
+  notes: string[];
+}

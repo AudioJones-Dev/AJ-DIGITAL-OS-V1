@@ -1,0 +1,18 @@
+{
+  "case_id": "qual-growth-001",
+  "company": "Northline Performance",
+  "industry": "B2B services",
+  "inputs": {
+    "monthly_leads": 140,
+    "avg_customer_value": 3200,
+    "sales_process_present": true,
+    "crm_present": true,
+    "tracking_present": false,
+    "database_size": 1800,
+    "lead_source_diversity": 0.6,
+    "fulfillment_capacity_defined": true,
+    "sop_coverage_ratio": 0.45,
+    "offer_clarity_score": 0.72,
+    "demand_signal_score": 0.68
+  }
+}

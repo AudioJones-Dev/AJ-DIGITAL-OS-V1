@@ -16,14 +16,15 @@ import type {
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: { runId: string } };
+type Props = { params: Promise<{ runId: string }> };
 
 export default async function RunDetailPage({ params }: Props) {
+  const { runId } = await params;
   let data = null;
   let error: string | null = null;
 
   try {
-    data = await fetchFullRunData(params.runId);
+    data = await fetchFullRunData(runId);
   } catch (e) {
     error = e instanceof Error ? e.message : "Failed to fetch run";
   }
@@ -33,17 +34,17 @@ export default async function RunDetailPage({ params }: Props) {
   let auditEvents: ControlAuditEvent[] = [];
   let attributionEvents: AttributionEvent[] = [];
   try {
-    controlRecord = await getControlRun(params.runId);
+    controlRecord = await getControlRun(runId);
   } catch {
     /* tolerate */
   }
   try {
-    auditEvents = await getControlRunAudit(params.runId);
+    auditEvents = await getControlRunAudit(runId);
   } catch {
     /* tolerate */
   }
   try {
-    attributionEvents = await getAttributionEventsByRun(params.runId);
+    attributionEvents = await getAttributionEventsByRun(runId);
   } catch {
     /* tolerate */
   }
@@ -239,7 +240,7 @@ export default async function RunDetailPage({ params }: Props) {
       <div>
         <h2 className="text-sm font-semibold mb-3 text-zinc-300">Enforcement</h2>
         <RunDetailEnforcement
-          runId={params.runId}
+          runId={runId}
           initialState={initialControlState}
           initialAudit={auditEvents}
           {...(environment ? { environment } : {})}
