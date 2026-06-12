@@ -1,0 +1,49 @@
+{
+  "policy": "offer-governance",
+  "version": "offer-v1",
+  "description": "Offer governance — price floors, scope limits, guarantee constraints, discount rules, required components.",
+  "rules": {
+    "priceFloor": {
+      "default": 500,
+      "byType": {
+        "consultation": 250,
+        "audit": 500,
+        "implementation": 2500,
+        "retainer": 1500,
+        "package": 1000
+      }
+    },
+    "currency": "USD",
+    "maxDeliverablesByType": {
+      "consultation": 5,
+      "audit": 8,
+      "implementation": 25,
+      "retainer": 15,
+      "package": 12
+    },
+    "allowedGuarantees": [
+      "satisfaction_or_refund",
+      "delivery_timeline",
+      "scope_completion"
+    ],
+    "forbiddenGuarantees": [
+      "specific_revenue",
+      "specific_roi",
+      "specific_ranking",
+      "specific_traffic"
+    ],
+    "discountRules": {
+      "maxAutoApprovedPercent": 15,
+      "maxApprovedPercent": 35,
+      "blockBeyondMaxApproved": true
+    },
+    "requiredComponents": [
+      "title",
+      "type",
+      "price",
+      "currency",
+      "deliverables",
+      "timeline"
+    ]
+  }
+}

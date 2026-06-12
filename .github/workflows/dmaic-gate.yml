@@ -1,0 +1,26 @@
+name: DMAIC Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  dmaic-gate:
+    name: Enforce DMAIC governance
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+      DMAIC_PR_BODY: ${{ github.event.pull_request.body }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run DMAIC gate
+        run: python tools/dmaic_gate/dmaic_gate.py --range "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
