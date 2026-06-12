@@ -1,0 +1,12 @@
+title: AJ Digital OS — Control Plane
+theme: dark
+color: slate
+headerStyle: clean
+hideVersion: true
+layout:
+  Agent OS:
+    style: row
+    columns: 3
+  Observability:
+    style: row
+    columns: 2
