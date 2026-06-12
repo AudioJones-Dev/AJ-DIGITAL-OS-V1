@@ -471,3 +471,88 @@ export interface CeraCycle {
   createdAt: string;
   updatedAt: string;
 }
+
+// ── Connectors (L3) ────────────────────────────────────────────────
+export type ConnectorCapability =
+  | "read" | "write" | "delete" | "list" | "search"
+  | "send" | "create" | "update" | "execute" | "webhook";
+export type ConnectorRiskLevel = "low" | "medium" | "high" | "restricted";
+export type ConnectorAuthType = "oauth" | "api_key" | "service_account" | "local" | "none";
+
+export interface OSConnector {
+  id: string;
+  provider: string;
+  displayName: string;
+  capabilities: ConnectorCapability[];
+  authType: ConnectorAuthType;
+  riskLevel: ConnectorRiskLevel;
+  version: string;
+  enabled: boolean;
+}
+
+// ── Normalized Entities (L5) ───────────────────────────────────────
+export type NormalizedEntityType =
+  | "tenant"
+  | "contact"
+  | "lead"
+  | "offer"
+  | "asset"
+  | "workflow"
+  | "knowledge_document";
+
+export interface NormalizedEntitySummary {
+  entityId: string;
+  tenantId?: string;
+  updatedAt: string;
+  schemaVersion: string;
+  [key: string]: unknown;
+}
+
+export interface EntityListResponse {
+  ok: boolean;
+  entityType: NormalizedEntityType;
+  count: number;
+  data: NormalizedEntitySummary[];
+}
+
+
+// ── Application Layer entity types ───────────────────────────────
+
+export interface NormalizedOffer {
+  entityId: string;
+  tenantId?: string;
+  title: string;
+  type: string;
+  tier: string;
+  price: number;
+  currency: string;
+  billingCycle?: string;
+  deliverables: string[];
+  timeline?: string;
+  scope?: string;
+  guarantees: string[];
+  status: string;
+  governanceStatus?: string;
+  mapScore?: number;
+  createdAt: string;
+  updatedAt: string;
+  schemaVersion: string;
+}
+
+export interface NormalizedAsset {
+  entityId: string;
+  tenantId?: string;
+  title: string;
+  type: string;
+  format: string;
+  contentHash?: string;
+  sourceUri?: string;
+  publishedUri?: string;
+  status: string;
+  tags: string[];
+  wordCount?: number;
+  channel?: string;
+  createdAt: string;
+  updatedAt: string;
+  schemaVersion: string;
+}

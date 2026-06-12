@@ -7,6 +7,7 @@
  */
 
 import type { MissionTypeName, MissionPriority } from "../missions/mission-entry-types.js";
+import type { SafeIntervalHandle } from "./hermes-timer-utils.js";
 
 // ── Schedule Definition ────────────────────────────────────────────
 
@@ -59,7 +60,7 @@ export interface HermesNotification {
 
 export interface SchedulerHandle {
   scheduleId: string;
-  intervalId: ReturnType<typeof setInterval>;
+  intervalId: SafeIntervalHandle;
   nextRunAt: Date;
 }
 

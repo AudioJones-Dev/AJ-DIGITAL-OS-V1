@@ -340,6 +340,26 @@ export type {
   MetricsSnapshotCommandResult,
 } from "./core.commands.js";
 
+export {
+  GovernanceBrandCheckCommand,
+  GovernanceLegalCheckCommand,
+  GovernanceSopValidateCommand,
+  GovernanceOfferCheckCommand,
+  GovernanceEvaluateCommand,
+} from "./governance.commands.js";
+export type {
+  GovernanceBrandCheckInput,
+  GovernanceBrandCheckResult,
+  GovernanceLegalCheckInput,
+  GovernanceLegalCheckResult,
+  GovernanceSopValidateInput,
+  GovernanceSopValidateResult,
+  GovernanceOfferCheckInput,
+  GovernanceOfferCheckResult,
+  GovernanceEvaluateInput,
+  GovernanceEvaluateResult,
+} from "./governance.commands.js";
+
 
 export { CacheLookupCommand } from "./cache-lookup.command.js";
 export type {
@@ -401,3 +421,39 @@ export type { DagAuditCommandInput, DagAuditCommandResult } from "./dag-audit.co
 
 export { DagOutputsCommand } from "./dag-outputs.command.js";
 export type { DagOutputsCommandInput, DagOutputsCommandResult } from "./dag-outputs.command.js";
+
+
+export {
+  ConnectorListCommand,
+  ConnectorEnableCommand,
+  ConnectorDisableCommand,
+  ConnectorExecuteCommand,
+  ConnectorAuditCommand,
+} from "./connector.commands.js";
+export type {
+  ConnectorListCommandInput, ConnectorListCommandResult,
+  ConnectorEnableCommandInput, ConnectorEnableCommandResult,
+  ConnectorDisableCommandInput, ConnectorDisableCommandResult,
+  ConnectorExecuteCommandInput, ConnectorExecuteCommandResult,
+  ConnectorAuditCommandInput, ConnectorAuditCommandResult,
+} from "./connector.commands.js";
+
+
+export { NormalizeEntityCommand, ListEntitiesCommand, GetEntityCommand } from "./normalization.commands.js";
+export type {
+  NormalizeEntityCommandInput, NormalizeEntityCommandResult,
+  ListEntitiesCommandInput, ListEntitiesCommandResult,
+  GetEntityCommandInput, GetEntityCommandResult,
+} from "./normalization.commands.js";
+
+export { TelegramStartCommand, TelegramStatusCommand } from "./telegram.commands.js";
+export type {
+  TelegramStartCommandInput,
+  TelegramStartCommandResult,
+  TelegramStatusCommandInput,
+  TelegramStatusCommandResult,
+} from "./telegram.commands.js";
+
+
+export { LeadToOfferCommand } from "./lead-to-offer.command.js";
+export type { LeadToOfferCommandInput, LeadToOfferCommandResult } from "./lead-to-offer.command.js";

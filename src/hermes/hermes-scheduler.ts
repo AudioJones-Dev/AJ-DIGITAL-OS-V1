@@ -14,6 +14,7 @@ import type { ProductionMissionConfig } from "../missions/mission-db-hooks.js";
 import { triggerFromSchedule } from "./hermes-bridge.js";
 import { parseCronToIntervalMs, getEnabledSchedules, DEFAULT_SCHEDULES } from "./hermes-schedule-config.js";
 import { notify } from "./hermes-notifications.js";
+import { safeSetInterval } from "./hermes-timer-utils.js";
 
 const TAG = "[HERMES-SCHEDULER]";
 
@@ -52,7 +53,7 @@ export function startScheduler(
 
     const handle: SchedulerHandle = {
       scheduleId: schedule.id,
-      intervalId: setInterval(() => {
+      intervalId: safeSetInterval(() => {
         void executeScheduledMission(schedule, config);
       }, intervalMs),
       nextRunAt: new Date(Date.now() + intervalMs),
@@ -85,7 +86,7 @@ export function stopScheduler(): void {
   if (!running) return;
 
   for (const handle of handles.values()) {
-    clearInterval(handle.intervalId);
+    handle.intervalId.cancel();
   }
   handles.clear();
   running = false;

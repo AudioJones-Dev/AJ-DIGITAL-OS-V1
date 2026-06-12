@@ -9,6 +9,7 @@
  */
 
 import { createServer, type Server } from "node:http";
+import path from "node:path";
 import { getIntelligenceSnapshot } from "../intelligence/intelligence-engine.js";
 import { registry } from "../observability/metrics.js";
 import { getSchedulerStatus } from "./hermes-scheduler.js";
@@ -83,6 +84,16 @@ import {
 } from "../core/state/run-state-machine.js";
 import { VALID_RUN_STATE_TRANSITIONS, type RunState } from "../core/state/run-state-types.js";
 import { evaluateActionRisk } from "../core/policy/policy-engine.js";
+import { evaluateGovernance } from "../governance/governance-engine.js";
+import { getBrandVoicePolicy } from "../governance/brand-voice/brand-voice-policy.js";
+import { getLegalPolicy } from "../governance/legal/legal-policy.js";
+import { getSOPForWorkflow } from "../governance/sop/sop-policy.js";
+import { getOfferPolicy } from "../governance/offer/offer-policy.js";
+import { getAgentPolicy } from "../governance/agent-behavior/agent-behavior-policy.js";
+import type {
+  GovernanceRequest,
+  OfferInput,
+} from "../governance/governance-types.js";
 import {
   listSystemEvents,
   getEventsByRunId,
@@ -95,6 +106,24 @@ import {
   exportJsonSchema,
 } from "../core/schemas/schema-registry.js";
 import { checkIdempotency } from "../core/idempotency/idempotency-store.js";
+import { readLogs } from "../security/persistence/jsonl-log-store.js";
+import { createOffer } from "../apps/offer-engine/offer-engine.js";
+import { runLeadToOfferWorkflow } from "../workflows/lead-to-offer.workflow.js";
+import type { CreateOfferInput } from "../apps/offer-engine/offer-engine-types.js";
+import { runDiagnosis } from "../apps/diagnostic-engine/diagnostic-engine.js";
+import type { DiagnosticInput, DiagnosticCategory } from "../apps/diagnostic-engine/diagnostic-engine-types.js";
+import { createContentBrief, publishContent } from "../apps/content-engine/content-engine.js";
+import type { ContentBriefInput, ContentBriefType } from "../apps/content-engine/content-engine-types.js";
+import {
+  listConnectors as listConnectorsReg,
+  getConnector as getConnectorReg,
+  enableConnector as enableConnectorReg,
+  disableConnector as disableConnectorReg,
+  initDefaultConnectors,
+} from "../connectors/connector-registry.js";
+import { executeConnector } from "../connectors/connector-executor.js";
+import { DEFAULT_CONNECTORS } from "../connectors/adapters/index.js";
+import type { ConnectorCapability } from "../connectors/connector-types.js";
 import { getMetricSnapshot } from "../core/observability/metrics-store.js";
 import {
   lookupCache as cacheLookup,
@@ -126,6 +155,27 @@ import {
 import type { BelDagPlan } from "../bel/dag/dag-types.js";
 import { handleLeadSubmit } from "../api/leads.js";
 import { handleLeadUpdate, handleAdminLeads } from "../api/leads-admin.js";
+import {
+  normalizeAsset,
+  normalizeContact,
+  normalizeKnowledgeDocument,
+  normalizeLead,
+  normalizeOffer,
+  normalizeTenant,
+  normalizeWorkflow,
+  saveEntity,
+  getEntity,
+  listEntities,
+  appendNormalizationAudit,
+  getNormalizationAuditEvents,
+  emitEntityNormalized,
+  emitEntityNormalizationFailed,
+} from "../normalization/index.js";
+import type {
+  NormalizedEntity,
+  NormalizedEntityType,
+} from "../normalization/index.js";
+import { getTelegramStatus as getTelegramBotStatus } from "../telegram/index.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -1447,6 +1497,145 @@ export function startHermesApi(port?: number): void {
       return;
     }
 
+    // ── Telegram bot ──────────────────────────────────────────────────
+    if (req.url === "/telegram/status" && req.method === "GET") {
+      const status = getTelegramBotStatus();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: true,
+          configured: status.configured,
+          running: status.running,
+          ...(status.chatId !== undefined ? { chatId: status.chatId } : {}),
+          botToken: status.hasToken,
+          ...(status.lastPolledAt !== undefined ? { lastPolledAt: status.lastPolledAt } : {}),
+        }),
+      );
+      return;
+    }
+
+    // ── Normalization: list entities of a given type ──────────────────
+    const normalizationListMatch = req.url?.match(/^\/normalization\/([^/?]+)(?:\?(.*))?$/);
+    if (normalizationListMatch && req.method === "GET") {
+      const entityTypeRaw = decodeURIComponent(normalizationListMatch[1]!);
+      const validTypes = new Set([
+        "tenant",
+        "contact",
+        "lead",
+        "offer",
+        "asset",
+        "workflow",
+        "knowledge_document",
+      ]);
+      if (!validTypes.has(entityTypeRaw)) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: `Unknown entity type: ${entityTypeRaw}` }));
+        return;
+      }
+      const params = new URLSearchParams(normalizationListMatch[2] ?? "");
+      const tenantParam = params.get("tenantId");
+      const limitRaw = params.get("limit");
+      const filter: { tenantId?: string; limit?: number } = {};
+      if (tenantParam) filter.tenantId = tenantParam;
+      if (limitRaw) filter.limit = Math.max(1, parseInt(limitRaw, 10) || 100);
+      const entities = listEntities(entityTypeRaw as NormalizedEntityType, filter);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, entityType: entityTypeRaw, count: entities.length, data: entities }));
+      return;
+    }
+
+    // ── Operating Core: health ─────────────────────────────────────────
+    // ── Workflows ─────────────────────────────────────────────────────
+    if (req.url === "/workflows/lead-to-offer" && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const result = await runLeadToOfferWorkflow({
+            ...(body["airtableRecordId"] !== undefined ? { airtableRecordId: String(body["airtableRecordId"]) } : {}),
+            ...(body["leadData"] !== null && body["leadData"] !== undefined ? { leadData: body["leadData"] as NonNullable<import("../workflows/lead-to-offer.types.js").LeadToOfferInput["leadData"]> } : {}),
+            ...(body["offerType"] !== undefined ? { offerType: String(body["offerType"]) as "audit" | "retainer" | "consulting" } : {}),
+            ...(body["offerTitle"] !== undefined ? { offerTitle: String(body["offerTitle"]) } : {}),
+            ...(body["tenantId"] !== undefined ? { tenantId: String(body["tenantId"]) } : {}),
+            ...(body["createdBy"] !== undefined ? { createdBy: String(body["createdBy"]) } : {}),
+            environment: String(body["environment"] ?? "local"),
+          });
+          res.writeHead(result.ok ? 200 : 207, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
+    // ── Connectors ────────────────────────────────────────────────────
+    if (req.url === "/connectors" && req.method === "GET") {
+      initDefaultConnectors(DEFAULT_CONNECTORS);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: listConnectorsReg() }));
+      return;
+    }
+
+    if (req.url === "/connectors/audit" && req.method === "GET") {
+      const auditPath = path.resolve("runtime", "connectors", "audit.jsonl");
+      readLogs(auditPath).then((events) => {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, events }));
+      }).catch(() => {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, events: [] }));
+      });
+      return;
+    }
+
+    const connectorPathMatch = req.url?.match(/^\/connectors\/([^/]+)(?:\/(enable|disable|execute))?$/);
+    if (connectorPathMatch && req.method === "GET" && !connectorPathMatch[2]) {
+      initDefaultConnectors(DEFAULT_CONNECTORS);
+      const c = getConnectorReg(connectorPathMatch[1]!);
+      if (!c) { res.writeHead(404, { "Content-Type": "application/json" }); res.end(JSON.stringify({ ok: false, error: "Connector not found" })); return; }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, data: c }));
+      return;
+    }
+
+    if (connectorPathMatch && req.method === "POST" && connectorPathMatch[2] === "enable") {
+      initDefaultConnectors(DEFAULT_CONNECTORS);
+      enableConnectorReg(connectorPathMatch[1]!);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, id: connectorPathMatch[1] }));
+      return;
+    }
+
+    if (connectorPathMatch && req.method === "POST" && connectorPathMatch[2] === "disable") {
+      initDefaultConnectors(DEFAULT_CONNECTORS);
+      disableConnectorReg(connectorPathMatch[1]!);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, id: connectorPathMatch[1] }));
+      return;
+    }
+
+    if (connectorPathMatch && req.method === "POST" && connectorPathMatch[2] === "execute") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const result = await executeConnector({
+            connectorId: connectorPathMatch[1]!,
+            action: String(body["action"] ?? "read") as ConnectorCapability,
+            payload: (body["payload"] as Record<string, unknown>) ?? {},
+            ...(body["tenantId"] !== undefined ? { tenantId: String(body["tenantId"]) } : {}),
+            ...(body["actorId"] !== undefined ? { actorId: String(body["actorId"]) } : {}),
+          });
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Bad request" }));
+        });
+      return;
+    }
+
     // ── Operating Core: health ─────────────────────────────────────────
     if (req.url === "/core/health" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
@@ -1706,6 +1895,258 @@ export function startHermesApi(port?: number): void {
         .catch((err: unknown) => {
           res.writeHead(500, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }));
+        });
+      return;
+    }
+
+    // ── Governance: full evaluation ───────────────────────────────────
+    if (req.url === "/governance/evaluate" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const request: GovernanceRequest = {};
+          if (typeof body["content"] === "string") request.content = body["content"];
+          if (typeof body["contentCategory"] === "string") request.contentCategory = body["contentCategory"];
+          if (typeof body["workflowType"] === "string") request.workflowType = body["workflowType"];
+          if (Array.isArray(body["workflowSteps"])) {
+            request.workflowSteps = (body["workflowSteps"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (typeof body["agentRole"] === "string") request.agentRole = body["agentRole"];
+          if (typeof body["action"] === "string") request.action = body["action"];
+          if (Array.isArray(body["tools"])) {
+            request.tools = (body["tools"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (body["offer"] && typeof body["offer"] === "object") {
+            request.offer = body["offer"] as OfferInput;
+          }
+          if (typeof body["tenantId"] === "string") request.tenantId = body["tenantId"];
+          const result = evaluateGovernance(request);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true, ...result }));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : "Bad request",
+            }),
+          );
+        });
+      return;
+    }
+
+    if (req.url === "/governance/brand-voice/policy" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, policy: getBrandVoicePolicy() }));
+      return;
+    }
+
+    if (req.url === "/governance/legal/policy" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, policy: getLegalPolicy() }));
+      return;
+    }
+
+    const sopMatch = req.url?.match(/^\/governance\/sop\/([^/?]+)$/);
+    if (sopMatch && req.method === "GET") {
+      const workflowType = decodeURIComponent(sopMatch[1]!);
+      const sop = getSOPForWorkflow(workflowType);
+      if (!sop) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: `Unknown workflow type: ${workflowType}` }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, sop }));
+      return;
+    }
+
+    if (req.url === "/governance/offer/policy" && req.method === "GET") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, policy: getOfferPolicy() }));
+      return;
+    }
+
+    const agentRoleMatch = req.url?.match(/^\/governance\/agent\/([^/?]+)$/);
+    if (agentRoleMatch && req.method === "GET") {
+      const role = decodeURIComponent(agentRoleMatch[1]!);
+      const policy = getAgentPolicy(role);
+      if (!policy) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: `Unknown agent role: ${role}` }));
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, policy }));
+      return;
+    }
+
+    if (req.url === "/apps/offer-engine/create" && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const input: CreateOfferInput = {
+            title: String(body["title"] ?? ""),
+            type: String(body["type"] ?? ""),
+            price: Number(body["price"] ?? 0),
+            currency: String(body["currency"] ?? "USD"),
+            deliverables: Array.isArray(body["deliverables"])
+              ? (body["deliverables"] as unknown[]).filter(
+                  (v): v is string => typeof v === "string",
+                )
+              : [],
+            createdBy: String(body["createdBy"] ?? "hermes-api"),
+          };
+          if (Array.isArray(body["guarantees"])) {
+            input.guarantees = (body["guarantees"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (typeof body["timeline"] === "string") input.timeline = body["timeline"];
+          if (typeof body["scope"] === "string") input.scope = body["scope"];
+          if (typeof body["tenantId"] === "string") input.tenantId = body["tenantId"];
+          if (typeof body["meaningfulScore"] === "number") input.meaningfulScore = body["meaningfulScore"];
+          if (typeof body["actionableScore"] === "number") input.actionableScore = body["actionableScore"];
+          if (typeof body["profitableScore"] === "number") input.profitableScore = body["profitableScore"];
+
+          const result = await createOffer(input);
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : "Bad request",
+            }),
+          );
+        });
+      return;
+    }
+
+    if (req.url === "/apps/diagnostic-engine/diagnose" && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const validCategories = [
+            "lead_gen",
+            "content",
+            "conversion",
+            "operations",
+            "offer",
+            "general",
+          ] as const;
+          const categoryRaw = String(body["category"] ?? "general");
+          const category = (validCategories as readonly string[]).includes(categoryRaw)
+            ? (categoryRaw as DiagnosticCategory)
+            : "general";
+          const input: DiagnosticInput = {
+            description: String(body["description"] ?? ""),
+            category,
+          };
+          if (Array.isArray(body["keywords"])) {
+            input.keywords = (body["keywords"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (Array.isArray(body["proposedActions"])) {
+            input.proposedActions = (body["proposedActions"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (typeof body["tenantId"] === "string") input.tenantId = body["tenantId"];
+          if (typeof body["createdBy"] === "string") input.createdBy = body["createdBy"];
+
+          const result = await runDiagnosis(input);
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : "Bad request",
+            }),
+          );
+        });
+      return;
+    }
+
+    if (req.url === "/apps/content-engine/brief" && req.method === "POST") {
+      collectBody(req)
+        .then(async (raw) => {
+          const body = JSON.parse(raw) as Record<string, unknown>;
+          const validTypes = [
+            "blog_post",
+            "social_post",
+            "email",
+            "landing_page",
+            "case_study",
+            "whitepaper",
+          ] as const;
+          const typeRaw = String(body["contentType"] ?? "blog_post");
+          const contentType = (validTypes as readonly string[]).includes(typeRaw)
+            ? (typeRaw as ContentBriefType)
+            : "blog_post";
+          const input: ContentBriefInput = {
+            title: String(body["title"] ?? ""),
+            description: String(body["description"] ?? ""),
+            contentType,
+            channel: String(body["channel"] ?? "blog"),
+            createdBy: String(body["createdBy"] ?? "hermes-api"),
+          };
+          if (Array.isArray(body["tags"])) {
+            input.tags = (body["tags"] as unknown[]).filter(
+              (v): v is string => typeof v === "string",
+            );
+          }
+          if (typeof body["tenantId"] === "string") input.tenantId = body["tenantId"];
+
+          const result = await createContentBrief(input);
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : "Bad request",
+            }),
+          );
+        });
+      return;
+    }
+
+    const contentPublishMatch = req.url?.match(/^\/apps\/content-engine\/publish\/([^/?]+)$/);
+    if (contentPublishMatch && req.method === "POST") {
+      const briefId = decodeURIComponent(contentPublishMatch[1]!);
+      collectBody(req)
+        .then(async (raw) => {
+          const body = raw.trim() ? (JSON.parse(raw) as Record<string, unknown>) : {};
+          const patch: Parameters<typeof publishContent>[1] = {};
+          if (typeof body["publishedUri"] === "string") patch.publishedUri = body["publishedUri"];
+          if (typeof body["sourceUri"] === "string") patch.sourceUri = body["sourceUri"];
+
+          const result = await publishContent(briefId, patch);
+          res.writeHead(result.ok ? 200 : 400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(result));
+        })
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              ok: false,
+              error: err instanceof Error ? err.message : "Bad request",
+            }),
+          );
         });
       return;
     }

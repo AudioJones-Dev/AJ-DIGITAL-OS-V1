@@ -57,15 +57,15 @@ const LeadSubmitSchema = z
     utm_campaign: z.string().trim().max(200).optional(),
   })
   .refine(
-    (d: { name?: string; firstName?: string; first_name?: string }) => !!(d.name ?? d.firstName ?? d.first_name),
+    (d) => !!(d.name ?? d.firstName ?? d.first_name),
     { message: "name or firstName is required", path: ["name"] },
   )
   .refine(
-    (d: { email?: string; phone?: string }) => !!(d.email ?? d.phone),
+    (d) => !!(d.email ?? d.phone),
     { message: "email or phone is required", path: ["email"] },
   )
   .refine(
-    (d: { serviceNeeded?: string; service_needed?: string }) => !!(d.serviceNeeded ?? d.service_needed),
+    (d) => !!(d.serviceNeeded ?? d.service_needed),
     { message: "serviceNeeded is required", path: ["serviceNeeded"] },
   );
 
