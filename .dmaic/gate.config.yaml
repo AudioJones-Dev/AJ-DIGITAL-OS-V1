@@ -1,5 +1,8 @@
-mode: enforce
-charters_dir: memory/dmaic/charters
+# warn = log "would block" findings but never fail CI (bootstrap posture).
+# Flip to "enforce" only as an explicit, approved decision once the component
+# registry + charters cover enough of the codebase (see memory/dmaic/charters/dmaic-gate.md).
+mode: warn
+charters_dir: .dmaic/charters
 registry: .dmaic/components.yaml
 telemetry: memory/dmaic/telemetry/gate-events.jsonl
 test_globs: ["**/test_*.py","**/*_test.py","**/*.test.*","**/tests/**","**/__tests__/**"]
