@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+set -eu
+
+python tools/dmaic_gate/dmaic_gate.py --precheck

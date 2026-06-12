@@ -1,0 +1,17 @@
+version: 1
+components:
+  # Seed component for the DMAIC enforcement gate itself.
+  - id: dmaic-gate
+    paths:
+      - ".dmaic/**"
+      - ".codex/hooks.json"
+      - ".codex/hooks/**"
+      - ".github/workflows/dmaic-gate.yml"
+      - "docs/dmaic-gate.md"
+      - "install_dmaic_gate.sh"
+      - "memory/dmaic/charters/**"
+      - "tools/dmaic_gate/**"
+    test_paths:
+      - "tests/test_dmaic_gate.py"
+    status: Ready for Sprint
+    owner: dev@audiojones.com

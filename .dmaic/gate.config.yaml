@@ -1,0 +1,5 @@
+mode: enforce
+charters_dir: memory/dmaic/charters
+registry: .dmaic/components.yaml
+telemetry: memory/dmaic/telemetry/gate-events.jsonl
+test_globs: ["**/test_*.py","**/*_test.py","**/*.test.*","**/tests/**","**/__tests__/**"]
