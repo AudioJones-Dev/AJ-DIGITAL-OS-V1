@@ -90,3 +90,9 @@ runtime/cache/
 # Next.js dashboard build output
 dashboard/.next/
 dashboard/.env.local
+
+# Generated artifacts (graphify index output, Python bytecode, dashboard snapshots)
+graphify-out/
+__pycache__/
+*.pyc
+.dashboard/
