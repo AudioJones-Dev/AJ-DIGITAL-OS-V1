@@ -1,0 +1,3 @@
+setup:
+  project: aj-digital-os
+  config: dev
