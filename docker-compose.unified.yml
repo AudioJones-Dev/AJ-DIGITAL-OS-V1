@@ -24,7 +24,11 @@ services:
     container_name: aj-digital-os
     restart: unless-stopped
     ports:
-      - "7420:7420"
+      # Bind to loopback only — the Hermes API is unauthenticated. Host-local
+      # callers (dashboards, tunnel via Traefik's docker-network route) are
+      # unaffected; this removes LAN/0.0.0.0 exposure. (Traefik reaches it as
+      # http://aj-digital-os:7420 on the internal network, not via this port.)
+      - "127.0.0.1:7420:7420"
     env_file:
       - .env
     environment:
