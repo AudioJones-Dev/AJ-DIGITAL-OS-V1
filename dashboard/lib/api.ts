@@ -11,6 +11,9 @@ import type {
   ControlActionPayload,
   ControlActionResult,
   AttributionEvent,
+  OSConnector,
+  NormalizedEntityType,
+  NormalizedEntitySummary,
 } from "./types";
 
 const HERMES_API_URL = process.env.HERMES_API_URL ?? "http://localhost:3001";
@@ -374,4 +377,102 @@ export async function getCeraCycles(limit?: number): Promise<import("./types").C
     const json = await res.json() as { ok: boolean; data: import("./types").CeraCycle[] };
     return json.data ?? [];
   } catch { return []; }
+}
+
+// ── Connectors (L3) ───────────────────────────────────────────────
+
+export async function getConnectors(): Promise<OSConnector[]> {
+  try {
+    const res = await fetch(`${HERMES_API_URL}/connectors`, { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { ok: boolean; data: OSConnector[] };
+    return json.data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function enableConnectorApi(id: string): Promise<{ ok: boolean }> {
+  try {
+    const res = await fetch(
+      `${PUBLIC_HERMES_API_URL}/connectors/${encodeURIComponent(id)}/enable`,
+      { method: "POST" },
+    );
+    return { ok: res.ok };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export async function disableConnectorApi(id: string): Promise<{ ok: boolean }> {
+  try {
+    const res = await fetch(
+      `${PUBLIC_HERMES_API_URL}/connectors/${encodeURIComponent(id)}/disable`,
+      { method: "POST" },
+    );
+    return { ok: res.ok };
+  } catch {
+    return { ok: false };
+  }
+}
+
+// ── Normalized Entities (L5) ──────────────────────────────────────
+
+export async function getEntityList(
+  entityType: NormalizedEntityType,
+  options?: { tenantId?: string; limit?: number },
+): Promise<{ count: number; data: NormalizedEntitySummary[] }> {
+  try {
+    const url = new URL(`${HERMES_API_URL}/normalization/${encodeURIComponent(entityType)}`);
+    if (options?.tenantId) url.searchParams.set("tenantId", options.tenantId);
+    if (options?.limit) url.searchParams.set("limit", String(options.limit));
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) return { count: 0, data: [] };
+    const json = (await res.json()) as {
+      ok: boolean;
+      count: number;
+      data: NormalizedEntitySummary[];
+    };
+    return { count: json.count ?? 0, data: json.data ?? [] };
+  } catch {
+    return { count: 0, data: [] };
+  }
+}
+
+
+// ── Governance policies ───────────────────────────────────────────
+
+export async function getGovernanceBrandVoicePolicy(): Promise<unknown> {
+  try {
+    const res = await fetch(\/governance/brand-voice/policy, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
+    return json.policy ?? json.data ?? json;
+  } catch { return null; }
+}
+
+export async function getGovernanceLegalPolicy(): Promise<unknown> {
+  try {
+    const res = await fetch(\/governance/legal/policy, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
+    return json.policy ?? json.data ?? json;
+  } catch { return null; }
+}
+
+export async function getGovernanceSopPolicy(workflowType: string): Promise<unknown> {
+  try {
+    const res = await fetch(\/governance/sop/\, { cache: "no-store" });
+    if (!res.ok) return null;
+    return res.json() as Promise<unknown>;
+  } catch { return null; }
+}
+
+export async function getGovernanceOfferPolicy(): Promise<unknown> {
+  try {
+    const res = await fetch(\/governance/offer/policy, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
+    return json.policy ?? json.data ?? json;
+  } catch { return null; }
 }

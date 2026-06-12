@@ -1,0 +1,31 @@
+{
+  "policy": "brand-voice",
+  "version": "brand-voice-v1",
+  "description": "Brand voice rules — forbidden phrases, allowed brand names, claim strength, and required disclaimers per category.",
+  "rules": {
+    "forbiddenPhrases": [
+      "game changer",
+      "revolutionary",
+      "cutting edge",
+      "seamlessly",
+      "best in class",
+      "world class",
+      "next level",
+      "leverage",
+      "synergy"
+    ],
+    "brandNames": ["AJ Digital OS", "AJ Digital"],
+    "incorrectBrandNames": ["AJD", "AJDigital", "AJ-Digital", "ajdigital", "Aj Digital os"],
+    "maxClaimStrength": "qualified",
+    "requiredDisclaimers": {
+      "financial": "Results vary. Past performance does not guarantee future results.",
+      "marketing": "Individual results may vary."
+    },
+    "strongClaimPatterns": [
+      "guaranteed",
+      "100% (success|results|effective)",
+      "always works",
+      "never fails"
+    ]
+  }
+}

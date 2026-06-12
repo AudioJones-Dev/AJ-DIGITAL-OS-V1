@@ -1,0 +1,17 @@
+{
+  "policy": "client-override",
+  "version": "client-override-v1",
+  "description": "Example client tenant overrides — additive (stricter) only.",
+  "rules": {
+    "tenantId": "example-tenant",
+    "additionalForbiddenPhrases": ["disrupt", "10x"],
+    "additionalRequiredDisclaimers": {
+      "marketing": "Sponsored content."
+    },
+    "maxClaimStrength": "factual",
+    "approvalOverrides": {
+      "publish": "always_required",
+      "send_email": "always_required"
+    }
+  }
+}

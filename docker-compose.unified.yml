@@ -1,0 +1,297 @@
+# =============================================================================
+# AJ DIGITAL OS — Unified Compose (ADOPTED design — Option A: reuse named volumes)
+# Single canonical stack merging docker-compose.yml + compose/docker-compose.yml.
+#
+# Default (no profile) = the 8 services currently live:
+#   aj-digital-os, postgres, redis, otel-collector, n8n, prometheus, grafana, open-webui
+#   -> reuses the EXISTING aj-digital-os_* named volumes (no data loss, 1:1 swap).
+# full profile adds new infra: ollama, qdrant, loki, alertmanager, blackbox-exporter.
+#
+# Project name `aj-digital-os` + short volume/network names (no explicit `name:`) keep
+# the project prefix, so volumes resolve to the existing aj-digital-os_* data and the
+# network resolves to aj-digital-os_aj-os-net (same network the Traefik overlay joins).
+#
+# Disk relocation of data to F:/J: is deferred to a separate, careful migration.
+# Stage 4 edge (Traefik + Homepage) lives in docker-compose.traefik.yml.
+# =============================================================================
+name: aj-digital-os
+
+services:
+
+  # ---- DEFAULT: the live control plane (reuses existing data) -----------------
+  aj-digital-os:
+    build: .
+    container_name: aj-digital-os
+    restart: unless-stopped
+    ports:
+      # Bind to loopback only — the Hermes API is unauthenticated. Host-local
+      # callers (dashboards, tunnel via Traefik's docker-network route) are
+      # unaffected; this removes LAN/0.0.0.0 exposure. (Traefik reaches it as
+      # http://aj-digital-os:7420 on the internal network, not via this port.)
+      - "127.0.0.1:7420:7420"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HERMES_BIND_HOST: 0.0.0.0
+      REDIS_URL: redis://redis:6379
+      POSTGRES_URL: postgres://${POSTGRES_USER:-aj}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-ajdigital}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      AIS_CASE_MEMORY_ENABLED: "true"
+      AIS_PREDICTION_ERROR_TRACKING_ENABLED: "true"
+      AIS_TOKEN_GOVERNANCE_ENABLED: "true"
+      AIS_DETERMINISTIC_MODE: "true"
+      AIS_SCHEMA_STRICT_MODE: "true"
+      AIS_FORWARD_COMPAT_ROUTING_HINTS: "true"
+      APP_DATA_DIR: /app/data
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-America/New_York}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    volumes:
+      - "aj-os-data:/app/data"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:7420/status').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks: [aj-os-net]
+
+  postgres:
+    image: postgres:16
+    container_name: aj-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-aj}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-change-me}"
+      POSTGRES_DB: "${POSTGRES_DB:-ajdigital}"
+      TZ: "${GENERIC_TIMEZONE:-America/New_York}"
+    volumes:
+      - "postgres-data:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aj} -d ${POSTGRES_DB:-ajdigital}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    networks: [aj-os-net]
+
+  redis:
+    image: redis:7
+    container_name: aj-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - "redis-data:/data"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+    networks: [aj-os-net]
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    ports:
+      - "${OTEL_PORT:-4317}:4317"
+    volumes:
+      - "./ops/otel/config.yaml:/etc/otelcol/config.yaml:ro"
+    networks: [aj-os-net]
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: aj-n8n
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      N8N_HOST: "${N8N_HOST:-localhost}"
+      N8N_PORT: 5678
+      N8N_PROTOCOL: "${N8N_PROTOCOL:-http}"
+      N8N_RUNNERS_ENABLED: "true"
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: "${N8N_BASIC_AUTH_USER:-admin}"
+      N8N_BASIC_AUTH_PASSWORD: "${N8N_BASIC_AUTH_PASSWORD:-change-me}"
+      # NOTE: no N8N_ENCRYPTION_KEY — n8n uses the auto-generated key stored in its
+      # data volume; forcing one here breaks the existing instance.
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: "${POSTGRES_DB:-ajdigital}"
+      DB_POSTGRESDB_USER: "${POSTGRES_USER:-aj}"
+      DB_POSTGRESDB_PASSWORD: "${POSTGRES_PASSWORD:-change-me}"
+      QUEUE_BULL_REDIS_HOST: redis
+      QUEUE_BULL_REDIS_PORT: 6379
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      GENERIC_TIMEZONE: "${GENERIC_TIMEZONE:-America/New_York}"
+    volumes:
+      - "n8n-data:/home/node/.n8n"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider --quiet http://localhost:5678 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    networks: [aj-os-net]
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aj-prometheus
+    restart: unless-stopped
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      - "./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+      - "./monitoring/alerts:/etc/prometheus/alerts:ro"
+      - "prometheus-data:/prometheus"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    networks: [aj-os-net]
+
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: aj-grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-change-me}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - "./ops/grafana/provisioning:/etc/grafana/provisioning:ro"
+      - "./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro"
+      - "grafana-data:/var/lib/grafana"
+    depends_on:
+      - prometheus
+    networks: [aj-os-net]
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "${OPENWEBUI_PORT:-3001}:8080"
+    environment:
+      WEBUI_AUTH: "True"
+      ENABLE_SIGNUP: "False"
+      ENABLE_OTEL: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+      OTEL_SERVICE_NAME: "open-webui"
+      OPENAI_API_BASE_URL: "${HERMES_API_BASE_URL:-http://host.docker.internal:8642/v1}"
+      OPENAI_API_KEY: "${HERMES_API_KEY:-change-me}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - "openwebui-data:/app/backend/data"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    networks: [aj-os-net]
+
+  # ---- full profile: new infra (opt-in; fresh volumes) ------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aj-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - "ollama-data:/root/.ollama"
+    networks: [aj-os-net]
+    profiles: [full]
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: aj-qdrant
+    restart: unless-stopped
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+      - "6334:6334"
+    volumes:
+      - "qdrant-data:/qdrant/storage"
+    networks: [aj-os-net]
+    profiles: [full]
+
+  loki:
+    image: grafana/loki:latest
+    container_name: aj-loki
+    restart: unless-stopped
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - "loki-data:/loki"
+    networks: [aj-os-net]
+    profiles: [full]
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: aj-alertmanager
+    restart: unless-stopped
+    ports:
+      - "${ALERTMANAGER_PORT:-9093}:9093"
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - "./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro"
+      - "alertmanager-data:/alertmanager"
+    networks: [aj-os-net]
+    profiles: [full]
+
+  blackbox-exporter:
+    image: quay.io/prometheus/blackbox-exporter:latest
+    container_name: aj-blackbox-exporter
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yml
+    volumes:
+      - "./monitoring/blackbox.yml:/etc/blackbox_exporter/config.yml:ro"
+    networks: [aj-os-net]
+    profiles: [full]
+
+networks:
+  aj-os-net:
+    driver: bridge      # project-prefixed -> aj-digital-os_aj-os-net (existing network)
+
+volumes:
+  aj-os-data:
+  postgres-data:
+  redis-data:
+  n8n-data:
+  prometheus-data:
+  grafana-data:
+  openwebui-data:
+  ollama-data:
+  qdrant-data:
+  loki-data:
+  alertmanager-data:
