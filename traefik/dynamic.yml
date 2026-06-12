@@ -3,7 +3,7 @@
 http:
   routers:
     home:
-      rule: "Host(`home.agentos.local`) || Host(`agentos.local`)"
+      rule: "Host(`home.agentos.local`) || Host(`agentos.local`) || Host(`home.ajdigital.app`)"
       entryPoints: [web]
       service: homepage
     control-plane:
