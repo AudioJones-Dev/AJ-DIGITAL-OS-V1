@@ -36,6 +36,7 @@ dash.ajdigital.app / Homepage → command surface & launch/control UX
 
 ## Existing assets
 - Panel inventory already drafted in [`docs/grafana-dashboard-map.md`](../grafana-dashboard-map.md) — adopt as the System/Infra MVP source (do not duplicate).
+- Live local Grafana: `metrics.ajdigital.app` (behind owner-only Cloudflare Access) / `localhost:3000`. Datasources provisioned from `ops/grafana/provisioning` (code-provisioned; survives volume resets).
 
 ## Implementation phases
 - **Phase 0 — Doctrine/spec only** ◀ current
