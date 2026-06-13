@@ -7,23 +7,23 @@ http:
       entryPoints: [web]
       service: homepage
     control-plane:
-      rule: "Host(`os.agentos.local`)"
+      rule: "Host(`os.agentos.local`) || Host(`os.ajdigital.app`)"
       entryPoints: [web]
       service: aj-os
     chat:
-      rule: "Host(`chat.agentos.local`)"
+      rule: "Host(`chat.agentos.local`) || Host(`chat.ajdigital.app`)"
       entryPoints: [web]
       service: open-webui
     flows:
-      rule: "Host(`flows.agentos.local`)"
+      rule: "Host(`flows.agentos.local`) || Host(`flows.ajdigital.app`)"
       entryPoints: [web]
       service: n8n
     metrics:
-      rule: "Host(`metrics.agentos.local`)"
+      rule: "Host(`metrics.agentos.local`) || Host(`metrics.ajdigital.app`)"
       entryPoints: [web]
       service: grafana
     prom:
-      rule: "Host(`prom.agentos.local`)"
+      rule: "Host(`prom.agentos.local`) || Host(`prom.ajdigital.app`)"
       entryPoints: [web]
       service: prometheus
 
