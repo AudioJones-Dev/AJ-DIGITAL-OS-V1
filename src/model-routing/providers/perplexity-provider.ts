@@ -93,6 +93,7 @@ export async function callPerplexity<TOutput>(
     const data = (await response.json()) as {
       choices: Array<{ message: { content: string } }>;
       citations?: string[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
     };
 
     const content = data.choices[0]?.message?.content;
@@ -142,6 +143,17 @@ export async function callPerplexity<TOutput>(
       model,
       output,
       warnings,
+      ...(data.usage
+        ? {
+            usage: {
+              promptTokens: data.usage.prompt_tokens ?? 0,
+              completionTokens: data.usage.completion_tokens ?? 0,
+              totalTokens:
+                data.usage.total_tokens ??
+                (data.usage.prompt_tokens ?? 0) + (data.usage.completion_tokens ?? 0),
+            },
+          }
+        : {}),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

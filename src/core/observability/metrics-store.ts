@@ -28,6 +28,8 @@ const KNOWN_METRICS: ReadonlyArray<string> = [
   "system_event_count",
   "attribution_emit_count",
   "attribution_failure_count",
+  "cost_usd_total",
+  "cost_ledger_write_errors",
 ];
 
 export function metricsPath(): string {

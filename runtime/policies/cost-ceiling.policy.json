@@ -1,0 +1,11 @@
+{
+  "policy": "cost-ceiling",
+  "version": "1.0.0",
+  "description": "Per-run and per-tenant cumulative model-spend ceilings (USD), soft-warn then hard-stop. Per-case/per-stage TOKEN limits remain owned by TokenBudgetPolicy and are NOT redefined here.",
+  "rules": {
+    "perRunUsd": { "hard": 5.0, "softRatio": 0.8 },
+    "perTenantUsd": { "hard": 50.0, "softRatio": 0.8 },
+    "onBreach": "block",
+    "onSoftWarn": "annotate"
+  }
+}

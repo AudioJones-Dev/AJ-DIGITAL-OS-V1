@@ -66,6 +66,7 @@ export async function callOpenAi<TContext, TOutput>(
 
     const data = (await response.json()) as {
       choices: Array<{ message: { content: string } }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
     };
 
     const content = data.choices[0]?.message?.content;
@@ -87,6 +88,17 @@ export async function callOpenAi<TContext, TOutput>(
       provider: "openai",
       model,
       output,
+      ...(data.usage
+        ? {
+            usage: {
+              promptTokens: data.usage.prompt_tokens ?? 0,
+              completionTokens: data.usage.completion_tokens ?? 0,
+              totalTokens:
+                data.usage.total_tokens ??
+                (data.usage.prompt_tokens ?? 0) + (data.usage.completion_tokens ?? 0),
+            },
+          }
+        : {}),
     });
   } catch (err) {
     return createResult<TOutput>({
