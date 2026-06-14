@@ -188,11 +188,11 @@ Every new module added to the system must update this index.
 
 | Field | Value |
 |-------|-------|
-| **Status** | 🔶 Partial |
-| **Primary Modules** | `src/security/permissions/` · `src/core/policy/` |
+| **Status** | 🔶 Partial (business governance built + Application-Layer-wired; not yet unified under executeWithEnforcement) |
+| **Primary Modules** | `src/security/permissions/` · `src/core/policy/` · `src/governance/` |
 | **Runtime Responsibility** | SOP policies, brand rules, approval policies, data access policies, agent behavior constraints, legal boundaries |
 | **Tests** | `tests/security/permissions/` · `tests/core/` |
-| **Notes / Gaps** | Enforcement engine, permission levels, and policy-as-code files cover security governance. Missing: brand voice governance, legal claims constraints, SOP policy files, offer governance, client-specific rule overrides. |
+| **Notes / Gaps** | Security governance (enforcement engine, permission levels, action-risk/tenant/approval policies) is live. BUSINESS governance ALSO exists now: `src/governance/` reads and evaluates `runtime/policies/{brand-voice,legal-constraints,sop-constraints,offer-governance,agent-behavior}.policy.json` plus client-specific overrides — built & evaluated, NOT orphan files. WIRING STATUS (honest): `evaluateGovernance()` is invoked by the Application Layer (offer/content engines), CLI (`governance.commands.ts`), and Hermes API, and emits MAP attribution — but is NOT yet routed through `executeWithEnforcement()`. Remaining gap: unify business-governance decisions under the single enforcement authority / shared audit, and surface them on the dashboard. |
 
 **Key files:**
 - `src/security/permissions/enforced-execution.ts`
@@ -203,6 +203,10 @@ Every new module added to the system must update this index.
 - `runtime/policies/tenant-boundary.policy.json`
 - `runtime/policies/environment.policy.json`
 - `runtime/policies/approval-gates.policy.json`
+- `src/governance/governance-engine.ts` — `evaluateGovernance()` (L10 business-governance entry point)
+- `src/governance/legal/legal-policy.ts` · `offer/offer-policy.ts` · `brand-voice/brand-voice-policy.ts` · `sop/sop-policy.ts` · `agent-behavior/agent-behavior-policy.ts`
+- `src/governance/client-rules/client-rule-engine.ts` — client-specific overrides
+- `runtime/policies/{brand-voice,legal-constraints,sop-constraints,offer-governance,agent-behavior}.policy.json`
 
 ---
 
@@ -246,7 +250,7 @@ Every new module added to the system must update this index.
 | **Primary Modules** | `src/core/observability/` · `src/core/events/` · JSONL logs throughout |
 | **Runtime Responsibility** | Run logs, agent logs, enforcement audit, attribution logs, system event ledger, metrics snapshot |
 | **Tests** | `tests/core/` |
-| **Notes / Gaps** | JSONL audit logs exist across Control Plane, BEL, DAG, Cache, Retrieval, Decision Engine. Operating Core adds unified System Event Ledger and file-backed metrics. Missing: cost tracking per run, tool/API spend, performance metrics (execution time), ROI dashboard, alerting. |
+| **Notes / Gaps** | JSONL audit logs exist across Control Plane, BEL, DAG, Cache, Retrieval, Decision Engine. Operating Core adds unified System Event Ledger and file-backed metrics. Token model-cost capture EXISTS: `src/intelligence-layer/token-governance/` computes per-event `cost_estimate`, rolls up by stage/agent, and enforces per-case/per-stage/soft-ratio budgets — but it is in-memory only and not wired into a run loop. Narrowed Missing: (a) per-run persistence of token telemetry to a `runtime/` ledger; (b) external tool/API spend (only model tokens are costed); (c) per-tenant cost rollup; (d) performance metrics (execution time); (e) ROI dashboard + spend alerting. |
 
 **Key files:**
 - `src/core/events/event-ledger.ts` — canonical system event JSONL
@@ -256,6 +260,7 @@ Every new module added to the system must update this index.
 - `src/cache/cache-audit-log.ts` — cache audit JSONL
 - `runtime/events/system-events.jsonl` — canonical system ledger
 - `runtime/observability/metrics.json` — metrics snapshot
+- `src/intelligence-layer/token-governance/index.ts` — `recordTokenUsage()`, `summarizeTokenUsageByCase()`, `enforceTokenBudgetPolicy()` (token cost capture + budget enforcement; in-memory)
 
 ---
 
@@ -285,7 +290,7 @@ Every new module added to the system must update this index.
 | **Primary Modules** | None yet |
 | **Runtime Responsibility** | Feedback loops, run evaluation, agent performance review, workflow optimization, cost optimization, prompt optimization |
 | **Tests** | None |
-| **Notes / Gaps** | CERA (Capture, Extract, Refine, Amplify) in the MAP-CERA Decision Engine is the conceptual foundation for this layer. Full optimization pipeline — reading attribution history and improving workflows — is unbuilt. |
+| **Notes / Gaps** | CERA (Capture, Extract, Refine, Amplify) in the MAP-CERA Decision Engine is the conceptual foundation for this layer. Run-evaluation / feedback-loop / optimization pipeline remains UNBUILT on main (no `src/**/{evaluation,run-eval,optimization}` module). NOTE: token-cost efficiency primitives now exist in `src/intelligence-layer/token-governance/` (`computeErrorReductionPer1kTokens`) and can feed this layer when built. |
 
 ---
 
@@ -362,7 +367,7 @@ Every new module added to the system must update this index.
 
 | Priority | Layer | Rationale |
 |----------|-------|-----------|
-| 1 | **L10 Governance hardening** | Brand voice policies, SOP constraints, legal claim rules, client-specific policy overrides — required before any Application Layer work |
+| 1 | **L10 Governance UNIFICATION** (not greenfield) | Brand voice, SOP, legal, offer, agent-behavior, and client-override policies ALREADY exist and are evaluated by `src/governance/` and wired into the Application Layer. Remaining work is WIRING, not building: unify `evaluateGovernance()` with the single `executeWithEnforcement()` authority / shared audit, and surface governance outcomes on the dashboard. |
 | 2 | **L5 Data Normalization** | Standardized entity objects (Lead, Offer, Client, Contact) are prerequisites for Application Layer and Connector Layer |
 | 3 | **L3 Connector / Driver** | Google Drive, Gmail, Calendar, CRM, Airtable — enables real data flow into the system |
 | 4 | **L11 Interface / Shell expansion** | Telegram approval bot, client portal, approval inbox — extends control surface to mobile/remote |
@@ -371,4 +376,4 @@ Every new module added to the system must update this index.
 
 ---
 
-*This document must be updated after every build sprint. Layer status should reflect the actual committed state of main, not planned or in-progress work.*
+*This document must be updated after every build sprint. Layer status should reflect the actual committed state of main, not planned or in-progress work. Before scoping a gap from this index, verify each "Missing"/"Planned" claim against the live repo (grep for the module + exported symbol) — this index is hand-maintained and can lag `main` (it previously listed shipped governance policy files and the token-governance module as missing).*
