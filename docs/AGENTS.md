@@ -9,6 +9,7 @@ This folder owns AJ Digital OS policy, architecture, operations, deployment, rel
 - `docs/OPERATING_POLICY.md`, `docs/REPO_SAFETY_POLICY.md`, `docs/IMPLEMENTATION_GATES.md`, and `docs/AGENT_HANDOFF_PROTOCOL.md` are canonical policy docs.
 - `docs/system/` contains system-level specifications and standards.
 - `docs/architecture/` contains architecture and integration specifications.
+- `docs/knowledge/` contains LLM Wiki, Obsidian-compatible knowledge-layer workflows, and agent-maintained Markdown synthesis rules.
 - `docs/ops/` and deployment docs support operator workflows and should not silently override canonical policy.
 
 ## Local Contracts
@@ -34,6 +35,7 @@ This folder owns AJ Digital OS policy, architecture, operations, deployment, rel
 
 - `architecture/` - architecture, integration, and module traceability specs.
 - `deployment/` - deployment and production-readiness documentation.
+- `knowledge/` - LLM Wiki, Obsidian-compatible knowledge-layer workflows, and agent-maintained Markdown synthesis rules.
 - `ops/` - operational runbooks and secret-hygiene guidance.
 - `system/` - system standards, trust layers, and implementation specs.
 - `ui/` - UI-specific documentation.
