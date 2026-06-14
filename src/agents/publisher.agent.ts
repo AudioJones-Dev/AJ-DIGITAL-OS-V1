@@ -14,6 +14,7 @@ import {
   executeWithEnforcement,
 } from "../security/permissions/enforced-execution.js";
 import { resolveAgentContext } from "../security/agents/agent-registry.js";
+import { evaluateClaims } from "../governance/deliverable-governance.js";
 import type { ApprovalContext } from "../security/permissions/approval-gate.js";
 import type { PermissionLevel } from "../security/permissions/permission-levels.js";
 
@@ -73,6 +74,27 @@ export class PublisherAgent {
       logger.info("Publisher loading run.", { runId: input.runId });
       const run = await this.loadRun(input.runId);
       this.assertExecutableRun(run);
+
+      // G4 claims/legal gate over the ACTUAL outbound content (the run's
+      // workflow assets) before anything is written to disk. Never throws.
+      const claims = await evaluateClaims(
+        [run.workflowResult.summary, ...run.workflowResult.assets.map((asset) => asset.value)].join("\n\n"),
+        { id: run.runId, clientId: run.clientId, contentCategory: run.taskType },
+      );
+      if (claims.blocked) {
+        logger.warn("Publisher blocked by claims gate.", { runId: run.runId, reasons: claims.reasons });
+        void emitEvent({ eventType: "run_failed", runId: run.runId, agentId: "publisher", channel: "unknown" });
+        return {
+          ok: false,
+          agent: "publisher",
+          runId: run.runId,
+          clientId: run.clientId,
+          status: "failed",
+          filesWritten: [],
+          warnings: claims.warnings,
+          errors: claims.reasons.map((r) => `claims_check: ${r}`),
+        };
+      }
 
       logger.info("Publisher starting execution.", {
         runId: run.runId,
