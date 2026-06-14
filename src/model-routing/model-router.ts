@@ -7,6 +7,7 @@ import { callDeterministic } from "./providers/deterministic-provider.js";
 import { callPerplexity } from "./providers/perplexity-provider.js";
 import type { PerplexityCallOptions } from "./providers/perplexity-provider.js";
 import type { RetrievedContext } from "../memory-runtime/retrieval.js";
+import { checkCostCeiling, recordModelSpend } from "../cost/cost-meter.js";
 
 /**
  * OpenAI-specific call options passed through for planner tasks.
@@ -72,7 +73,7 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
   request: ModelTaskRequest<TContext>,
   dispatch: DispatchOptions<TContext, TOutput>,
 ): Promise<ModelRoutingResult<TOutput>> {
-  const { taskType, task, context, constraints, preferredProvider, allowEscalation, retrievedContext } = request;
+  const { taskType, task, context, constraints, preferredProvider, allowEscalation, retrievedContext, runId, tenantId } = request;
   const routeStartMs = Date.now();
 
   let effectivePreferredProvider = preferredProvider;
@@ -109,6 +110,47 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
       error: route.blockedReason ?? "Route blocked by policy.",
     });
   }
+
+  // Cost ceiling — no-op unless the call is run/tenant-scoped. Hard-stop on a
+  // cumulative breach (DN42 runaway-spend guard); never throws (fails open).
+  const ceilingWarnings: string[] = [];
+  if (runId !== undefined || tenantId !== undefined) {
+    const ceiling = checkCostCeiling({
+      ...(runId !== undefined ? { runId } : {}),
+      ...(tenantId !== undefined ? { tenantId } : {}),
+    });
+    if (!ceiling.allowed) {
+      console.error(
+        `[MODEL-ROUTER] COST-CEILING BLOCK scope=${ceiling.scope ?? "n/a"} spent=$${ceiling.spentUsd.toFixed(4)} taskType=${taskType}`,
+      );
+      return createResult<TOutput>({
+        taskType,
+        ok: false,
+        provider: null,
+        decisionReason: "cost-ceiling-exceeded",
+        error: `Cost ceiling exceeded (${ceiling.scope ?? "run"}): ${ceiling.reasons.join("; ")}`,
+        warnings: ceiling.warnings,
+      });
+    }
+    ceilingWarnings.push(...ceiling.warnings);
+  }
+
+  // Finalize a returned result: surface soft-ceiling warnings (onSoftWarn:
+  // annotate) and record real spend. Metering — like the ceiling — is scoped to
+  // run/tenant, so unscoped callers incur no metering I/O and are unchanged.
+  const finalize = (r: ModelRoutingResult<TOutput>): ModelRoutingResult<TOutput> => {
+    if (ceilingWarnings.length > 0) r.warnings.push(...ceilingWarnings);
+    if ((runId !== undefined || tenantId !== undefined) && r.ok && r.usage && r.provider) {
+      recordModelSpend({
+        provider: r.provider,
+        model: r.model ?? "unknown",
+        usage: r.usage,
+        ...(runId !== undefined ? { runId } : {}),
+        ...(tenantId !== undefined ? { tenantId } : {}),
+      });
+    }
+    return r;
+  };
 
   // Step 2: Dispatch to resolved provider
   let result = await dispatchToProvider<TContext, TOutput>(
@@ -154,7 +196,7 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
           console.error(
             `[MODEL-ROUTER] COMPLETED taskType=${taskType} provider=${escalated.provider ?? "none"} model=${escalated.model ?? "n/a"} ok=true escalated=true latencyMs=${Date.now() - routeStartMs}`,
           );
-          return escalated;
+          return finalize(escalated);
         }
 
         // Escalation also failed — return original error with warning
@@ -173,7 +215,7 @@ export async function routeModelTask<TContext = unknown, TOutput = unknown>(
   console.error(
     `[MODEL-ROUTER] COMPLETED taskType=${taskType} provider=${result.provider ?? "none"} model=${result.model ?? "n/a"} ok=${result.ok} escalated=${result.escalated} latencyMs=${Date.now() - routeStartMs}`,
   );
-  return result;
+  return finalize(result);
 }
 
 async function dispatchToProvider<TContext, TOutput>(

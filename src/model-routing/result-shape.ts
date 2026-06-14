@@ -2,6 +2,8 @@
  * Normalized result shape returned by every model routing call.
  * All providers must conform to this envelope.
  */
+import type { ModelUsage } from "../cost/cost-types.js";
+
 export interface ModelRoutingResult<T = unknown> {
   ok: boolean;
   provider: string | null;
@@ -12,6 +14,8 @@ export interface ModelRoutingResult<T = unknown> {
   escalated: boolean;
   warnings: string[];
   error: string | null;
+  /** Real token usage reported by the provider, when available (cloud calls). */
+  usage?: ModelUsage | undefined;
 }
 
 export type TaskType =
@@ -42,6 +46,9 @@ export interface ModelTaskRequest<T = unknown> {
   allowEscalation?: boolean | undefined;
   /** Retrieved memory context — passed through to prompt builder. */
   retrievedContext?: import("../memory-runtime/retrieval.js").RetrievedContext | undefined;
+  /** Optional run/tenant scope — enables per-run/per-tenant cost metering + ceiling. */
+  runId?: string | undefined;
+  tenantId?: string | undefined;
 }
 
 export function createResult<T>(
@@ -57,5 +64,6 @@ export function createResult<T>(
     escalated: partial.escalated ?? false,
     warnings: partial.warnings ?? [],
     error: partial.error ?? null,
+    ...(partial.usage !== undefined ? { usage: partial.usage } : {}),
   };
 }

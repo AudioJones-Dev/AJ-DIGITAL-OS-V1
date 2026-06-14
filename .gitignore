@@ -81,6 +81,9 @@ runtime/cache/
 runtime/evaluation/verdicts.json
 runtime/evaluation/eval-audit.jsonl
 
+# G2 cost ledger (generated spend events)
+runtime/cost/cost-events.jsonl
+
 # Graphify local discovery artifacts (generated, not source of truth)
 /graphify-out
 /graphify-out/
