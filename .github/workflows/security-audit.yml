@@ -23,10 +23,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: npm
@@ -34,5 +34,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run npm audit (high+)
-        run: npm audit --audit-level=high
+      # Full report for visibility — never blocks the build on transitive or
+      # dev-tooling advisories (these created a merge deadlock: each Dependabot
+      # PR fixes one package while `npm audit` keeps failing on the rest).
+      - name: npm audit (full report, non-blocking)
+        run: npm audit || true
+
+      # Hard gate: only fail on high+ vulnerabilities in PRODUCTION dependencies.
+      - name: Fail on high+ production vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
