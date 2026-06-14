@@ -3,3 +3,4 @@ export * from "./decision-engine.js";
 export * from "./decision-policy.js";
 export * from "./decision-store.js";
 export * from "./decision-attribution.js";
+export * from "./operator-decision-profile.js";
