@@ -35,10 +35,11 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-zinc-800 text-zinc-400",
 };
 
-export default async function DagRunDetailPage({ params }: { params: { runId: string } }) {
+export default async function DagRunDetailPage({ params }: { params: Promise<{ runId: string }> }) {
+  const { runId } = await params;
   const [run, audit] = await Promise.all([
-    getDagRun(params.runId),
-    getDagAudit(params.runId, 50),
+    getDagRun(runId),
+    getDagAudit(runId, 50),
   ]);
 
   if (!run) notFound();
