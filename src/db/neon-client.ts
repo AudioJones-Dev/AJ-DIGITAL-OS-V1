@@ -440,3 +440,24 @@ export async function checkNeonConnection(
     return { ok: false, latencyMs: Date.now() - start, error: String(err) };
   }
 }
+
+export function isNeonConfigured(config?: Partial<NeonConfig>): boolean {
+  return isConfigured(resolveConfig(config));
+}
+
+/**
+ * Execute an arbitrary parameterised SQL statement against Neon. Returns
+ * { ok, data, error } where `data` is an array of rows. Used by the Operating
+ * Schema stores (control_runs, approvals, dag_runs).
+ */
+export async function executeNeonSql<T>(
+  sql: string,
+  params: unknown[] = [],
+  config?: Partial<NeonConfig>,
+): Promise<QueryResult<T[]>> {
+  const cfg = resolveConfig(config);
+  if (!isConfigured(cfg)) {
+    return { ok: false, data: null, error: "Neon not configured", count: null };
+  }
+  return neonQuery<T>(cfg, sql, params);
+}
