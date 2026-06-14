@@ -1,0 +1,41 @@
+# =============================================================================
+# AJ DIGITAL OS — Edge overlay (Stage 4): Traefik + Homepage
+# ADDITIVE. Joins the EXISTING external network of the running stack and routes
+# to the live containers via Traefik's file provider. Does NOT touch or recreate
+# the 8 running services. Reversible: `docker compose -f docker-compose.traefik.yml down`.
+#
+# Run (gated): docker compose -f docker-compose.traefik.yml up -d
+# Prereqs: the `aj-digital-os` stack is running; ports 80, 8080, 3030 free;
+#          hosts entries for *.agentos.local (see EDGE_NOTES.md).
+# =============================================================================
+name: aj-digital-os-edge
+
+services:
+  traefik:
+    image: traefik:v3.7
+    container_name: aj-traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"        # web entrypoint (routes *.agentos.local)
+      - "8080:8080"    # traefik dashboard (local dev only)
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    networks: [aj-os-net]
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: aj-homepage
+    restart: unless-stopped
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: "home.agentos.local,agentos.local,localhost:3030,home.ajdigital.app"
+    ports:
+      - "3030:3000"    # direct access in addition to home.agentos.local
+    volumes:
+      - ./homepage:/app/config
+    networks: [aj-os-net]
+
+networks:
+  aj-os-net:
+    external: true
+    name: aj-digital-os_aj-os-net   # network of the running `aj-digital-os` project
