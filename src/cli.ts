@@ -16,6 +16,8 @@ import {
   DashboardCommand,
   DeliverablesCommand,
   ExecuteRunCommand,
+  EvalRunCommand,
+  EvalStatsCommand,
   HealthcheckCommand,
   HelpCommand,
   IntegrationProfilesCommand,
@@ -1108,6 +1110,33 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
             runId: runIdFlag,
             force: hasFlag(parsed.flags, "force"),
             json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "eval-run":
+      case "eval:run":
+        {
+          const runIdFlag = getStringFlag(parsed.flags, "runId");
+          const engineFlag = getStringFlag(parsed.flags, "engine");
+          const tenantIdFlag = getStringFlag(parsed.flags, "tenantId");
+          const result = await new EvalRunCommand().run({
+            golden: hasFlag(parsed.flags, "golden"),
+            json: hasFlag(parsed.flags, "json"),
+            ...(runIdFlag ? { runId: runIdFlag } : {}),
+            ...(engineFlag ? { engine: engineFlag } : {}),
+            ...(tenantIdFlag ? { tenantId: tenantIdFlag } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "eval-stats":
+      case "eval:stats":
+        {
+          const engineFlag = getStringFlag(parsed.flags, "engine");
+          const tenantIdFlag = getStringFlag(parsed.flags, "tenantId");
+          const result = await new EvalStatsCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(engineFlag ? { engine: engineFlag } : {}),
+            ...(tenantIdFlag ? { tenantId: tenantIdFlag } : {}),
           });
           return result.ok ? 0 : 1;
         }
