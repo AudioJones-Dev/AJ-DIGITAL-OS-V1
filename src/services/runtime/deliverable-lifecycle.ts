@@ -7,6 +7,7 @@ import { SemanticMemoryIndexer } from "../../memory/semantic-memory-indexer.js";
 import { syncOutcomeFromLocalStatus } from "../deliverables.js";
 import type { DeliverableRecord, DeliverableStatus } from "../../types/deliverable.types.js";
 import { OutputPathResolver } from "./output-path-resolver.js";
+import { evaluateDeliverableClaims } from "../../governance/deliverable-governance.js";
 
 const VALID_LIFECYCLE_TRANSITIONS: Readonly<Record<DeliverableStatus, DeliverableStatus[]>> = {
   draft: ["pending_approval"],
@@ -39,6 +40,19 @@ export class DeliverableLifecycleService {
   ) {}
 
   async submitForApproval(input: DeliverableLifecycleInput): Promise<DeliverableLifecycleResult> {
+    const deliverable = await this.store.getById(input.deliverableId);
+    if (!deliverable) {
+      return {
+        ok: false,
+        action: "submit_for_approval",
+        warnings: [],
+        errors: [`Deliverable "${input.deliverableId}" was not found.`],
+      };
+    }
+    if (deliverable.status === "draft") {
+      const blocked = await this.enforceClaims("submit_for_approval", deliverable);
+      if (blocked) return blocked;
+    }
     return this.transition({
       action: "submit_for_approval",
       deliverableId: input.deliverableId,
@@ -98,6 +112,12 @@ export class DeliverableLifecycleService {
       };
     }
 
+    // Materialized deliverable (its body is in outputFiles/outputPath) — scan
+    // its own content. The runId branch above delegates to PublisherAgent, which
+    // runs its own claims-check over the run's actual workflow assets.
+    const blocked = await this.enforceClaims("publish", deliverable);
+    if (blocked) return blocked;
+
     return this.transition({
       action: "publish",
       deliverableId: input.deliverableId,
@@ -106,6 +126,28 @@ export class DeliverableLifecycleService {
       ...(input.actor ? { actor: input.actor } : {}),
       ...(input.notes !== undefined ? { notes: input.notes } : {}),
     });
+  }
+
+  /**
+   * G4 claims/legal gate — blocks a transition when the deliverable content
+   * carries a legal block-severity claim violation. Returns a blocking result
+   * to short-circuit the caller, or undefined to proceed.
+   */
+  private async enforceClaims(
+    action: DeliverableLifecycleResult["action"],
+    deliverable: DeliverableRecord,
+  ): Promise<DeliverableLifecycleResult | undefined> {
+    const check = await evaluateDeliverableClaims(deliverable);
+    if (check.blocked) {
+      return {
+        ok: false,
+        action,
+        deliverable,
+        warnings: check.warnings,
+        errors: check.reasons.map((r) => `claims_check: ${r}`),
+      };
+    }
+    return undefined;
   }
 
   private async transition(input: {
