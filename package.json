@@ -31,7 +31,9 @@
     "link:local": "npm run build && npm link",
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "eval:golden": "npm run cli -- eval-run --golden --engine bel-dag-runtime --json",
+    "eval:stats": "npm run cli -- eval-stats --json"
   },
   "dependencies": {
     "axios": "^1.16.0",

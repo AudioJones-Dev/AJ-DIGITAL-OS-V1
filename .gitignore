@@ -76,6 +76,11 @@ supabase/
 # Cache Augmentation Layer runtime state (created on demand)
 runtime/cache/
 
+# L15 Evaluation runtime state (generated). Golden sets under
+# runtime/evaluation/golden/ ARE tracked (source of truth for the CI eval gate).
+runtime/evaluation/verdicts.json
+runtime/evaluation/eval-audit.jsonl
+
 # Graphify local discovery artifacts (generated, not source of truth)
 /graphify-out
 /graphify-out/
