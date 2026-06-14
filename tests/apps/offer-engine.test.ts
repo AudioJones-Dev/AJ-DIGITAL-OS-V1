@@ -14,6 +14,7 @@ beforeEach(() => {
 
 import { createOffer } from "../../src/apps/offer-engine/index.js";
 import { listEntities } from "../../src/normalization/normalization-store.js";
+import { defaultApprovalService } from "../../src/security/approvals/approval-service.js";
 import * as attributionTracker from "../../src/attribution/attribution-tracker.js";
 
 function baseOffer(overrides: Partial<Parameters<typeof createOffer>[0]> = {}) {
@@ -126,5 +127,34 @@ describe("Offer Engine", () => {
     const result = await createOffer(baseOffer({ title: "Status Field Audit" }));
     expect(result.governanceStatus).toBeDefined();
     expect(typeof result.governanceStatus).toBe("string");
+  });
+
+  // 9. G4: a discount needing approval creates a real ApprovalRequest
+  it("creates a real approval request when a discount needs approval", async () => {
+    const result = await createOffer(baseOffer({ title: "Discounted Audit", discountPercent: 20 }));
+    expect(result.ok).toBe(true);
+    expect(result.governanceStatus).toBe("approval_required");
+    expect(typeof result.approvalId).toBe("string");
+    expect(result.approvalId!.length).toBeGreaterThan(0);
+    // proves the request was persisted + retrievable, not just an id minted
+    const persisted = await defaultApprovalService.getApprovalById(result.approvalId!);
+    expect(persisted).not.toBeNull();
+    expect(persisted?.status).toBe("pending");
+  });
+
+  // 10. G4: a clean offer auto-approves with no approval request
+  it("does not create an approval request for a clean offer", async () => {
+    const result = await createOffer(baseOffer({ title: "Clean Audit" }));
+    expect(result.ok).toBe(true);
+    expect(result.governanceStatus).not.toBe("approval_required");
+    expect(result.approvalId).toBeUndefined();
+  });
+
+  // 11. G4: discountPercent threads through to the offer policy (blocks over-max)
+  it("blocks an offer whose discount exceeds the maximum approved tier", async () => {
+    const result = await createOffer(baseOffer({ title: "Over Discount Audit", discountPercent: 50 }));
+    expect(result.ok).toBe(false);
+    expect(result.governanceStatus).toBe("block");
+    expect(result.blockedReasons?.some((r) => r.includes("discountPercent"))).toBe(true);
   });
 });
