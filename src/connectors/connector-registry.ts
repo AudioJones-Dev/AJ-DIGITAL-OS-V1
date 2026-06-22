@@ -2,18 +2,21 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import type { OSConnector } from "./connector-types.js";
 
-const REGISTRY_PATH = path.resolve("runtime", "connectors", "registry.json");
+function registryPath(): string {
+  return process.env["AJ_CONNECTOR_REGISTRY_PATH"] ?? path.resolve("runtime", "connectors", "registry.json");
+}
 
 function ensureDir(): void {
-  const dir = path.dirname(REGISTRY_PATH);
+  const dir = path.dirname(registryPath());
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
 function load(): OSConnector[] {
   ensureDir();
-  if (!existsSync(REGISTRY_PATH)) return [];
+  const filePath = registryPath();
+  if (!existsSync(filePath)) return [];
   try {
-    return JSON.parse(readFileSync(REGISTRY_PATH, "utf-8")) as OSConnector[];
+    return JSON.parse(readFileSync(filePath, "utf-8")) as OSConnector[];
   } catch {
     return [];
   }
@@ -21,7 +24,7 @@ function load(): OSConnector[] {
 
 function save(connectors: OSConnector[]): void {
   ensureDir();
-  writeFileSync(REGISTRY_PATH, JSON.stringify(connectors, null, 2), "utf-8");
+  writeFileSync(registryPath(), JSON.stringify(connectors, null, 2), "utf-8");
 }
 
 export function registerConnector(connector: OSConnector): void {

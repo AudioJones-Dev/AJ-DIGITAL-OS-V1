@@ -9,7 +9,9 @@ import { CONNECTOR_ADAPTERS, DEFAULT_CONNECTORS } from "./adapters/index.js";
 import { emitConnectorExecuted, emitConnectorBlocked, emitConnectorFailed } from "./connector-attribution.js";
 import type { ConnectorAuditEvent, ConnectorInput, ConnectorResult } from "./connector-types.js";
 
-const AUDIT_PATH = path.resolve("runtime", "connectors", "audit.jsonl");
+function auditPath(): string {
+  return process.env["AJ_CONNECTOR_AUDIT_PATH"] ?? path.resolve("runtime", "connectors", "audit.jsonl");
+}
 
 // Boot: register defaults once
 let initialized = false;
@@ -21,7 +23,7 @@ function ensureInit(): void {
 
 async function writeAudit(event: ConnectorAuditEvent): Promise<void> {
   try {
-    await appendLog(AUDIT_PATH, event as unknown as Record<string, unknown>);
+    await appendLog(auditPath(), event as unknown as Record<string, unknown>);
   } catch {
     // audit must never break control flow
   }

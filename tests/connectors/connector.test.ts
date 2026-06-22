@@ -41,6 +41,7 @@ import {
   GitHubConnector,
   AirtableConnector,
   WebhookConnector,
+  ResendConnector,
 } from "../../src/connectors/adapters/index.js";
 
 function makeConnector(overrides: Partial<import("../../src/connectors/connector-types.js").OSConnector> = {}): import("../../src/connectors/connector-types.js").OSConnector {
@@ -153,6 +154,42 @@ describe("stub adapters", () => {
     const result = await executeConnector({ connectorId: "webhook", action: "send", payload: { url: "https://example.com/hook" }, environment: "local" });
     expect(result.ok).toBe(true);
     expect((result.data as Record<string, unknown>)["stub"]).toBe(true);
+  });
+
+  it("12b. resend stub send returns stub:true in local env", async () => {
+    registerConnector({ ...ResendConnector.connector, enabled: true });
+    const result = await executeConnector({
+      connectorId: "resend",
+      action: "send",
+      payload: {
+        from: "ops@ajdigital.test",
+        to: "client@example.test",
+        subject: "Test",
+        text: "Hello",
+      },
+      environment: "local",
+    });
+    expect(result.ok).toBe(true);
+    expect((result.data as Record<string, unknown>)["stub"]).toBe(true);
+  });
+
+  it("12c. resend requires RESEND_API_KEY outside local env", async () => {
+    registerConnector({ ...ResendConnector.connector, enabled: true });
+    delete process.env["RESEND_API_KEY"];
+    const result = await executeConnector({
+      connectorId: "resend",
+      action: "send",
+      payload: {
+        from: "ops@ajdigital.test",
+        to: "client@example.test",
+        subject: "Test",
+        text: "Hello",
+      },
+      tenantId: "tenant-test",
+      environment: "production",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("RESEND_API_KEY");
   });
 });
 

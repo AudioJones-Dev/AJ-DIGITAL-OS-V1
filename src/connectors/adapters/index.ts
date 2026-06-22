@@ -5,6 +5,7 @@ import { GoogleCalendarConnector } from "./google-calendar.connector.js";
 import { GitHubConnector } from "./github.connector.js";
 import { AirtableConnector } from "./airtable.connector.js";
 import { WebhookConnector } from "./webhook.connector.js";
+import { ResendConnector } from "./resend.connector.js";
 
 export const CONNECTOR_ADAPTERS: Map<string, ConnectorAdapter> = new Map([
   ["google-drive", GoogleDriveConnector],
@@ -13,6 +14,7 @@ export const CONNECTOR_ADAPTERS: Map<string, ConnectorAdapter> = new Map([
   ["github", GitHubConnector],
   ["airtable", AirtableConnector],
   ["webhook", WebhookConnector],
+  ["resend", ResendConnector],
 ]);
 
 export const DEFAULT_CONNECTORS = [
@@ -22,6 +24,7 @@ export const DEFAULT_CONNECTORS = [
   GitHubConnector.connector,
   AirtableConnector.connector,
   WebhookConnector.connector,
+  ResendConnector.connector,
 ];
 
 export {
@@ -31,4 +34,5 @@ export {
   GitHubConnector,
   AirtableConnector,
   WebhookConnector,
+  ResendConnector,
 };

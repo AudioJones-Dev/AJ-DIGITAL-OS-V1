@@ -73,11 +73,18 @@ Every new module added to the system must update this index.
 
 | Field | Value |
 |-------|-------|
-| **Status** | 📋 Planned |
-| **Primary Modules** | None yet |
+| **Status** | 🔶 Partial |
+| **Primary Modules** | `src/connectors/` |
 | **Runtime Responsibility** | External tool communication — Google Drive, Gmail, Calendar, CRM, Airtable, GitHub, Cloudflare, n8n, SERP |
-| **Tests** | None |
-| **Notes / Gaps** | `OSConnector` interface is defined in Layer Model Spec. No adapters implemented. MCP tool registry in BEL v3 is the nearest precursor. Build after Operating Core and Governance hardening. |
+| **Tests** | `tests/connectors/` |
+| **Notes / Gaps** | Connector registry, executor, audit path, attribution hooks, and disabled-by-default adapters exist for Google Drive, Gmail, Google Calendar, GitHub, Airtable, Webhook, and Resend. Resend uses `RESEND_API_KEY` only outside local stub execution. Missing: formal provider credential registry, per-provider scopes, production approval workflow, broader tenant policy overlays, and live connector enablement runbooks. |
+
+**Key files:**
+- `src/connectors/connector-types.ts` — `OSConnector`, adapter, input, result, and audit event contracts
+- `src/connectors/connector-registry.ts` — file-backed connector registration and enable/disable state
+- `src/connectors/connector-executor.ts` — connector lookup, enabled gate, tenant gate, audit write, and attribution emission
+- `src/connectors/adapters/resend.connector.ts` — disabled-by-default Resend email send adapter
+- `tests/connectors/connector.test.ts` — registry, executor, default adapter, and Resend coverage
 
 ---
 
