@@ -10,7 +10,9 @@ import { readLogs } from "../security/persistence/jsonl-log-store.js";
 import path from "node:path";
 import type { ConnectorAuditEvent } from "../connectors/connector-types.js";
 
-const AUDIT_PATH = path.resolve("runtime", "connectors", "audit.jsonl");
+function auditPath(): string {
+  return process.env["AJ_CONNECTOR_AUDIT_PATH"] ?? path.resolve("runtime", "connectors", "audit.jsonl");
+}
 
 function init(): void { initDefaultConnectors(DEFAULT_CONNECTORS); }
 
@@ -94,7 +96,7 @@ export interface ConnectorAuditCommandInput { limit?: number; json?: boolean; }
 export interface ConnectorAuditCommandResult { ok: boolean; events?: ConnectorAuditEvent[]; }
 export class ConnectorAuditCommand {
   async run(input: ConnectorAuditCommandInput = {}): Promise<ConnectorAuditCommandResult> {
-    const events = await readLogs<ConnectorAuditEvent>(AUDIT_PATH);
+    const events = await readLogs<ConnectorAuditEvent>(auditPath());
     const slice = events.slice(-(input.limit ?? 50)).reverse();
     if (input.json) console.log(JSON.stringify({ ok: true, events: slice }, null, 2));
     else {
