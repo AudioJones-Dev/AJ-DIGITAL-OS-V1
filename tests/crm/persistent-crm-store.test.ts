@@ -154,6 +154,21 @@ describe("PersistentCrmStore", () => {
     expect(bravoContact?.lifecycleStage).toBe("lead");
   });
 
+  it("rejects primary id changes during updates", async () => {
+    const store = new PersistentCrmStore(tmpFile("crm-id-update.json"));
+    const { tenantA } = await seedStore(store);
+
+    await expect(
+      store.updateContact(tenantA, "contact-shared", {
+        tenantId: "tenant-alpha",
+        contactId: "contact-rewritten",
+      }),
+    ).rejects.toBeInstanceOf(CrmStoreValidationError);
+
+    expect(await store.getContact(tenantA, "contact-shared")).toBeDefined();
+    expect(await store.getContact(tenantA, "contact-rewritten")).toBeNull();
+  });
+
   it("survives corrupt store files by returning an empty store", async () => {
     const file = tmpFile("crm-corrupt.json");
     await writeFile(file, "{broken", "utf-8");

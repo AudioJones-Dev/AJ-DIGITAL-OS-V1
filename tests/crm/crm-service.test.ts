@@ -11,6 +11,7 @@ vi.mock("../../src/attribution/attribution-tracker.js", () => ({
 
 import {
   CrmApprovalRequiredError,
+  CrmPermissionDeniedError,
   CrmService,
   PersistentCrmAuditLog,
   PersistentCrmStore,
@@ -128,6 +129,37 @@ describe("CrmService", () => {
     expect(alpha.leadId).toBe(bravo.leadId);
     expect(await auditLog.read({ tenantId: "tenant-alpha" })).toHaveLength(1);
     expect(await auditLog.read({ tenantId: "tenant-bravo" })).toHaveLength(1);
+  });
+
+  it("blocks write actions when the actor has only read permission", async () => {
+    const seed = createTwoTenantCrmSeedData();
+    const { service, auditLog } = makeService();
+    const readOnlyTenantA = tenantContext(
+      seed.tenants[0].tenantId,
+      "readonly-alpha",
+      [
+        {
+          tenantId: seed.tenants[0].tenantId,
+          userId: "readonly-alpha",
+          role: "tenant_user",
+          status: "active",
+          permissions: ["crm:read"],
+          createdAt: "2026-06-15T00:00:00.000Z",
+          updatedAt: "2026-06-15T00:00:00.000Z",
+        },
+      ],
+    );
+
+    await expect(
+      service.createContact(readOnlyTenantA, {
+        ...seed.contacts[0],
+        tenantId: seed.tenants[0].tenantId,
+      }),
+    ).rejects.toBeInstanceOf(CrmPermissionDeniedError);
+
+    const audit = await auditLog.read({ tenantId: "tenant-alpha" });
+    expect(audit).toHaveLength(1);
+    expect(audit[0]?.eventType).toBe("crm_action_blocked");
   });
 
   it("blocks approval-gated opportunity updates without approved status", async () => {

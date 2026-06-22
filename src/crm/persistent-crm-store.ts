@@ -73,6 +73,17 @@ function sameTenantAndId<TRecord extends CrmTenantScopedRecord>(
   return record.tenantId === tenantId && record[idField] === id;
 }
 
+function assertPrimaryIdUnchanged<TRecord extends CrmTenantScopedRecord>(
+  idField: Extract<keyof TRecord, string>,
+  id: string,
+  patch: Partial<TRecord>,
+): void {
+  const patchedId = patch[idField];
+  if (patchedId !== undefined && patchedId !== id) {
+    throw new CrmStoreValidationError([`${idField}: primary id cannot be changed`]);
+  }
+}
+
 export class PersistentCrmStore {
   constructor(private readonly filePath: string = DEFAULT_CRM_STORE_PATH) {}
 
@@ -237,6 +248,7 @@ export class PersistentCrmStore {
     validate: (record: unknown) => CrmSchemaValidationResult,
   ): Promise<TRecord> {
     assertTenantScopedRecord(context, patch);
+    assertPrimaryIdUnchanged(idField, id, patch);
     const data = await this.load();
     const records = data[collection] as TRecord[];
     const index = records.findIndex((record) => sameTenantAndId(record, idField, context.tenantId, id));

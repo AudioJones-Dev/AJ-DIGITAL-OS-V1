@@ -21,6 +21,16 @@ export class CrmApprovalRequiredError extends Error {
   readonly action: CrmServiceAction;
 }
 
+export class CrmPermissionDeniedError extends Error {
+  constructor(action: CrmServiceAction, reason: string) {
+    super(reason);
+    this.name = "CrmPermissionDeniedError";
+    this.action = action;
+  }
+
+  readonly action: CrmServiceAction;
+}
+
 export interface CrmServiceOptions {
   store?: PersistentCrmStore | undefined;
   auditLog?: PersistentCrmAuditLog | undefined;
@@ -117,6 +127,27 @@ export class CrmService {
     objectType: CrmAuditObjectType,
     objectId: string,
   ): Promise<void> {
+    const permission = permissionForAction(action);
+    if (!hasCrmPermission(context, permission)) {
+      const reason = `CRM action ${action} requires permission ${permission}.`;
+      try {
+        await this.auditLog.append({
+          ...auditPayloadForContext(context, {
+            action,
+            reason,
+            requiredPermission: permission,
+          }),
+          eventType: "crm_action_blocked",
+          objectType,
+          objectId,
+        });
+      } catch {
+        // audit must not mask the permission decision
+      }
+
+      throw new CrmPermissionDeniedError(action, reason);
+    }
+
     const decision = evaluateCrmApproval(action, context.approvalStatus);
     if (decision.approved) return;
 
@@ -162,3 +193,16 @@ export class CrmService {
 }
 
 export const defaultCrmService = new CrmService();
+
+function permissionForAction(action: CrmServiceAction): string {
+  return `crm:${action}`;
+}
+
+function hasCrmPermission(context: CrmTenantContext, permission: string): boolean {
+  return context.permissions.some((candidate) =>
+    candidate === permission
+    || candidate === "crm:*"
+    || candidate === "tenant:admin"
+    || candidate === "system:tenant",
+  );
+}
