@@ -29,4 +29,6 @@ This folder owns AJ Digital OS automated tests, fixtures, and validation coverag
 
 ## Child DOX Index
 
-This folder is not yet subdivided by child `AGENTS.md` files.
+- `crm/` - tests for CRM tenant context resolution and cross-tenant isolation.
+
+Other test domains are not yet subdivided by child `AGENTS.md` files.
