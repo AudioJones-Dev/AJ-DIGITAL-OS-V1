@@ -29,4 +29,6 @@ This folder owns AJ Digital OS automated tests, fixtures, and validation coverag
 
 ## Child DOX Index
 
-This folder is not yet subdivided by child `AGENTS.md` files.
+- `intelligence-layer/founder-opportunity-engine/` - compliance, scoring, website-analysis, and store-boundary tests for Founder Opportunity Engine.
+
+Other test domains are not yet subdivided by child `AGENTS.md` files.

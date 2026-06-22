@@ -1,0 +1,44 @@
+{
+  "booking": [
+    "calendly.com",
+    "acuityscheduling.com",
+    "housecallpro.com",
+    "servicetitan.com",
+    "getjobber.com",
+    "squareup.com",
+    "booksy.com",
+    "vagaro.com",
+    "mindbodyonline.com",
+    "schedulicity.com",
+    "setmore.com",
+    "simplybook.me"
+  ],
+  "chat": [
+    "intercom.io",
+    "intercomcdn.com",
+    "drift.com",
+    "driftt.com",
+    "tawk.to",
+    "livechatinc.com",
+    "tidio.co",
+    "podium.com",
+    "birdeye.com",
+    "hubspot.com",
+    "hs-scripts.com",
+    "facebook.com",
+    "fbcdn.net",
+    "gorgias.com",
+    "crisp.chat"
+  ],
+  "aiReceptionist": [
+    "smith.ai",
+    "slang.ai",
+    "abby.com",
+    "conversica.com",
+    "answerconnect.com",
+    "ruby.com",
+    "patlive.com",
+    "nexa.com",
+    "moneypenny.com"
+  ]
+}

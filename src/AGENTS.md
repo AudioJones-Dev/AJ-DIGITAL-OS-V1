@@ -32,4 +32,6 @@ This folder owns AJ Digital OS application source code, CLI commands, runtime mo
 
 ## Child DOX Index
 
-This folder has many source domains but is not yet subdivided by child `AGENTS.md` files. Before editing, inspect the nearest module files and tests for local conventions.
+- `intelligence/founder-opportunity-engine/` - Founder Opportunity Engine website analysis, runtime-only Places-derived signals, scoring, compliance, and CRM-ready opportunity output.
+
+Other source domains are not yet subdivided by child `AGENTS.md` files. Before editing, inspect the nearest module files and tests for local conventions.
