@@ -41,6 +41,7 @@ After meaningful changes, run a DOX pass before final response:
 ### Child DOX Index
 
 - `.codex/AGENTS.md` - repo-local Codex policy, validation registry, and hook proposals.
+- `config/AGENTS.md` - static non-secret configuration, seed lists, and module config contracts.
 - `docs/AGENTS.md` - canonical policy docs, specs, runbooks, release notes, and operational documentation.
 - `runtime/AGENTS.md` - runtime state surfaces, local execution artifacts, connector state, and generated operational data.
 - `src/AGENTS.md` - TypeScript source, CLI, Hermes, BEL, MCP, security, services, and application modules.

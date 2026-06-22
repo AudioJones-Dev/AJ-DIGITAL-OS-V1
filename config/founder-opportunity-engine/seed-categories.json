@@ -1,0 +1,30 @@
+{
+  "cities": [
+    { "city": "Orlando", "state": "FL" },
+    { "city": "Tampa", "state": "FL" },
+    { "city": "St. Petersburg", "state": "FL" },
+    { "city": "Jacksonville", "state": "FL" },
+    { "city": "Miami", "state": "FL" }
+  ],
+  "callFirstCategories": [
+    "plumber",
+    "hvac_contractor",
+    "roofing_contractor",
+    "electrician",
+    "dentist",
+    "doctor",
+    "lawyer",
+    "auto_repair",
+    "beauty_salon",
+    "spa",
+    "veterinary_care"
+  ],
+  "afterHoursDemandCategories": [
+    "plumber",
+    "hvac_contractor",
+    "roofing_contractor",
+    "electrician",
+    "auto_repair",
+    "veterinary_care"
+  ]
+}

@@ -29,6 +29,7 @@ This folder owns AJ Digital OS automated tests, fixtures, and validation coverag
 
 ## Child DOX Index
 
+- `intelligence-layer/founder-opportunity-engine/` - compliance, scoring, website-analysis, and store-boundary tests for Founder Opportunity Engine.
 - `crm/` - tests for CRM tenant context resolution and cross-tenant isolation.
 
 Other test domains are not yet subdivided by child `AGENTS.md` files.
