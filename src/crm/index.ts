@@ -6,5 +6,6 @@ export * from "./crm-types.js";
 export * from "./crm-schemas.js";
 export * from "./crm-seed.js";
 export * from "./persistent-crm-store.js";
+export * from "./postgres-crm-store.js";
 export * from "./tenant-context.js";
 export * from "./tenant-scoped-store.js";
