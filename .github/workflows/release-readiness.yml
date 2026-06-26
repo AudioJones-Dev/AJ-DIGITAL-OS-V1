@@ -1,11 +1,14 @@
 name: Release Readiness
 
 on:
+  # Push runs only validate the integration branch post-merge. Feature
+  # branches (build/**, docs/**) are covered by their pull_request run, so
+  # triggering push there too would create a second, redundant run whose
+  # github.ref differs from the PR's (refs/heads/... vs refs/pull/N/merge),
+  # defeating the concurrency group below and doubling flaky-network exposure.
   push:
     branches:
       - main
-      - 'build/**'
-      - 'docs/**'
   pull_request:
     branches:
       - main
