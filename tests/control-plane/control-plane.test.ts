@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mkdirSync, rmSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { resolveRuntimePath } from "../../src/core/runtime-paths.js";
 
 // ── Isolate file-system state between tests ───────────────────────────────
-const TEST_STORE = join(process.cwd(), "runtime", "control-runs.json");
+const TEST_STORE = resolveRuntimePath("control-runs.json");
 
 beforeEach(() => {
   if (existsSync(TEST_STORE)) rmSync(TEST_STORE);

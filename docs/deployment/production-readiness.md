@@ -76,10 +76,10 @@ If memory is enabled, `memory/` must also be writable.
 
 1. Install dependencies and build the project.
 2. Set the environment variables for the enabled provider set.
-3. Run `npm run assistant:setup`.
-4. Run `npm run release:check`.
+3. Run `npm run cli -- assistant-setup`.
+4. Run `npm run cli -- healthcheck --json`.
 5. Confirm the healthcheck returns `ok: true` or a passing human-readable status.
-6. Confirm `npm run assistant:doctor` reports the assistant is ready.
+6. Confirm `npm run cli -- assistant-doctor` reports the assistant is ready.
 7. Start the operator workflow using the existing CLI or orchestration path.
 8. Run a model-backed workflow and verify observability shows model execution behavior.
 
@@ -90,9 +90,9 @@ Use this exact sequence before deploy or production startup:
 ```bash
 npm install
 npm run build
-npm run assistant:setup
-npm run assistant:doctor
-npm run release:check
+npm run cli -- assistant-setup
+npm run cli -- assistant-doctor
+npm run cli -- healthcheck --json
 ```
 
 Exit code behavior:
@@ -113,11 +113,9 @@ npm run cli -- healthcheck
 Machine-readable:
 
 ```bash
-npm run smoke:ollama-provider
 npm run cli -- healthcheck --json
 npm run cli -- ollama-probe --json
-npm run assistant:doctor -- --json
-npm run release:check
+npm run cli -- assistant-doctor --json
 ```
 
 This check validates:
@@ -139,31 +137,31 @@ Assistant-specific readiness also validates:
 The current installed assistant path is:
 
 ```bash
-npm run assistant:setup
-npm run assistant:doctor
-npm run assistant:start -- --brand aj-digital --task "Summarize this transcript into a short operator advisory."
-npm run assistant:history
-npm run conversation:history
-npm run assistant:shell -- --brand audio-jones
-npm run ui:start
-npm run deliverables
-npm run deliverables:pending
-npm run memory:index -- --rebuild
-npm run memory:stats
+npm run cli -- assistant-setup
+npm run cli -- assistant-doctor
+npm run cli -- assistant-start --brand aj-digital --task "Summarize this transcript into a short operator advisory."
+npm run cli -- assistant-history
+npm run cli -- conversation-history
+npm run cli -- assistant-shell --brand audio-jones
+npm run cli -- ui-start
+npm run cli -- deliverables
+npm run cli -- list-pending-deliverables
+npm run cli -- memory-index --rebuild
+npm run cli -- memory-stats
 ```
 
 What this does:
 
-- `assistant:setup` ensures the compiled CLI exists and initializes writable runtime directories
-- `assistant:doctor` reports whether the assistant is actually ready to use on the current machine
-- `assistant:start` checks readiness and then launches one assistant task through the existing runtime
-- `assistant:history` inspects the local file-backed assistant task log under `data/assistant/`
+- `assistant-setup` ensures the compiled CLI exists and initializes writable runtime directories
+- `assistant-doctor` reports whether the assistant is actually ready to use on the current machine
+- `assistant-start` checks readiness and then launches one assistant task through the existing runtime
+- `assistant-history` inspects the local file-backed assistant task log under `data/assistant/`
 - `conversation-history` inspects the local file-backed conversation thread registry under `data/conversations/threads/`
 - `memory-index` rebuilds or ingests the local semantic memory layer under `data/memory/`
 - `memory-search` queries the local semantic memory layer
 - `memory-stats` reports local semantic memory counts and storage paths
-- `assistant:shell` opens a terminal-native conversational loop backed by the same runtime and history store
-- `ui:start` opens the local-first browser shell over the same runtime and local registries
+- `assistant-shell` opens a terminal-native conversational loop backed by the same runtime and history store
+- `ui-start` opens the local-first browser shell over the same runtime and local registries
 - `--threadId <id>` continues an existing persisted conversation thread
 - `deliverables` inspects the local file-backed deliverable registry under `data/deliverables/registry/`
 - `list-pending-deliverables` inspects the local pending approval queue for deliverables

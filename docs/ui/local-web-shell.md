@@ -18,7 +18,7 @@ It is intentionally thin and local-first:
 Use:
 
 ```bash
-npm run ui:start
+npm run cli -- ui-start
 ```
 
 Default URL:

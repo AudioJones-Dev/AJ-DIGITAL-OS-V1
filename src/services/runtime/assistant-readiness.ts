@@ -372,7 +372,7 @@ export class AssistantReadinessService {
     }
 
     if (nextSteps.length === 0) {
-      nextSteps.push("Assistant prerequisites are satisfied. Start a single-task session with `npm run assistant:start -- --task \"Your request\"`.");
+      nextSteps.push("Assistant prerequisites are satisfied. Start a single-task session with `npm run cli -- assistant-start --task \"Your request\"`.");
     }
 
     return nextSteps;

@@ -5,7 +5,7 @@
  * Exits with code 1 if any required table is missing or unreachable.
  *
  * Usage:
- *   npm run validate:supabase-schema
+ *   node --import ./dist/env.js dist/scripts/validate-supabase-schema.js
  */
 
 import "../env.js";

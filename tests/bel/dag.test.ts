@@ -22,10 +22,11 @@ import type {
   BelDagNode,
   BelDagPlan,
 } from "../../src/bel/dag/dag-types.js";
+import { resolveRuntimePath } from "../../src/core/runtime-paths.js";
 import * as attributionTracker from "../../src/attribution/attribution-tracker.js";
 
 // ── Test helpers ──────────────────────────────────────────────────────────
-const DAG_DIR = join(process.cwd(), "runtime", "dag");
+const DAG_DIR = resolveRuntimePath("dag");
 const RUNS_FILE = join(DAG_DIR, "dag-runs.json");
 const AUDIT_FILE = join(DAG_DIR, "dag-audit.jsonl");
 const OUTPUTS_FILE = join(DAG_DIR, "dag-node-outputs.json");
