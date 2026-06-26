@@ -78,6 +78,15 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+// Postgres unique_violation SQLSTATE. node-postgres surfaces it on error.code.
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "23505"
+  );
+}
+
 function assertValid(result: CrmSchemaValidationResult): void {
   if (!result.valid) {
     throw new CrmStoreValidationError(result.errors);
@@ -177,7 +186,11 @@ export class PostgresCrmStore {
 
     return this.run(context, async (client) => {
       await this.assertUnique(client, "contact", "crm_contacts", "contact_id", contact.contactId, context.tenantId);
-      const result = await client.query<ContactRow>(
+      const row = await this.insertRow<ContactRow>(
+        client,
+        "contact",
+        contact.contactId,
+        context.tenantId,
         `insert into public.crm_contacts (
           tenant_id, contact_id, company_id, first_name, last_name, email, phone,
           lifecycle_stage, owner_user_id, source, consent_status, created_at, updated_at
@@ -199,7 +212,7 @@ export class PostgresCrmStore {
           contact.updatedAt,
         ],
       );
-      return mapContact(result.rows[0]!);
+      return mapContact(row);
     });
   }
 
@@ -234,7 +247,14 @@ export class PostgresCrmStore {
     assertPrimaryIdUnchanged<CrmContact>("contactId", contactId, patch);
 
     return this.run(context, async (client) => {
-      const existing = await this.getRecordInTransaction(client, "crm_contacts", "contact_id", contactId, mapContact);
+      const existing = await this.getRecordInTransaction(
+        client,
+        "crm_contacts",
+        "contact_id",
+        contactId,
+        context.tenantId,
+        mapContact,
+      );
       const updated: CrmContact = {
         ...existing,
         ...patch,
@@ -276,7 +296,11 @@ export class PostgresCrmStore {
 
     return this.run(context, async (client) => {
       await this.assertUnique(client, "lead", "crm_leads", "lead_id", lead.leadId, context.tenantId);
-      const result = await client.query<LeadRow>(
+      const row = await this.insertRow<LeadRow>(
+        client,
+        "lead",
+        lead.leadId,
+        context.tenantId,
         `insert into public.crm_leads (
           tenant_id, lead_id, contact_id, company_id, status, source, score,
           urgency, owner_user_id, created_at, updated_at
@@ -296,7 +320,7 @@ export class PostgresCrmStore {
           lead.updatedAt,
         ],
       );
-      return mapLead(result.rows[0]!);
+      return mapLead(row);
     });
   }
 
@@ -331,7 +355,14 @@ export class PostgresCrmStore {
     assertPrimaryIdUnchanged<CrmLead>("leadId", leadId, patch);
 
     return this.run(context, async (client) => {
-      const existing = await this.getRecordInTransaction(client, "crm_leads", "lead_id", leadId, mapLead);
+      const existing = await this.getRecordInTransaction(
+        client,
+        "crm_leads",
+        "lead_id",
+        leadId,
+        context.tenantId,
+        mapLead,
+      );
       const updated: CrmLead = {
         ...existing,
         ...patch,
@@ -377,7 +408,11 @@ export class PostgresCrmStore {
         opportunity.opportunityId,
         context.tenantId,
       );
-      const result = await client.query<OpportunityRow>(
+      const row = await this.insertRow<OpportunityRow>(
+        client,
+        "opportunity",
+        opportunity.opportunityId,
+        context.tenantId,
         `insert into public.crm_opportunities (
           tenant_id, opportunity_id, pipeline_id, stage_id, contact_id, company_id,
           value, currency, expected_close_at, status, created_at, updated_at
@@ -398,7 +433,7 @@ export class PostgresCrmStore {
           opportunity.updatedAt,
         ],
       );
-      return mapOpportunity(result.rows[0]!);
+      return mapOpportunity(row);
     });
   }
 
@@ -438,6 +473,7 @@ export class PostgresCrmStore {
         "crm_opportunities",
         "opportunity_id",
         opportunityId,
+        context.tenantId,
         mapOpportunity,
       );
       const updated: CrmOpportunity = {
@@ -499,17 +535,48 @@ export class PostgresCrmStore {
     }
   }
 
+  // The preflight assertUnique gives a friendly error in the common case, but is
+  // not atomic: two concurrent creates for the same id can both pass it, and the
+  // loser then violates the composite primary key. Translate that pg unique
+  // violation (23505) into the same CrmDuplicateRecordError so the duplicate
+  // contract holds under concurrency instead of leaking a raw driver error.
+  private async insertRow<TRow>(
+    client: CrmTenantDbClient,
+    recordType: CrmRecordKind,
+    id: string,
+    tenantId: string,
+    text: string,
+    values: readonly unknown[],
+  ): Promise<TRow> {
+    try {
+      const result = await client.query<TRow>(text, values);
+      return result.rows[0]!;
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new CrmDuplicateRecordError(recordType, id, tenantId);
+      }
+      throw error;
+    }
+  }
+
+  // Tenant-leading read per CRM DB/RLS spec §13 (Forbidden Database Patterns):
+  // preloads MUST filter by tenant_id, not object id alone. RLS already scopes
+  // visibility for an RLS-enforcing role, but an id-only read would let a
+  // BYPASSRLS/service-role connection load a different tenant's row on a
+  // duplicate id and write its fields into the active tenant on the following
+  // UPDATE. Filtering by both columns closes that defense-in-depth gap.
   private async getRecordInTransaction<T>(
     client: CrmTenantDbClient,
     tableName: string,
     idColumn: string,
     id: string,
+    tenantId: string,
     map: (row: never) => T,
   ): Promise<T> {
     const columns = columnsFor(tableName);
     const result = await client.query<never>(
-      `select ${columns} from public.${tableName} where ${idColumn} = $1 limit 1`,
-      [id],
+      `select ${columns} from public.${tableName} where tenant_id = $1 and ${idColumn} = $2 limit 1`,
+      [tenantId, id],
     );
     const row = result.rows[0];
     if (!row) {
