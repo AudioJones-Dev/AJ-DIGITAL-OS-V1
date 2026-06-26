@@ -1,5 +1,17 @@
 # AJ Digital OS Repo Health Register - 2026-06-16
 
+> **2026-06-26 Cleanup Addendum.** A post-merge worktree/branch cleanup was performed
+> on the local command center after this register was written. Two merged-PR worktrees
+> and their branches were removed (PR #77 `codex/remote-secret-doppler-doctrine`,
+> PR #78 `codex/founder-opportunity-engine-v1`; merged commits `1faf3df` / `94bad1b`
+> now on `main`), and the root checkout was returned to `main` and fast-forwarded to
+> `origin/main`. Preserved lanes — Claude worktrees, `docs/grafana-coverage-index-symmetry`,
+> `docs/open-webui-ai-workbench-layer`, and `codex/knowledge-substrate-phase1` — were
+> intentionally **not** deleted; they remain open decisions per this register's triage
+> sequence and approval gates. Full closeout:
+> [`worktree-cleanup-closeout-2026-06-26.md`](./worktree-cleanup-closeout-2026-06-26.md).
+> The inventory tables below still reflect the 2026-06-16 snapshot and were not rewritten.
+
 ## Purpose
 
 This register documents local branch and worktree health for `C:\dev\AJ-DIGITAL-OS`.
