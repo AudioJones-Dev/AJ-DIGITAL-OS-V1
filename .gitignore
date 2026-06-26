@@ -74,7 +74,10 @@ supabase/
 *.tsbuildinfo
 
 # Cache Augmentation Layer runtime state (created on demand)
-runtime/cache/
+runtime/*
+!runtime/AGENTS.md
+!runtime/policies/
+!runtime/policies/**
 
 # Graphify local discovery artifacts (generated, not source of truth)
 /graphify-out

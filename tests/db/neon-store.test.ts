@@ -5,11 +5,9 @@
  * file-backed fallback path of each store. Real-Neon behaviour is
  * tested separately in integration tests when a database is available.
  *
- * Note: the file-backed stores write to fixed paths under runtime/.
- * Other test files (e.g. control-plane.test.ts) also use those paths
- * and run in parallel forks. We avoid clobbering them by using
- * unique run/agent IDs and filtering by those, rather than wiping
- * the shared file.
+ * The file-backed stores honor AJ_RUNTIME_DIR, which the Vitest setup
+ * points at a per-worker temp directory so parallel forks cannot clobber
+ * the same runtime files.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

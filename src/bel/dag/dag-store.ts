@@ -14,19 +14,32 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 
+import { resolveRuntimePath } from "../../core/runtime-paths.js";
 import type {
   BelDagAuditEvent,
   BelDagNodeOutput,
   BelDagRunState,
 } from "./dag-types.js";
 
-const DAG_DIR = join(process.cwd(), "runtime", "dag");
-const RUNS_FILE = join(DAG_DIR, "dag-runs.json");
-const AUDIT_FILE = join(DAG_DIR, "dag-audit.jsonl");
-const OUTPUTS_FILE = join(DAG_DIR, "dag-node-outputs.json");
+function dagDir(): string {
+  return resolveRuntimePath("dag");
+}
+
+function runsFile(): string {
+  return join(dagDir(), "dag-runs.json");
+}
+
+function auditFile(): string {
+  return join(dagDir(), "dag-audit.jsonl");
+}
+
+function outputsFile(): string {
+  return join(dagDir(), "dag-node-outputs.json");
+}
 
 function ensureDir(): void {
-  if (!existsSync(DAG_DIR)) mkdirSync(DAG_DIR, { recursive: true });
+  const dir = dagDir();
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
 function readJsonArray<T>(path: string): T[] {
@@ -47,17 +60,17 @@ function writeJsonArray<T>(path: string, data: T[]): void {
 
 export function saveDagRun(state: BelDagRunState): void {
   ensureDir();
-  const runs = readJsonArray<BelDagRunState>(RUNS_FILE);
+  const runs = readJsonArray<BelDagRunState>(runsFile());
   const idx = runs.findIndex((r) => r.runId === state.runId);
   const updated: BelDagRunState = { ...state, updatedAt: new Date().toISOString() };
   if (idx >= 0) runs[idx] = updated;
   else runs.push(updated);
-  writeJsonArray(RUNS_FILE, runs);
+  writeJsonArray(runsFile(), runs);
 }
 
 export function getDagRun(runId: string): BelDagRunState | undefined {
   ensureDir();
-  return readJsonArray<BelDagRunState>(RUNS_FILE).find((r) => r.runId === runId);
+  return readJsonArray<BelDagRunState>(runsFile()).find((r) => r.runId === runId);
 }
 
 export function listDagRuns(filter?: {
@@ -66,7 +79,7 @@ export function listDagRuns(filter?: {
   limit?: number;
 }): BelDagRunState[] {
   ensureDir();
-  let runs = readJsonArray<BelDagRunState>(RUNS_FILE);
+  let runs = readJsonArray<BelDagRunState>(runsFile());
   if (filter?.status !== undefined) runs = runs.filter((r) => r.status === filter.status);
   if (filter?.tenantId !== undefined) runs = runs.filter((r) => r.tenantId === filter.tenantId);
   runs = runs.slice().reverse();
@@ -78,7 +91,7 @@ export function listDagRuns(filter?: {
 
 export function appendDagAuditEvent(event: BelDagAuditEvent): void {
   ensureDir();
-  appendFileSync(AUDIT_FILE, JSON.stringify(event) + "\n", "utf-8");
+  appendFileSync(auditFile(), JSON.stringify(event) + "\n", "utf-8");
 }
 
 export function getDagAuditEvents(filter?: {
@@ -88,10 +101,11 @@ export function getDagAuditEvents(filter?: {
   limit?: number;
 }): BelDagAuditEvent[] {
   ensureDir();
-  if (!existsSync(AUDIT_FILE)) return [];
+  const path = auditFile();
+  if (!existsSync(path)) return [];
   let events: BelDagAuditEvent[] = [];
   try {
-    events = readFileSync(AUDIT_FILE, "utf-8")
+    events = readFileSync(path, "utf-8")
       .trim()
       .split("\n")
       .filter(Boolean)
@@ -112,13 +126,13 @@ export function getDagAuditEvents(filter?: {
 
 export function saveNodeOutput(output: BelDagNodeOutput): void {
   ensureDir();
-  const outputs = readJsonArray<BelDagNodeOutput>(OUTPUTS_FILE);
+  const outputs = readJsonArray<BelDagNodeOutput>(outputsFile());
   const idx = outputs.findIndex(
     (o) => o.runId === output.runId && o.nodeId === output.nodeId,
   );
   if (idx >= 0) outputs[idx] = output;
   else outputs.push(output);
-  writeJsonArray(OUTPUTS_FILE, outputs);
+  writeJsonArray(outputsFile(), outputs);
 }
 
 export function getNodeOutputs(filter?: {
@@ -127,7 +141,7 @@ export function getNodeOutputs(filter?: {
   nodeId?: string;
 }): BelDagNodeOutput[] {
   ensureDir();
-  let outputs = readJsonArray<BelDagNodeOutput>(OUTPUTS_FILE);
+  let outputs = readJsonArray<BelDagNodeOutput>(outputsFile());
   if (filter?.runId !== undefined) outputs = outputs.filter((o) => o.runId === filter.runId);
   if (filter?.dagId !== undefined) outputs = outputs.filter((o) => o.dagId === filter.dagId);
   if (filter?.nodeId !== undefined) outputs = outputs.filter((o) => o.nodeId === filter.nodeId);
