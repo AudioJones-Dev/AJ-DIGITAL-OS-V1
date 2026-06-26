@@ -67,8 +67,11 @@ skills-lock.json
 # Notes (local only)
 notes/
 
-# Supabase local config
-supabase/
+# Supabase local state
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+supabase/.env.*
 
 # Local caches
 *.tsbuildinfo
