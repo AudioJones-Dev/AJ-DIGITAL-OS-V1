@@ -101,7 +101,7 @@ export class AssistantShellCommand {
         readiness,
         shellSessionId,
         shellSessionLabel,
-        "Assistant prerequisites are not ready. Run `npm run assistant:doctor` and resolve the reported setup issues before starting shell mode.",
+        "Assistant prerequisites are not ready. Run `npm run cli -- assistant-doctor` and resolve the reported setup issues before starting shell mode.",
       );
       await this.recordBlockedSession(result, input, mode);
 

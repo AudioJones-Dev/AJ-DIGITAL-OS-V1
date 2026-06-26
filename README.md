@@ -10,23 +10,23 @@ Build the project first so the compiled CLI is available under `dist/cli.js`.
 
 ```bash
 npm run build
-npm run assistant:setup
-npm run assistant:doctor
-npm run assistant:start -- --brand aj-digital --task "Create a short operator brief for this week"
-npm run assistant:history
-npm run conversation:history
-npm run assistant:shell -- --brand audio-jones
-npm run ui:start
-npm run deliverables
-npm run deliverables:pending
-npm run memory:stats
-npm run memory:search -- --query "approval lifecycle"
-npm run tool-registry
-npm run integration-profiles
-npm run model-profiles
+npm run cli -- assistant-setup
+npm run cli -- assistant-doctor
+npm run cli -- assistant-start --brand aj-digital --task "Create a short operator brief for this week"
+npm run cli -- assistant-history
+npm run cli -- conversation-history
+npm run cli -- assistant-shell --brand audio-jones
+npm run cli -- ui-start
+npm run cli -- deliverables
+npm run cli -- list-pending-deliverables
+npm run cli -- memory-stats
+npm run cli -- memory-search --query "approval lifecycle"
+npm run cli -- tool-registry
+npm run cli -- integration-profiles
+npm run cli -- model-profiles
 npm run cli:help
-npm run cli:assistant -- --task "Create a short operator brief for this week"
-npm run cli:healthcheck
+npm run cli -- assistant --task "Create a short operator brief for this week"
+npm run cli -- healthcheck
 npm run cli:dashboard
 npm run cli:console
 ```
@@ -95,30 +95,30 @@ npm run cli -- <command> [flags]
 ### Example Usage
 
 ```bash
-npm run assistant:setup
-npm run assistant:doctor
-npm run assistant:start -- --brand aj-digital --task "Draft a concise SEO brief for AJ Digital"
-npm run assistant:start -- --task "Repurpose this transcript into clips" --skill transcript-to-content --mode orchestrated --source "Transcript text here"
-npm run assistant:history
-npm run conversation:history
-npm run assistant:shell -- --brand audio-jones --label morning-ops
-npm run conversation:thread -- --threadId <thread-id>
-npm run ui:start
-npm run deliverables -- --brand aj-digital --status draft
-npm run memory:index -- --rebuild
-npm run memory:search -- --query "brand approval policy"
-npm run memory:index -- --text "Client positioning notes" --label "AJ positioning"
+npm run cli -- assistant-setup
+npm run cli -- assistant-doctor
+npm run cli -- assistant-start --brand aj-digital --task "Draft a concise SEO brief for AJ Digital"
+npm run cli -- assistant-start --task "Repurpose this transcript into clips" --skill transcript-to-content --mode orchestrated --source "Transcript text here"
+npm run cli -- assistant-history
+npm run cli -- conversation-history
+npm run cli -- assistant-shell --brand audio-jones --label morning-ops
+npm run cli -- conversation-thread --threadId <thread-id>
+npm run cli -- ui-start
+npm run cli -- deliverables --brand aj-digital --status draft
+npm run cli -- memory-index --rebuild
+npm run cli -- memory-search --query "brand approval policy"
+npm run cli -- memory-index --text "Client positioning notes" --label "AJ positioning"
 npm run cli -- submit-for-approval --deliverableId <deliverable-id>
 npm run cli -- approve-deliverable --deliverableId <deliverable-id>
 npm run cli -- publish-deliverable --deliverableId <deliverable-id>
-npm run tool-registry
-npm run integration-profiles -- --brand aj-digital
-npm run model-profiles -- --brand aj-digital
+npm run cli -- tool-registry
+npm run cli -- integration-profiles --brand aj-digital
+npm run cli -- model-profiles --brand aj-digital
 npm run cli:help
 npm run cli -- assistant --task "Draft a concise SEO brief for AJ Digital"
 npm run cli -- assistant --task "Repurpose this transcript into clips" --skill transcript-to-content --mode orchestrated --source "Transcript text here"
-npm run cli:healthcheck
-npm run cli:ollama-probe
+npm run cli -- healthcheck
+npm run cli -- ollama-probe
 npm run cli:dashboard
 npm run cli:console
 npm run cli -- run-summary --runId run_123
@@ -181,7 +181,7 @@ The repo now includes architecture-first scaffolds for future external tool and 
 The first local browser-based shell is started with:
 
 ```bash
-npm run ui:start
+npm run cli -- ui-start
 ```
 
 What it includes:
@@ -223,17 +223,17 @@ Recommended local assistant flow:
 
 ```bash
 npm install
-npm run assistant:setup
-npm run assistant:doctor
-npm run assistant:start -- --brand aj-digital --task "Summarize this transcript into a short operator advisory."
-npm run assistant:history
-npm run conversation:history
-npm run assistant:shell -- --brand audio-jones
-npm run ui:start
-npm run deliverables
-npm run deliverables:pending
-npm run memory:index -- --rebuild
-npm run memory:stats
+npm run cli -- assistant-setup
+npm run cli -- assistant-doctor
+npm run cli -- assistant-start --brand aj-digital --task "Summarize this transcript into a short operator advisory."
+npm run cli -- assistant-history
+npm run cli -- conversation-history
+npm run cli -- assistant-shell --brand audio-jones
+npm run cli -- ui-start
+npm run cli -- deliverables
+npm run cli -- list-pending-deliverables
+npm run cli -- memory-index --rebuild
+npm run cli -- memory-stats
 ```
 
 If readiness fails, `assistant-setup` and `assistant-doctor` print the exact next-step guidance needed to finish the local install path.
@@ -241,25 +241,25 @@ If readiness fails, `assistant-setup` and `assistant-doctor` print the exact nex
 Current assistant commands:
 
 ```bash
-npm run assistant:setup
-npm run assistant:doctor
-npm run assistant:start -- --brand aj-digital --task "Draft a short operator brief"
-npm run assistant:start -- --task "Repurpose this transcript" --skill transcript-to-content --mode orchestrated --source "Transcript text here"
-npm run assistant:history
-npm run conversation:history
-npm run assistant:shell -- --brand audio-jones --label morning-ops
-npm run conversation:thread -- --threadId <thread-id>
-npm run ui:start
-npm run deliverables -- --brand aj-digital --json
+npm run cli -- assistant-setup
+npm run cli -- assistant-doctor
+npm run cli -- assistant-start --brand aj-digital --task "Draft a short operator brief"
+npm run cli -- assistant-start --task "Repurpose this transcript" --skill transcript-to-content --mode orchestrated --source "Transcript text here"
+npm run cli -- assistant-history
+npm run cli -- conversation-history
+npm run cli -- assistant-shell --brand audio-jones --label morning-ops
+npm run cli -- conversation-thread --threadId <thread-id>
+npm run cli -- ui-start
+npm run cli -- deliverables --brand aj-digital --json
 npm run cli -- list-pending-deliverables --json
-npm run memory:search -- --query "client brief" --json
-npm run memory:stats -- --json
+npm run cli -- memory-search --query "client brief" --json
+npm run cli -- memory-stats --json
 npm run cli -- submit-for-approval --deliverableId <deliverable-id>
 npm run cli -- approve-deliverable --deliverableId <deliverable-id> --actor operator
 npm run cli -- publish-deliverable --deliverableId <deliverable-id>
-npm run tool-registry -- --json
-npm run integration-profiles -- --json
-npm run model-profiles -- --json
+npm run cli -- tool-registry --json
+npm run cli -- integration-profiles --json
+npm run cli -- model-profiles --json
 ```
 
 History output includes the task timestamp, mode, selected brand, selected skill/workflow, provider/model route, success status, warnings/errors, and governed `runId` when orchestrated mode creates one.
@@ -293,15 +293,15 @@ Shell mode notes:
 Many commands support `--json` for machine-readable output.
 
 ```bash
-npm run assistant:doctor -- --json
-npm run assistant:start -- --task "Draft a short operator brief" --json
+npm run cli -- assistant-doctor --json
+npm run cli -- assistant-start --task "Draft a short operator brief" --json
 npm run cli -- dashboard --json
 npm run cli -- run-summary --runId run_123 --json
 npm run cli -- list-pending-approvals --json
-npm run tool-registry -- --json
-npm run integration-profiles -- --json
-npm run model-profiles -- --json
-npm run ui:start
+npm run cli -- tool-registry --json
+npm run cli -- integration-profiles --json
+npm run cli -- model-profiles --json
+npm run cli -- ui-start
 ```
 
 Use JSON mode for scripting, debugging, and future automation integrations.
@@ -313,7 +313,6 @@ Use the runtime healthcheck before first deployment and during production startu
 ```bash
 npm run cli -- healthcheck
 npm run cli -- healthcheck --json
-npm run release:check
 ```
 
 Runtime behavior remains local-first by default. For production-style validation, set:
@@ -336,8 +335,8 @@ The healthcheck verifies:
 Assistant-specific readiness can be checked separately with:
 
 ```bash
-npm run assistant:doctor
-npm run assistant:doctor -- --json
+npm run cli -- assistant-doctor
+npm run cli -- assistant-doctor --json
 ```
 
 See `docs/deployment/production-readiness.md` for the full startup checklist and deployment notes.
@@ -348,24 +347,31 @@ Before a production deployment or production process start, run the release gate
 
 ```bash
 npm run build
-npm run release:check
+npm run cli -- healthcheck --json
 ```
 
-`release:check` exits with code `0` when readiness passes and a non-zero exit code when production readiness fails.
+The healthcheck exits with code `0` when readiness passes and a non-zero exit
+code when production readiness fails.
 
 ### Staging Launch Path
 
 The current production-like staging start path is:
 
 ```bash
-npm run start:staging
+npm run build
+npm run cli -- assistant-setup
+npm run cli -- assistant-doctor
+npm run cli -- healthcheck --json
+node dist/cli.js operator-console --watch
 ```
 
-This command composes:
+This explicit sequence composes:
 
 1. `npm run build`
-2. `npm run release:check`
-3. `node dist/cli.js operator-console --watch`
+2. `npm run cli -- assistant-setup`
+3. `npm run cli -- assistant-doctor`
+4. `npm run cli -- healthcheck --json`
+5. `node dist/cli.js operator-console --watch`
 
 There is not yet a separate long-running service entrypoint in this repository. The operator console watch mode is the current supported staging/production-like operational launch path.
 
@@ -389,16 +395,13 @@ OLLAMA_TAGS_TIMEOUT_MS=15000
 To validate that at least one real local model-backed JSON path is working before staging use:
 
 ```bash
-npm run assistant:doctor
-npm run cli:ollama-probe
+npm run cli -- assistant-doctor
+npm run cli -- ollama-probe
 npm run cli -- ollama-probe --json
 ```
 
-For a deterministic provider-level smoke that does not require a live Ollama process, use:
-
-```bash
-npm run smoke:ollama-provider
-```
+For a deterministic provider-level smoke that does not require a live Ollama
+process, use the existing Vitest coverage around `src/providers/ollama.provider.smoke.ts`.
 
 ## Installable CLI
 
@@ -421,8 +424,8 @@ npm run link:local
 ### Direct compiled usage
 
 ```bash
-npm run assistant:doctor
-npm run assistant:start -- --task "Draft a short operator brief"
+npm run cli -- assistant-doctor
+npm run cli -- assistant-start --task "Draft a short operator brief"
 npm run cli:help
 npm run cli -- dashboard
 npm run cli:console
