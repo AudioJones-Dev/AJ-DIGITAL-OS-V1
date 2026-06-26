@@ -33,6 +33,7 @@
     "release:check": "npm run typecheck && npm test && npm run build && npm run smoke && npm pack --dry-run",
     "validate:crm-migration": "npm run build && node dist/scripts/validate-crm-migration.js",
     "test": "vitest run",
+    "test:crm-rls": "vitest run tests/db/crm-rls.integration.test.ts",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage"
   },
@@ -44,7 +45,9 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "@types/pg": "^8.20.0",
     "@vitest/coverage-v8": "^4.1.8",
+    "pg": "^8.22.0",
     "typescript": "^5.8.3",
     "vitest": "^4.1.8"
   },
