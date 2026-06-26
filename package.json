@@ -31,6 +31,7 @@
     "link:local": "npm run build && npm link",
     "smoke": "node dist/scripts/smoke-cli.js",
     "release:check": "npm run typecheck && npm test && npm run build && npm run smoke && npm pack --dry-run",
+    "validate:crm-migration": "npm run build && node dist/scripts/validate-crm-migration.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage"
