@@ -5,7 +5,7 @@
  * and deployment config before go-live.
  *
  * Usage:
- *   npm run validate:production
+ *   node --import ./dist/env.js dist/scripts/validate-production-ready.js
  */
 
 import "../env.js";

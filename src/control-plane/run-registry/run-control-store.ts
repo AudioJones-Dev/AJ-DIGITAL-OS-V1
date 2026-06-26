@@ -1,20 +1,23 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { resolveRuntimePath } from "../../core/runtime-paths.js";
 import type { ControlRunRecord, RunControlState } from "./run-control-types.js";
 import { VALID_TRANSITIONS } from "./run-control-types.js";
 
-const STORE_PATH = join(process.cwd(), "runtime", "control-runs.json");
+function storePath(): string {
+  return resolveRuntimePath("control-runs.json");
+}
 
 function ensureDir(): void {
-  const dir = join(process.cwd(), "runtime");
+  const dir = resolveRuntimePath();
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
 function loadRecords(): ControlRunRecord[] {
   ensureDir();
-  if (!existsSync(STORE_PATH)) return [];
+  const path = storePath();
+  if (!existsSync(path)) return [];
   try {
-    return JSON.parse(readFileSync(STORE_PATH, "utf-8")) as ControlRunRecord[];
+    return JSON.parse(readFileSync(path, "utf-8")) as ControlRunRecord[];
   } catch {
     return [];
   }
@@ -22,7 +25,7 @@ function loadRecords(): ControlRunRecord[] {
 
 function saveRecords(records: ControlRunRecord[]): void {
   ensureDir();
-  writeFileSync(STORE_PATH, JSON.stringify(records, null, 2), "utf-8");
+  writeFileSync(storePath(), JSON.stringify(records, null, 2), "utf-8");
 }
 
 export function createControlRun(runId: string, agentId: string): ControlRunRecord {

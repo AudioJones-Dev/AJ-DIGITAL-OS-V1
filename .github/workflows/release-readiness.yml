@@ -1,0 +1,54 @@
+name: Release Readiness
+
+on:
+  push:
+    branches:
+      - main
+      - 'build/**'
+      - 'docs/**'
+  pull_request:
+    branches:
+      - main
+      - 'build/**'
+      - 'docs/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-readiness-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-readiness:
+    name: typecheck-test-build-smoke-pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: CLI smoke
+        run: npm run smoke
+
+      - name: Package dry run
+        run: npm pack --dry-run

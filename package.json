@@ -29,6 +29,8 @@
     "cli:resume": "npm run cli -- resume-run",
     "control-plane:start": "node --import ./dist/env.js dist/control-plane/index.js",
     "link:local": "npm run build && npm link",
+    "smoke": "node dist/scripts/smoke-cli.js",
+    "release:check": "npm run typecheck && npm test && npm run build && npm run smoke && npm pack --dry-run",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage"

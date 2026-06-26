@@ -67,74 +67,72 @@ Run these exactly before staging startup:
 ```bash
 npm install
 npm run build
-npm run assistant:setup
-npm run assistant:doctor
-npm run release:check
+npm run cli -- assistant-setup
+npm run cli -- assistant-doctor
+npm run cli -- healthcheck --json
 ```
 
-`release:check` is the deploy/start gate. It exits with code `0` when readiness passes and non-zero when production prerequisites are not met.
+The healthcheck and assistant doctor commands are the current deploy/start gate.
+They exit with code `0` when readiness passes and non-zero when production
+prerequisites are not met.
 
 Optional machine-readable preflight output:
 
 ```bash
-npm run smoke:ollama-provider
 npm run cli -- healthcheck --json
 npm run cli -- ollama-probe --json
-npm run assistant:doctor -- --json
+npm run cli -- assistant-doctor --json
 ```
 
 Assistant verification commands:
 
 ```bash
-npm run assistant:start -- --brand aj-digital --task "Draft a short operator brief"
-npm run assistant:start -- --task "Repurpose this transcript" --skill transcript-to-content --mode orchestrated --source "Transcript text here"
-npm run assistant:history
-npm run conversation:history
-npm run assistant:shell -- --brand audio-jones --label staging-ops
-npm run conversation:thread -- --threadId <thread-id>
-npm run ui:start
-npm run deliverables -- --brand aj-digital
-npm run deliverables:pending
-npm run memory:index -- --rebuild
-npm run memory:search -- --query "approval workflow"
-npm run memory:stats
+npm run cli -- assistant-start --brand aj-digital --task "Draft a short operator brief"
+npm run cli -- assistant-start --task "Repurpose this transcript" --skill transcript-to-content --mode orchestrated --source "Transcript text here"
+npm run cli -- assistant-history
+npm run cli -- conversation-history
+npm run cli -- assistant-shell --brand audio-jones --label staging-ops
+npm run cli -- conversation-thread --threadId <thread-id>
+npm run cli -- ui-start
+npm run cli -- deliverables --brand aj-digital
+npm run cli -- list-pending-deliverables
+npm run cli -- memory-index --rebuild
+npm run cli -- memory-search --query "approval workflow"
+npm run cli -- memory-stats
 npm run cli -- submit-for-approval --deliverableId <deliverable-id>
 npm run cli -- approve-deliverable --deliverableId <deliverable-id>
 npm run cli -- publish-deliverable --deliverableId <deliverable-id>
-npm run tool-registry
-npm run integration-profiles -- --brand aj-digital
-npm run model-profiles -- --brand aj-digital
+npm run cli -- tool-registry
+npm run cli -- integration-profiles --brand aj-digital
+npm run cli -- model-profiles --brand aj-digital
 ```
 
 ## Build And Start Commands
 
-Single-command staging launch path:
+The current staging launch path is explicit. No dedicated `start:staging`
+npm script is defined in `package.json` at this stage.
 
 ```bash
-npm run start:staging
+npm run build
+npm run cli -- assistant-setup
+npm run cli -- assistant-doctor
+npm run cli -- healthcheck --json
+node dist/cli.js operator-console --watch
 ```
 
 This composes:
 
 1. `npm run build`
-2. `npm run release:check`
-3. `node dist/cli.js operator-console --watch`
-
-Equivalent explicit sequence:
-
-```bash
-npm run build
-npm run assistant:setup
-npm run assistant:doctor
-npm run release:check
-node dist/cli.js operator-console --watch
-```
+2. `npm run cli -- assistant-setup`
+3. `npm run cli -- assistant-doctor`
+4. `npm run cli -- healthcheck --json`
+5. `node dist/cli.js operator-console --watch`
 
 ## Current Launch Limitation
 
 AJ Digital OS does not yet provide a dedicated always-on service entrypoint for deployment. The current production-like operational launch path is the CLI operator console in watch mode. This is intentional for the current scaffold and should be treated as the correct staging start path until a dedicated runtime process is introduced.
 
-The assistant path follows the same constraint: `assistant:start`, `assistant:shell`, and `ui:start` are thin surfaces around the current assistant runtime. They should not be presented as a standalone production desktop or SaaS application yet.
+The assistant path follows the same constraint: `assistant-start`, `assistant-shell`, and `ui-start` are thin surfaces around the current assistant runtime. They should not be presented as a standalone production desktop or SaaS application yet.
 
 ## Post-Start Verification Commands
 

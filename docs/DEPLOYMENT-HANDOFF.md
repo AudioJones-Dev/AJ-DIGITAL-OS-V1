@@ -6,10 +6,10 @@
 |---|------|--------|
 | 1 | Renamed `SUPABASE_ANON_KEY` → `SUPABASE_SERVICE_ROLE_KEY` everywhere | ✅ Done |
 | 2 | Added production config guards in `src/server.ts` (fail-fast on missing env vars) | ✅ Done |
-| 3 | Created `src/scripts/validate-production-ready.ts` + `npm run validate:production` | ✅ Done |
+| 3 | Created `src/scripts/validate-production-ready.ts`; run it after build with `node --import ./dist/env.js dist/scripts/validate-production-ready.js` | ✅ Done |
 | 4 | Verified Dockerfile, docker-compose.yml, Procfile, .dockerignore are current | ✅ Done |
 | 5 | Audited logging — no secrets printed to stdout/stderr | ✅ Done |
-| 6 | Added `npm run start:production-local` (build → validate → start) | ✅ Done |
+| 6 | Documented explicit production-local sequence (`npm run build` -> validation script -> `node dist/server.js`); no dedicated npm alias exists in current `package.json` | ✅ Done |
 | 7 | This deployment handoff document | ✅ Done |
 
 ---
@@ -32,10 +32,9 @@
 
 ```bash
 npm run build                   # TypeScript → dist/
-npm run validate:supabase-schema # Check all 7 Supabase tables exist
-npm run validate:production      # Full production readiness check
-npm run start:production-local   # Build + validate + start server
-npm run start:full               # Build + start (no validation)
+node --import ./dist/env.js dist/scripts/validate-supabase-schema.js  # Check all 7 Supabase tables exist
+node --import ./dist/env.js dist/scripts/validate-production-ready.js # Full production readiness check
+node dist/server.js              # Start server after build/validation
 ```
 
 ---
@@ -81,7 +80,7 @@ These items **cannot** be done by Copilot and require manual action:
 - [ ] **Verify Supabase RLS policies** — Ensure service role key has write access to all 7 tables.
 - [ ] **Set DNS / domain** — Point your domain to the deployment host.
 - [ ] **Enable HTTPS** — Use a reverse proxy (nginx, Caddy) or platform-provided TLS.
-- [ ] **Run `npm run validate:production`** on the deployed environment to confirm all checks pass.
+- [ ] **Run `node --import ./dist/env.js dist/scripts/validate-production-ready.js`** on the deployed environment to confirm all checks pass.
 
 ---
 

@@ -46,7 +46,7 @@ export class AssistantStartCommand {
     if (!readiness.ok) {
       const result = this.buildBlockedResult(
         readiness,
-        "Assistant prerequisites are not ready. Run `npm run assistant:doctor` and resolve the reported setup issues before starting a session.",
+        "Assistant prerequisites are not ready. Run `npm run cli -- assistant-doctor` and resolve the reported setup issues before starting a session.",
       );
       await this.recordSession({
         sourceCommand: "assistant-start",
