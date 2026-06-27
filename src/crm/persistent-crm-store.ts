@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { readJSON, writeJSON } from "../security/persistence/json-file-store.js";
+import type { CrmStore } from "./crm-store.js";
 import type {
   CrmContact,
   CrmLead,
@@ -84,7 +85,7 @@ function assertPrimaryIdUnchanged<TRecord extends CrmTenantScopedRecord>(
   }
 }
 
-export class PersistentCrmStore {
+export class PersistentCrmStore implements CrmStore {
   constructor(private readonly filePath: string = DEFAULT_CRM_STORE_PATH) {}
 
   async createContact(context: CrmTenantContext, contact: CrmContact): Promise<CrmContact> {

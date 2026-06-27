@@ -2,6 +2,7 @@ export * from "./crm-audit.js";
 export * from "./crm-approval-policy.js";
 export * from "./crm-attribution.js";
 export * from "./crm-service.js";
+export * from "./crm-store.js";
 export * from "./crm-types.js";
 export * from "./crm-schemas.js";
 export * from "./crm-seed.js";
