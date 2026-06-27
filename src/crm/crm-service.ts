@@ -2,6 +2,7 @@ import type { CrmAuditEventType, CrmAuditObjectType, PersistentCrmAuditLog } fro
 import { auditPayloadForContext, defaultCrmAuditLog } from "./crm-audit.js";
 import { emitCrmAttribution } from "./crm-attribution.js";
 import { evaluateCrmApproval, type CrmServiceAction } from "./crm-approval-policy.js";
+import type { CrmStore } from "./crm-store.js";
 import type {
   CrmContact,
   CrmLead,
@@ -9,7 +10,7 @@ import type {
   CrmTenantContext,
   CrmTenantScopedRecord,
 } from "./crm-types.js";
-import { defaultCrmStore, PersistentCrmStore } from "./persistent-crm-store.js";
+import { defaultCrmStore } from "./persistent-crm-store.js";
 
 export class CrmApprovalRequiredError extends Error {
   constructor(action: CrmServiceAction, reason: string) {
@@ -32,12 +33,12 @@ export class CrmPermissionDeniedError extends Error {
 }
 
 export interface CrmServiceOptions {
-  store?: PersistentCrmStore | undefined;
+  store?: CrmStore | undefined;
   auditLog?: PersistentCrmAuditLog | undefined;
 }
 
 export class CrmService {
-  private readonly store: PersistentCrmStore;
+  private readonly store: CrmStore;
   private readonly auditLog: PersistentCrmAuditLog;
 
   constructor(options: CrmServiceOptions = {}) {

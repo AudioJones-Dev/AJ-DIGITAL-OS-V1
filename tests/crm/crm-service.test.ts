@@ -17,7 +17,13 @@ import {
   PersistentCrmStore,
   assertCrmTenantContext,
   createTwoTenantCrmSeedData,
+  defaultCrmService,
+  defaultCrmStore,
   evaluateCrmApproval,
+  type CrmContact,
+  type CrmLead,
+  type CrmOpportunity,
+  type CrmStore,
   type CrmTenantContext,
   type CrmTenantMembership,
 } from "../../src/crm/index.js";
@@ -78,6 +84,103 @@ function makeService(): {
   };
 }
 
+class FakeCrmStore implements CrmStore {
+  readonly calls: string[] = [];
+
+  constructor(
+    private readonly contact: CrmContact,
+    private readonly lead: CrmLead,
+    private readonly opportunity: CrmOpportunity,
+  ) {}
+
+  async createContact(_context: CrmTenantContext, contact: CrmContact): Promise<CrmContact> {
+    this.calls.push("createContact");
+    return contact;
+  }
+
+  async getContact(_context: CrmTenantContext, _contactId: string): Promise<CrmContact | null> {
+    this.calls.push("getContact");
+    return this.contact;
+  }
+
+  async listContacts(_context: CrmTenantContext): Promise<CrmContact[]> {
+    this.calls.push("listContacts");
+    return [this.contact];
+  }
+
+  async updateContact(
+    context: CrmTenantContext,
+    contactId: string,
+    patch: Partial<CrmContact> & Pick<CrmContact, "tenantId">,
+  ): Promise<CrmContact> {
+    this.calls.push("updateContact");
+    return {
+      ...this.contact,
+      ...patch,
+      tenantId: context.tenantId,
+      contactId,
+    };
+  }
+
+  async createLead(_context: CrmTenantContext, lead: CrmLead): Promise<CrmLead> {
+    this.calls.push("createLead");
+    return lead;
+  }
+
+  async getLead(_context: CrmTenantContext, _leadId: string): Promise<CrmLead | null> {
+    this.calls.push("getLead");
+    return this.lead;
+  }
+
+  async listLeads(_context: CrmTenantContext): Promise<CrmLead[]> {
+    this.calls.push("listLeads");
+    return [this.lead];
+  }
+
+  async updateLead(
+    context: CrmTenantContext,
+    leadId: string,
+    patch: Partial<CrmLead> & Pick<CrmLead, "tenantId">,
+  ): Promise<CrmLead> {
+    this.calls.push("updateLead");
+    return {
+      ...this.lead,
+      ...patch,
+      tenantId: context.tenantId,
+      leadId,
+    };
+  }
+
+  async createOpportunity(_context: CrmTenantContext, opportunity: CrmOpportunity): Promise<CrmOpportunity> {
+    this.calls.push("createOpportunity");
+    return opportunity;
+  }
+
+  async getOpportunity(_context: CrmTenantContext, _opportunityId: string): Promise<CrmOpportunity | null> {
+    this.calls.push("getOpportunity");
+    return this.opportunity;
+  }
+
+  async listOpportunities(_context: CrmTenantContext): Promise<CrmOpportunity[]> {
+    this.calls.push("listOpportunities");
+    return [this.opportunity];
+  }
+
+  async updateOpportunity(
+    context: CrmTenantContext,
+    opportunityId: string,
+    patch: Partial<CrmOpportunity> & Pick<CrmOpportunity, "tenantId">,
+  ): Promise<CrmOpportunity> {
+    this.calls.push("updateOpportunity");
+    return {
+      ...this.opportunity,
+      ...patch,
+      tenantId: context.tenantId,
+      opportunityId,
+    };
+  }
+}
+
 describe("CRM approval policy", () => {
   it("requires approval for opportunity updates", () => {
     const decision = evaluateCrmApproval("update_opportunity", "pending");
@@ -95,6 +198,50 @@ describe("CRM approval policy", () => {
 });
 
 describe("CrmService", () => {
+  it("keeps the default service on the file-backed store", () => {
+    expect((defaultCrmService as unknown as { store: unknown }).store).toBe(defaultCrmStore);
+  });
+
+  it("delegates CRM writes through an injected store contract", async () => {
+    const seed = createTwoTenantCrmSeedData();
+    const tenantA = tenantContext(
+      seed.tenants[0].tenantId,
+      seed.tenants[0].ownerUserId,
+      seed.memberships,
+      "approved",
+    );
+    const store = new FakeCrmStore(seed.contacts[0], seed.leads[0], seed.opportunities[0]);
+    const service = new CrmService({
+      store,
+      auditLog: new PersistentCrmAuditLog(tmpFile("crm-contract-audit.jsonl")),
+    });
+
+    await service.createContact(tenantA, seed.contacts[0]);
+    await service.updateContact(tenantA, seed.contacts[0].contactId, {
+      tenantId: tenantA.tenantId,
+      lifecycleStage: "qualified",
+    });
+    await service.createLead(tenantA, seed.leads[0]);
+    await service.updateLead(tenantA, seed.leads[0].leadId, {
+      tenantId: tenantA.tenantId,
+      status: "working",
+    });
+    await service.createOpportunity(tenantA, seed.opportunities[0]);
+    await service.updateOpportunity(tenantA, seed.opportunities[0].opportunityId, {
+      tenantId: tenantA.tenantId,
+      status: "won",
+    });
+
+    expect(store.calls).toEqual([
+      "createContact",
+      "updateContact",
+      "createLead",
+      "updateLead",
+      "createOpportunity",
+      "updateOpportunity",
+    ]);
+  });
+
   it("creates a contact through tenant guard, audit, and attribution", async () => {
     const seed = createTwoTenantCrmSeedData();
     const { service, auditLog } = makeService();

@@ -1,5 +1,6 @@
 import type { CrmTenantDbClient } from "../db/crm-tenant-context.js";
 import { withTenantContext } from "../db/crm-tenant-context.js";
+import type { CrmStore } from "./crm-store.js";
 import type {
   CrmContact,
   CrmLead,
@@ -176,7 +177,7 @@ function mapOpportunity(row: OpportunityRow): CrmOpportunity {
   };
 }
 
-export class PostgresCrmStore {
+export class PostgresCrmStore implements CrmStore {
   constructor(private readonly pool: PostgresCrmPool) {}
 
   async createContact(context: CrmTenantContext, contact: CrmContact): Promise<CrmContact> {
