@@ -13,9 +13,13 @@ import {
   CrmApprovalRequiredError,
   CrmPermissionDeniedError,
   CrmService,
+  CrmServiceFactoryError,
   PersistentCrmAuditLog,
   PersistentCrmStore,
+  PostgresCrmStore,
   assertCrmTenantContext,
+  createCrmService,
+  createPostgresCrmService,
   createTwoTenantCrmSeedData,
   defaultCrmService,
   defaultCrmStore,
@@ -26,6 +30,7 @@ import {
   type CrmStore,
   type CrmTenantContext,
   type CrmTenantMembership,
+  type PostgresCrmPool,
 } from "../../src/crm/index.js";
 
 let tmpDir = "";
@@ -200,6 +205,41 @@ describe("CRM approval policy", () => {
 describe("CrmService", () => {
   it("keeps the default service on the file-backed store", () => {
     expect((defaultCrmService as unknown as { store: unknown }).store).toBe(defaultCrmStore);
+  });
+
+  it("creates a default service with the file-backed store", () => {
+    const service = createCrmService();
+
+    expect((service as unknown as { store: unknown }).store).toBe(defaultCrmStore);
+  });
+
+  it("creates a service with an explicitly injected store", () => {
+    const seed = createTwoTenantCrmSeedData();
+    const store = new FakeCrmStore(seed.contacts[0], seed.leads[0], seed.opportunities[0]);
+    const service = createCrmService({ store });
+
+    expect((service as unknown as { store: unknown }).store).toBe(store);
+  });
+
+  it("creates a service with an explicit Postgres CRM store", () => {
+    const pool: PostgresCrmPool = {
+      connect: vi.fn(),
+    };
+
+    const service = createPostgresCrmService(pool);
+    const store = (service as unknown as { store: unknown }).store;
+
+    expect(store).toBeInstanceOf(PostgresCrmStore);
+  });
+
+  it("rejects ambiguous service factory store inputs", () => {
+    const seed = createTwoTenantCrmSeedData();
+    const store = new FakeCrmStore(seed.contacts[0], seed.leads[0], seed.opportunities[0]);
+    const postgresPool: PostgresCrmPool = {
+      connect: vi.fn(),
+    };
+
+    expect(() => createCrmService({ store, postgresPool })).toThrow(CrmServiceFactoryError);
   });
 
   it("delegates CRM writes through an injected store contract", async () => {
