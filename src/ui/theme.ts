@@ -38,7 +38,8 @@ export const buildThemeCssVariables = (theme: UiTheme = uiTheme): string => {
 export const buildUiStylesheet = (theme: UiTheme = uiTheme): string => {
   const variables = buildThemeCssVariables(theme);
 
-  return `
+  return `@import url("https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap");
+
 :root {
 ${variables}
 }

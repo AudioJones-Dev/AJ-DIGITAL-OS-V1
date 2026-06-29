@@ -39,10 +39,10 @@ export default async function HermesPage() {
               {status.health}
             </span>
             {status.version != null && (
-              <span className="text-xs text-zinc-500 font-mono">v{String(status.version)}</span>
+              <span className="text-xs text-aj-text-muted font-mono">v{String(status.version)}</span>
             )}
             {status.uptime != null && (
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-aj-text-muted">
                 up {Math.floor(Number(status.uptime) / 60)}m
               </span>
             )}
@@ -50,12 +50,12 @@ export default async function HermesPage() {
 
           {/* Missions */}
           <div>
-            <h2 className="text-sm font-semibold mb-3 text-zinc-300">
+            <h2 className="text-sm font-semibold mb-3 text-aj-text-secondary">
               Missions{" "}
-              <span className="text-zinc-600 font-normal">({status.missions?.length ?? 0})</span>
+              <span className="text-aj-text-muted font-normal">({status.missions?.length ?? 0})</span>
             </h2>
             {!status.missions?.length ? (
-              <p className="text-zinc-600 text-sm">No active missions.</p>
+              <p className="text-aj-text-muted text-sm">No active missions.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {status.missions.map((mission) => (
@@ -68,24 +68,24 @@ export default async function HermesPage() {
           {/* BEL Capabilities */}
           {capabilities && (
             <div>
-              <h2 className="text-sm font-semibold mb-3 text-zinc-300">BEL Capabilities</h2>
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+              <h2 className="text-sm font-semibold mb-3 text-aj-text-secondary">BEL Capabilities</h2>
+              <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
                 {capabilities.tools?.length ? (
                   <div className="flex flex-wrap gap-2">
                     {capabilities.tools.map((tool) => (
                       <span
                         key={tool}
-                        className="text-xs bg-zinc-800 text-zinc-300 px-2 py-1 rounded font-mono"
+                        className="text-xs bg-aj-surface-2 text-aj-text-secondary px-2 py-1 rounded font-mono"
                       >
                         {tool}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-zinc-600 text-sm">No tools reported.</p>
+                  <p className="text-aj-text-muted text-sm">No tools reported.</p>
                 )}
                 {capabilities.version != null && (
-                  <p className="mt-3 text-xs text-zinc-500 font-mono">
+                  <p className="mt-3 text-xs text-aj-text-muted font-mono">
                     BEL v{String(capabilities.version)}
                   </p>
                 )}

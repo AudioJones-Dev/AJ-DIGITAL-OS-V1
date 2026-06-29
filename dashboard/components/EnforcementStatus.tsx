@@ -12,7 +12,7 @@ const DECISION_COLORS: Record<ActionDecision, string> = {
 };
 
 const RISK_COLORS: Record<RiskLevel, string> = {
-  low: "bg-zinc-800 text-zinc-300",
+  low: "bg-aj-surface-2 text-aj-text-secondary",
   medium: "bg-amber-950/60 text-amber-300 border border-amber-900",
   high: "bg-red-950/60 text-red-300 border border-red-900",
 };
@@ -23,10 +23,10 @@ export default function EnforcementStatus({ snapshot }: Props) {
       data-testid="enforcement-status"
       data-decision={snapshot.decision ?? "none"}
       data-risk={snapshot.risk ?? "none"}
-      className="bg-zinc-900 border border-zinc-800 rounded-md p-4 space-y-3"
+      className="bg-aj-surface-1 border border-aj-border rounded-md p-4 space-y-3"
     >
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-zinc-200">Enforcement Status</h3>
+        <h3 className="text-sm font-semibold text-aj-text">Enforcement Status</h3>
         {snapshot.decision && (
           <span
             data-testid="enforcement-decision"
@@ -60,7 +60,7 @@ export default function EnforcementStatus({ snapshot }: Props) {
           value={
             <span
               className={
-                snapshot.approvalRequired ? "text-amber-300 font-medium" : "text-zinc-500"
+                snapshot.approvalRequired ? "text-amber-300 font-medium" : "text-aj-text-muted"
               }
               data-testid="approval-required-flag"
             >
@@ -81,7 +81,7 @@ export default function EnforcementStatus({ snapshot }: Props) {
                 {snapshot.tenantId}
               </span>
             ) : (
-              <span className="text-zinc-500" data-testid="tenant-status">absent</span>
+              <span className="text-aj-text-muted" data-testid="tenant-status">absent</span>
             )
           }
         />
@@ -96,7 +96,7 @@ export default function EnforcementStatus({ snapshot }: Props) {
           data-testid="blocked-reason"
           className="bg-red-950/40 border border-red-900 rounded p-2 text-xs text-red-300 font-mono"
         >
-          <span className="text-zinc-500 not-italic mr-1">blocked:</span>
+          <span className="text-aj-text-muted not-italic mr-1">blocked:</span>
           {snapshot.blockedReason}
         </div>
       )}
@@ -108,7 +108,7 @@ export default function EnforcementStatus({ snapshot }: Props) {
       )}
 
       {snapshot.enforcementAuditId && (
-        <div className="text-xs text-zinc-500">
+        <div className="text-xs text-aj-text-muted">
           Enforcement audit: <span className="font-mono">{snapshot.enforcementAuditId.slice(0, 12)}…</span>
         </div>
       )}
@@ -119,8 +119,8 @@ export default function EnforcementStatus({ snapshot }: Props) {
 function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
     <>
-      <dt className="text-zinc-500">{label}</dt>
-      <dd className="text-zinc-200">{value}</dd>
+      <dt className="text-aj-text-muted">{label}</dt>
+      <dd className="text-aj-text">{value}</dd>
     </>
   );
 }

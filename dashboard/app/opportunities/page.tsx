@@ -21,12 +21,12 @@ export default async function OpportunitiesPage() {
           {error}
         </div>
       ) : items.length === 0 ? (
-        <p className="text-zinc-600 text-sm">No opportunities found.</p>
+        <p className="text-aj-text-muted text-sm">No opportunities found.</p>
       ) : (
         <div className="space-y-3">
           {items.map((item, i) => (
-            <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-              <pre className="text-xs text-zinc-300 font-mono overflow-x-auto whitespace-pre-wrap">
+            <div key={i} className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
+              <pre className="text-xs text-aj-text-secondary font-mono overflow-x-auto whitespace-pre-wrap">
                 {JSON.stringify(item, null, 2)}
               </pre>
             </div>

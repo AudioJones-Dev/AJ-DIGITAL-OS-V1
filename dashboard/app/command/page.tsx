@@ -16,7 +16,7 @@ function StatCard({
   label,
   value,
   sub,
-  color = "text-zinc-100",
+  color = "text-aj-text",
 }: {
   label: string;
   value: string | number;
@@ -24,17 +24,17 @@ function StatCard({
   color?: string;
 }) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-      <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">{label}</p>
+    <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
+      <p className="text-xs text-aj-text-muted uppercase tracking-wide mb-1">{label}</p>
       <p className={`text-2xl font-bold ${color}`}>{value}</p>
-      {sub && <p className="text-xs text-zinc-600 mt-1">{sub}</p>}
+      {sub && <p className="text-xs text-aj-text-muted mt-1">{sub}</p>}
     </div>
   );
 }
 
 function StateChip({ state }: { state: string }) {
   const colors: Record<string, string> = {
-    queued: "bg-zinc-700 text-zinc-200",
+    queued: "bg-aj-surface-3 text-aj-text",
     planning: "bg-blue-900 text-blue-200",
     running: "bg-green-900 text-green-200",
     waiting_for_approval: "bg-yellow-900 text-yellow-200",
@@ -42,10 +42,10 @@ function StateChip({ state }: { state: string }) {
     escalated: "bg-red-900 text-red-200",
     completed: "bg-emerald-900 text-emerald-200",
     failed: "bg-red-950 text-red-300",
-    cancelled: "bg-zinc-800 text-zinc-400",
+    cancelled: "bg-aj-surface-2 text-aj-text-secondary",
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[state] ?? "bg-zinc-700 text-zinc-200"}`}>
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[state] ?? "bg-aj-surface-3 text-aj-text"}`}>
       {state}
     </span>
   );
@@ -100,8 +100,8 @@ export default async function CommandPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Command Center</h1>
-          <p className="text-zinc-500 text-sm mt-0.5">AJ Digital OS — Operator View</p>
+          <h1 className="text-2xl font-bold text-aj-text">Command Center</h1>
+          <p className="text-aj-text-muted text-sm mt-0.5">AJ Digital OS — Operator View</p>
         </div>
         <div className="flex items-center gap-2">
           <span
@@ -111,14 +111,14 @@ export default async function CommandPage() {
           >
             {h?.ok ? "OS Online" : "OS Offline"}
           </span>
-          <span className="text-xs text-zinc-600">{new Date().toLocaleTimeString()}</span>
+          <span className="text-xs text-aj-text-muted">{new Date().toLocaleTimeString()}</span>
         </div>
       </div>
 
       {/* Core Modules */}
       {h?.modules && (
         <div>
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+          <h2 className="text-xs font-semibold text-aj-text-muted uppercase tracking-wider mb-3">
             Core Modules
           </h2>
           <div className="flex flex-wrap gap-2">
@@ -131,30 +131,30 @@ export default async function CommandPage() {
 
       {/* Key Metrics */}
       <div>
-        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+        <h2 className="text-xs font-semibold text-aj-text-muted uppercase tracking-wider mb-3">
           System Metrics
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatCard
             label="Active Runs"
             value={activeRuns.length}
-            color={activeRuns.length > 0 ? "text-green-400" : "text-zinc-100"}
+            color={activeRuns.length > 0 ? "text-green-400" : "text-aj-text"}
           />
           <StatCard
             label="Pending Approval"
             value={pendingApproval.length}
-            color={pendingApproval.length > 0 ? "text-yellow-400" : "text-zinc-100"}
+            color={pendingApproval.length > 0 ? "text-yellow-400" : "text-aj-text"}
           />
           <StatCard
             label="Failed Runs"
             value={failedRuns.length}
-            color={failedRuns.length > 0 ? "text-red-400" : "text-zinc-100"}
+            color={failedRuns.length > 0 ? "text-red-400" : "text-aj-text"}
           />
           <StatCard
             label="Policy Blocks"
             value={policyBlock}
             sub={policyTotal > 0 ? `${Math.round((policyBlock / policyTotal) * 100)}% of decisions` : undefined}
-            color={policyBlock > 0 ? "text-red-400" : "text-zinc-100"}
+            color={policyBlock > 0 ? "text-red-400" : "text-aj-text"}
           />
           <StatCard
             label="Events"
@@ -172,28 +172,28 @@ export default async function CommandPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Active Control Runs */}
         <div>
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+          <h2 className="text-xs font-semibold text-aj-text-muted uppercase tracking-wider mb-3">
             Recent Control Runs
           </h2>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+          <div className="bg-aj-surface-1 border border-aj-border rounded-lg overflow-hidden">
             {runs.length === 0 ? (
-              <p className="text-zinc-600 text-sm p-4">No control runs.</p>
+              <p className="text-aj-text-muted text-sm p-4">No control runs.</p>
             ) : (
               <table className="w-full text-sm">
-                <thead className="border-b border-zinc-800">
+                <thead className="border-b border-aj-border">
                   <tr>
-                    <th className="text-left px-4 py-2 text-zinc-500 font-medium text-xs">Run</th>
-                    <th className="text-left px-4 py-2 text-zinc-500 font-medium text-xs">State</th>
-                    <th className="text-left px-4 py-2 text-zinc-500 font-medium text-xs">Updated</th>
+                    <th className="text-left px-4 py-2 text-aj-text-muted font-medium text-xs">Run</th>
+                    <th className="text-left px-4 py-2 text-aj-text-muted font-medium text-xs">State</th>
+                    <th className="text-left px-4 py-2 text-aj-text-muted font-medium text-xs">Updated</th>
                   </tr>
                 </thead>
                 <tbody>
                   {runs.slice(0, 8).map((run: ControlRunRecord) => (
-                    <tr key={run.runId} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
+                    <tr key={run.runId} className="border-b border-aj-border hover:bg-aj-surface-3">
                       <td className="px-4 py-2">
                         <a
                           href={`/runs/${run.runId}`}
-                          className="font-mono text-xs text-zinc-300 hover:text-indigo-400"
+                          className="font-mono text-xs text-aj-text-secondary hover:text-aj-data"
                         >
                           {run.runId.slice(0, 12)}…
                         </a>
@@ -201,7 +201,7 @@ export default async function CommandPage() {
                       <td className="px-4 py-2">
                         <StateChip state={run.controlState} />
                       </td>
-                      <td className="px-4 py-2 text-zinc-600 text-xs">
+                      <td className="px-4 py-2 text-aj-text-muted text-xs">
                         {new Date(run.updatedAt).toLocaleTimeString()}
                       </td>
                     </tr>
@@ -214,33 +214,33 @@ export default async function CommandPage() {
 
         {/* Recent DAG Runs */}
         <div>
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+          <h2 className="text-xs font-semibold text-aj-text-muted uppercase tracking-wider mb-3">
             Recent DAG Runs
           </h2>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+          <div className="bg-aj-surface-1 border border-aj-border rounded-lg overflow-hidden">
             {dags.length === 0 ? (
-              <p className="text-zinc-600 text-sm p-4">No DAG runs.</p>
+              <p className="text-aj-text-muted text-sm p-4">No DAG runs.</p>
             ) : (
               <table className="w-full text-sm">
-                <thead className="border-b border-zinc-800">
+                <thead className="border-b border-aj-border">
                   <tr>
-                    <th className="text-left px-4 py-2 text-zinc-500 font-medium text-xs">DAG</th>
-                    <th className="text-left px-4 py-2 text-zinc-500 font-medium text-xs">Nodes</th>
-                    <th className="text-left px-4 py-2 text-zinc-500 font-medium text-xs">Status</th>
+                    <th className="text-left px-4 py-2 text-aj-text-muted font-medium text-xs">DAG</th>
+                    <th className="text-left px-4 py-2 text-aj-text-muted font-medium text-xs">Nodes</th>
+                    <th className="text-left px-4 py-2 text-aj-text-muted font-medium text-xs">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {dags.map((dag: BelDagRunState) => (
-                    <tr key={dag.runId} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
+                    <tr key={dag.runId} className="border-b border-aj-border hover:bg-aj-surface-3">
                       <td className="px-4 py-2">
                         <a
                           href={`/dag/${dag.runId}`}
-                          className="font-mono text-xs text-zinc-300 hover:text-indigo-400"
+                          className="font-mono text-xs text-aj-text-secondary hover:text-aj-data"
                         >
                           {dag.runId.slice(0, 12)}…
                         </a>
                       </td>
-                      <td className="px-4 py-2 text-zinc-400 text-xs">{dag.nodes.length}</td>
+                      <td className="px-4 py-2 text-aj-text-secondary text-xs">{dag.nodes.length}</td>
                       <td className="px-4 py-2">
                         <StateChip state={dag.status} />
                       </td>
@@ -257,24 +257,24 @@ export default async function CommandPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* MAP Evaluations */}
         <div>
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+          <h2 className="text-xs font-semibold text-aj-text-muted uppercase tracking-wider mb-3">
             Recent MAP Evaluations
           </h2>
           <div className="space-y-2">
             {evals.length === 0 ? (
-              <p className="text-zinc-600 text-sm">No evaluations.</p>
+              <p className="text-aj-text-muted text-sm">No evaluations.</p>
             ) : (
               evals.map((ev) => (
                 <div
                   key={ev.evaluationId}
-                  className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-3 flex items-center justify-between"
+                  className="bg-aj-surface-1 border border-aj-border rounded-lg px-4 py-3 flex items-center justify-between"
                 >
                   <div>
-                    <p className="text-sm text-zinc-200 font-medium truncate max-w-[200px]">{ev.title}</p>
-                    <p className="text-xs text-zinc-500 mt-0.5">{ev.category}</p>
+                    <p className="text-sm text-aj-text font-medium truncate max-w-[200px]">{ev.title}</p>
+                    <p className="text-xs text-aj-text-muted mt-0.5">{ev.category}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-mono text-sm font-bold text-indigo-400">{ev.mapScore}/9</span>
+                    <span className="font-mono text-sm font-bold text-aj-data">{ev.mapScore}/9</span>
                     <span
                       className={`text-xs px-2 py-0.5 rounded font-medium ${
                         ev.decisionBand === "strong_alignment"
@@ -295,14 +295,14 @@ export default async function CommandPage() {
 
         {/* System Events */}
         <div>
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+          <h2 className="text-xs font-semibold text-aj-text-muted uppercase tracking-wider mb-3">
             Recent System Events
           </h2>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+          <div className="bg-aj-surface-1 border border-aj-border rounded-lg overflow-hidden">
             {events.length === 0 ? (
-              <p className="text-zinc-600 text-sm p-4">No system events.</p>
+              <p className="text-aj-text-muted text-sm p-4">No system events.</p>
             ) : (
-              <div className="divide-y divide-zinc-800">
+              <div className="divide-y divide-aj-border">
                 {events.slice(0, 8).map((ev) => (
                   <div key={ev.eventId} className="px-4 py-2 flex items-start gap-3">
                     <span
@@ -313,14 +313,14 @@ export default async function CommandPage() {
                           ? "bg-yellow-900 text-yellow-300"
                           : ev.category === "state"
                           ? "bg-blue-900 text-blue-300"
-                          : "bg-zinc-800 text-zinc-400"
+                          : "bg-aj-surface-2 text-aj-text-secondary"
                       }`}
                     >
                       {ev.category}
                     </span>
                     <div className="min-w-0">
-                      <p className="text-xs text-zinc-300 truncate">{ev.eventType}</p>
-                      <p className="text-xs text-zinc-600">
+                      <p className="text-xs text-aj-text-secondary truncate">{ev.eventType}</p>
+                      <p className="text-xs text-aj-text-muted">
                         {new Date(ev.timestamp).toLocaleTimeString()}
                       </p>
                     </div>
@@ -336,24 +336,24 @@ export default async function CommandPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Retrieval Docs */}
         <div>
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+          <h2 className="text-xs font-semibold text-aj-text-muted uppercase tracking-wider mb-3">
             Retrieval Layer
           </h2>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+          <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
             {rdocs.length === 0 ? (
-              <p className="text-zinc-600 text-sm">No documents ingested.</p>
+              <p className="text-aj-text-muted text-sm">No documents ingested.</p>
             ) : (
               <div className="space-y-2">
                 {rdocs.slice(0, 4).map((doc) => (
                   <div key={doc.documentId} className="flex items-center justify-between">
-                    <p className="text-xs text-zinc-300 truncate max-w-[200px]">{doc.title}</p>
-                    <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded font-mono shrink-0">
+                    <p className="text-xs text-aj-text-secondary truncate max-w-[200px]">{doc.title}</p>
+                    <span className="text-xs bg-aj-surface-2 text-aj-text-secondary px-2 py-0.5 rounded font-mono shrink-0">
                       {doc.namespace}
                     </span>
                   </div>
                 ))}
                 {rdocs.length > 4 && (
-                  <a href="/retrieval" className="text-xs text-indigo-400 hover:underline">
+                  <a href="/retrieval" className="text-xs text-aj-data hover:underline">
                     +{rdocs.length - 4} more →
                   </a>
                 )}
@@ -364,7 +364,7 @@ export default async function CommandPage() {
 
         {/* Quick links */}
         <div>
-          <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+          <h2 className="text-xs font-semibold text-aj-text-muted uppercase tracking-wider mb-3">
             Quick Access
           </h2>
           <div className="grid grid-cols-2 gap-2">
@@ -381,10 +381,10 @@ export default async function CommandPage() {
               <a
                 key={link.href}
                 href={link.href}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-3 hover:border-indigo-800 hover:bg-zinc-800/50 transition-colors"
+                className="bg-aj-surface-1 border border-aj-border rounded-lg px-3 py-3 hover:border-aj-border-strong hover:bg-aj-surface-2 transition-colors"
               >
-                <p className="text-sm font-medium text-zinc-200">{link.label}</p>
-                <p className="text-xs text-zinc-600 mt-0.5">{link.desc}</p>
+                <p className="text-sm font-medium text-aj-text">{link.label}</p>
+                <p className="text-xs text-aj-text-muted mt-0.5">{link.desc}</p>
               </a>
             ))}
           </div>

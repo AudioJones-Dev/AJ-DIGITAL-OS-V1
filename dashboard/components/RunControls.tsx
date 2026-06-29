@@ -89,10 +89,10 @@ export default function RunControls({ runId, currentState, onResult }: Props) {
     const risk = ACTION_RISK[action];
     const base =
       "px-3 py-1.5 rounded text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
-    if (disabled) return `${base} bg-zinc-800 text-zinc-500 border border-zinc-800`;
+    if (disabled) return `${base} bg-aj-surface-2 text-aj-text-muted border border-aj-border`;
     if (risk === "high") return `${base} bg-red-950/60 hover:bg-red-900/70 text-red-200 border border-red-900`;
     if (risk === "medium") return `${base} bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-900/60`;
-    return `${base} bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700`;
+    return `${base} bg-aj-surface-2 hover:bg-aj-surface-3 text-aj-text border border-aj-border-strong`;
   }
 
   return (

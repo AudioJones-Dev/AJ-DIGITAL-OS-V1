@@ -43,28 +43,28 @@ export default async function DecisionPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-xl font-semibold">MAP-CERA Decision Engine</h1>
-        <p className="text-zinc-500 text-sm mt-1">
+        <p className="text-aj-text-muted text-sm mt-1">
           Meaningful · Actionable · Profitable → Capture · Extract · Refine · Amplify
         </p>
       </div>
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-xs text-zinc-500 uppercase tracking-wide">Evaluations</p>
-          <p className="text-2xl font-bold text-zinc-100 mt-1">{evaluations.length}</p>
+        <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
+          <p className="text-xs text-aj-text-muted uppercase tracking-wide">Evaluations</p>
+          <p className="text-2xl font-bold text-aj-text mt-1">{evaluations.length}</p>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-xs text-zinc-500 uppercase tracking-wide">Avg MAP Score</p>
-          <p className="text-2xl font-bold text-indigo-400 mt-1">{avgMap !== null ? `${avgMap}/9` : "—"}</p>
+        <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
+          <p className="text-xs text-aj-text-muted uppercase tracking-wide">Avg MAP Score</p>
+          <p className="text-2xl font-bold text-aj-data mt-1">{avgMap !== null ? `${avgMap}/9` : "—"}</p>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-xs text-zinc-500 uppercase tracking-wide">CERA Cycles</p>
-          <p className="text-2xl font-bold text-zinc-100 mt-1">{cycles.length}</p>
+        <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
+          <p className="text-xs text-aj-text-muted uppercase tracking-wide">CERA Cycles</p>
+          <p className="text-2xl font-bold text-aj-text mt-1">{cycles.length}</p>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-          <p className="text-xs text-zinc-500 uppercase tracking-wide">Avg Compound</p>
-          <p className="text-2xl font-bold text-indigo-400 mt-1">{avgCompound !== null ? `${avgCompound}/90` : "—"}</p>
+        <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
+          <p className="text-xs text-aj-text-muted uppercase tracking-wide">Avg Compound</p>
+          <p className="text-2xl font-bold text-aj-data mt-1">{avgCompound !== null ? `${avgCompound}/90` : "—"}</p>
         </div>
       </div>
 
@@ -88,11 +88,11 @@ export default async function DecisionPage() {
 
       {/* MAP Evaluations */}
       <div>
-        <h2 className="text-sm font-semibold text-zinc-300 mb-4">MAP Evaluations</h2>
+        <h2 className="text-sm font-semibold text-aj-text-secondary mb-4">MAP Evaluations</h2>
         {evaluations.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
-            <p className="text-zinc-500 text-sm">No evaluations yet.</p>
-            <p className="text-zinc-700 text-xs mt-2">
+          <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-8 text-center">
+            <p className="text-aj-text-muted text-sm">No evaluations yet.</p>
+            <p className="text-aj-text-muted text-xs mt-2">
               node dist/cli.js map-evaluate --title "..." --category campaign --meaningful 3 --actionable 3 --profitable 2
             </p>
           </div>
@@ -105,25 +105,25 @@ export default async function DecisionPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="text-sm font-semibold text-zinc-100 truncate">{ev.title}</p>
-                        <span className="text-xs text-zinc-500 shrink-0">{ev.category}</span>
+                        <p className="text-sm font-semibold text-aj-text truncate">{ev.title}</p>
+                        <span className="text-xs text-aj-text-muted shrink-0">{ev.category}</span>
                       </div>
-                      <p className="text-xs text-zinc-500 line-clamp-2">{ev.description}</p>
+                      <p className="text-xs text-aj-text-muted line-clamp-2">{ev.description}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <span className="font-mono text-lg font-bold text-zinc-100">{ev.mapScore}/9</span>
+                      <span className="font-mono text-lg font-bold text-aj-text">{ev.mapScore}/9</span>
                       <div className="flex gap-1">
                         <span className={`text-xs px-2 py-0.5 rounded font-medium ${cfg.badge}`}>{cfg.label}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${DECISION_COLORS[ev.decision] ?? "bg-zinc-800 text-zinc-300"}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${DECISION_COLORS[ev.decision] ?? "bg-aj-surface-2 text-aj-text-secondary"}`}>
                           {ev.decision}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-4 mt-3 text-xs text-zinc-500">
-                    <span>M: <span className="text-zinc-300 font-medium">{ev.meaningfulScore}</span></span>
-                    <span>A: <span className="text-zinc-300 font-medium">{ev.actionableScore}</span></span>
-                    <span>P: <span className="text-zinc-300 font-medium">{ev.profitableScore}</span></span>
+                  <div className="flex gap-4 mt-3 text-xs text-aj-text-muted">
+                    <span>M: <span className="text-aj-text-secondary font-medium">{ev.meaningfulScore}</span></span>
+                    <span>A: <span className="text-aj-text-secondary font-medium">{ev.actionableScore}</span></span>
+                    <span>P: <span className="text-aj-text-secondary font-medium">{ev.profitableScore}</span></span>
                     <span className="ml-auto">{new Date(ev.createdAt).toLocaleString()}</span>
                   </div>
                 </div>
@@ -135,52 +135,52 @@ export default async function DecisionPage() {
 
       {/* CERA Cycles */}
       <div>
-        <h2 className="text-sm font-semibold text-zinc-300 mb-4">CERA Cycles</h2>
+        <h2 className="text-sm font-semibold text-aj-text-secondary mb-4">CERA Cycles</h2>
         {cycles.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
-            <p className="text-zinc-500 text-sm">No CERA cycles yet.</p>
-            <p className="text-zinc-700 text-xs mt-2">
+          <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-8 text-center">
+            <p className="text-aj-text-muted text-sm">No CERA cycles yet.</p>
+            <p className="text-aj-text-muted text-xs mt-2">
               node dist/cli.js cera-cycle --evaluationId &lt;id&gt; --capture "signal1,signal2"
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-md border border-zinc-800">
+          <div className="overflow-x-auto rounded-md border border-aj-border">
             <table className="w-full text-sm">
-              <thead className="bg-zinc-900 border-b border-zinc-800">
+              <thead className="bg-aj-surface-1 border-b border-aj-border">
                 <tr>
-                  <th className="text-left px-4 py-2 text-zinc-400 font-medium text-xs">Cycle</th>
-                  <th className="text-left px-4 py-2 text-zinc-400 font-medium text-xs">CERA Score</th>
-                  <th className="text-left px-4 py-2 text-zinc-400 font-medium text-xs">Compound</th>
-                  <th className="text-left px-4 py-2 text-zinc-400 font-medium text-xs">Path</th>
-                  <th className="text-left px-4 py-2 text-zinc-400 font-medium text-xs">Signals</th>
-                  <th className="text-left px-4 py-2 text-zinc-400 font-medium text-xs">Created</th>
+                  <th className="text-left px-4 py-2 text-aj-text-secondary font-medium text-xs">Cycle</th>
+                  <th className="text-left px-4 py-2 text-aj-text-secondary font-medium text-xs">CERA Score</th>
+                  <th className="text-left px-4 py-2 text-aj-text-secondary font-medium text-xs">Compound</th>
+                  <th className="text-left px-4 py-2 text-aj-text-secondary font-medium text-xs">Path</th>
+                  <th className="text-left px-4 py-2 text-aj-text-secondary font-medium text-xs">Signals</th>
+                  <th className="text-left px-4 py-2 text-aj-text-secondary font-medium text-xs">Created</th>
                 </tr>
               </thead>
               <tbody>
                 {cycles.map((cycle: CeraCycle) => (
-                  <tr key={cycle.cycleId} className="border-b border-zinc-800 hover:bg-zinc-900/50">
-                    <td className="px-4 py-2 font-mono text-xs text-zinc-400">
+                  <tr key={cycle.cycleId} className="border-b border-aj-border hover:bg-aj-surface-2">
+                    <td className="px-4 py-2 font-mono text-xs text-aj-text-secondary">
                       {cycle.cycleId.slice(0, 12)}…
                     </td>
                     <td className="px-4 py-2">
-                      <span className="font-mono text-sm font-bold text-indigo-400">
+                      <span className="font-mono text-sm font-bold text-aj-data">
                         {cycle.ceraEfficiencyScore}/10
                       </span>
                     </td>
                     <td className="px-4 py-2">
-                      <span className="font-mono text-sm font-bold text-zinc-100">
+                      <span className="font-mono text-sm font-bold text-aj-text">
                         {cycle.compoundScore}/90
                       </span>
                     </td>
                     <td className="px-4 py-2">
-                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${PATH_COLORS[cycle.decisionPath] ?? "bg-zinc-800 text-zinc-300"}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${PATH_COLORS[cycle.decisionPath] ?? "bg-aj-surface-2 text-aj-text-secondary"}`}>
                         {cycle.decisionPath}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-zinc-500 text-xs">
+                    <td className="px-4 py-2 text-aj-text-muted text-xs">
                       {cycle.captureSignals.length} signals
                     </td>
-                    <td className="px-4 py-2 text-zinc-500 text-xs">
+                    <td className="px-4 py-2 text-aj-text-muted text-xs">
                       {new Date(cycle.createdAt).toLocaleString()}
                     </td>
                   </tr>
