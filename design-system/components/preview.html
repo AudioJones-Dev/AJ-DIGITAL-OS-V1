@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Audio Jones — Editorial Intelligence Systems · Design System Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../tokens/audio-jones.tokens.css" />
+<link rel="stylesheet" href="components.css" />
+<style>
+  body { margin: 0; }
+  .wrap { max-width: var(--aj-container-app); margin-inline: auto; padding: var(--aj-space-12) var(--aj-container-gutter); }
+  .row { display: flex; flex-wrap: wrap; gap: var(--aj-space-4); align-items: center; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: var(--aj-space-4); }
+  .swatch { border: 1px solid var(--aj-border); border-radius: var(--aj-radius-card); overflow: hidden; }
+  .swatch .chip { height: 72px; }
+  .swatch .meta { padding: 10px 12px; font-family: var(--aj-font-mono); font-size: 12px; color: var(--aj-text-secondary); }
+  .stack { display: grid; gap: var(--aj-space-3); }
+  .scale > * { margin: 0; }
+  hr.aj { border: 0; border-top: 1px solid var(--aj-border); margin: var(--aj-space-12) 0; }
+</style>
+</head>
+<body class="aj">
+<div class="wrap">
+
+  <p class="aj-eyebrow">Audio Jones · Editorial Intelligence Systems</p>
+  <h1 class="aj-display">Clean web data,<br />operational seriousness.</h1>
+  <p class="aj-lead" style="max-width: var(--aj-container-prose)">Apple restraint × Linear polish × Palantir seriousness on a broadsheet canvas. Dark-first. Signal-yellow is semantic, not decorative — one primary CTA per major section.</p>
+  <div class="row" style="margin-top: var(--aj-space-6)">
+    <button class="aj-btn aj-btn--signal">Start a mission</button>
+    <button class="aj-btn">Secondary</button>
+    <button class="aj-btn aj-btn--ghost">Ghost</button>
+    <button class="aj-btn" disabled>Disabled</button>
+  </div>
+
+  <hr class="aj" />
+
+  <!-- COLOR -->
+  <p class="aj-eyebrow">Color</p>
+  <h2 class="aj-h2">Palette</h2>
+  <div class="grid3" style="margin-top: var(--aj-space-5)">
+    <div class="swatch"><div class="chip" style="background:var(--aj-signal)"></div><div class="meta">--aj-signal · #E8FF5A</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--aj-data)"></div><div class="meta">--aj-data · #4DACFF</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--aj-success)"></div><div class="meta">--aj-success · #3DFFB0</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--aj-warning)"></div><div class="meta">--aj-warning · #FFB340</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--aj-critical)"></div><div class="meta">--aj-critical · #FF4545</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--aj-paper)"></div><div class="meta">--aj-paper · #F4F1E9</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--aj-base)"></div><div class="meta">--aj-base · #080808</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--aj-surface-1)"></div><div class="meta">--aj-surface-1 · #0F0F0F</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--aj-surface-2)"></div><div class="meta">--aj-surface-2 · #161616</div></div>
+  </div>
+
+  <hr class="aj" />
+
+  <!-- TYPE -->
+  <p class="aj-eyebrow">Typography</p>
+  <h2 class="aj-h2">Syne · DM Sans · DM Mono</h2>
+  <div class="scale stack" style="margin-top: var(--aj-space-5)">
+    <p class="aj-display">Display 64 — Syne</p>
+    <h1 class="aj-h1">Heading 1 — 48</h1>
+    <h2 class="aj-h2">Heading 2 — 40</h2>
+    <h3 class="aj-h3">Heading 3 — 32</h3>
+    <p class="aj-lead">Lead 18 — DM Sans, the editorial reading voice for intros and standfirsts.</p>
+    <p>Body 16 — DM Sans. Borders and spacing carry hierarchy; we avoid generic AI gradients, glass, and decorative animation.</p>
+    <p class="aj-label">Label 12 — DM Mono · uppercase · tracked</p>
+    <p class="aj-data">Data 16 — DM Mono · 1,284 runs · 99.2% uptime</p>
+  </div>
+
+  <hr class="aj" />
+
+  <!-- CARDS -->
+  <p class="aj-eyebrow">Surfaces</p>
+  <h2 class="aj-h2">Cards &amp; panels</h2>
+  <div class="grid3" style="margin-top: var(--aj-space-5)">
+    <div class="aj-card">
+      <p class="aj-eyebrow">Mission</p>
+      <h3 class="aj-card__title">Lead enrichment</h3>
+      <p class="aj-muted">Surface-2 card, hairline border, 8px radius. No shadow — depth from surface + border.</p>
+      <div class="row" style="margin-top: var(--aj-space-4)"><span class="aj-badge aj-badge--success">Active</span><span class="aj-badge aj-badge--data">Data</span></div>
+    </div>
+    <div class="aj-panel">
+      <p class="aj-eyebrow">Panel</p>
+      <h3 class="aj-card__title">Surface-1 panel</h3>
+      <p class="aj-muted">Quieter surface for grouping. Status badges below.</p>
+      <div class="row" style="margin-top: var(--aj-space-4)"><span class="aj-badge aj-badge--warning">Review</span><span class="aj-badge aj-badge--critical">Blocked</span></div>
+    </div>
+    <div class="aj-paper">
+      <p class="aj-eyebrow">Light-split</p>
+      <h3 style="font-family:var(--aj-font-display);margin:0 0 8px">Editorial paper</h3>
+      <p style="margin:0">Warm broadsheet surface for long-form / printable editorial. Used sparingly.</p>
+    </div>
+  </div>
+
+  <hr class="aj" />
+
+  <!-- FORM -->
+  <p class="aj-eyebrow">Lead capture</p>
+  <h2 class="aj-h2">Native controls</h2>
+  <div class="aj-card" style="max-width: var(--aj-container-prose); margin-top: var(--aj-space-5)">
+    <div class="stack">
+      <div class="aj-field"><label for="n">Name</label><input id="n" class="aj-input" placeholder="Jane Operator" /></div>
+      <div class="aj-field"><label for="t">Tier</label>
+        <select id="t" class="aj-select"><option>Standard</option><option>Professional</option><option>Enterprise</option></select>
+      </div>
+      <div class="aj-field"><label for="m">Brief</label><textarea id="m" class="aj-textarea" placeholder="What outcome do you need?"></textarea></div>
+      <div class="row"><button class="aj-btn aj-btn--signal">Request access</button><span class="aj-muted">One signal CTA per section.</span></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
