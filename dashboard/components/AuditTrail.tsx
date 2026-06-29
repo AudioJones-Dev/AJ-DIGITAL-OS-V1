@@ -13,15 +13,15 @@ interface Props {
 }
 
 const DECISION_COLORS: Record<ActionDecision, string> = {
-  allow: "bg-emerald-900/60 text-emerald-300",
-  block: "bg-red-900/60 text-red-300",
-  approval_required: "bg-amber-900/60 text-amber-300",
+  allow: "bg-aj-success/15 text-aj-success",
+  block: "bg-aj-critical/15 text-aj-critical",
+  approval_required: "bg-aj-warning/15 text-aj-warning",
 };
 
 const RISK_COLORS: Record<RiskLevel, string> = {
-  low: "text-zinc-400",
-  medium: "text-amber-400",
-  high: "text-red-400",
+  low: "text-aj-text-secondary",
+  medium: "text-aj-warning",
+  high: "text-aj-critical",
 };
 
 export default function AuditTrail({ runId, refreshKey, initialEvents }: Props) {
@@ -48,15 +48,15 @@ export default function AuditTrail({ runId, refreshKey, initialEvents }: Props) 
     };
   }, [runId, refreshKey]);
 
-  if (loading) return <p className="text-zinc-500 text-xs">Loading audit trail…</p>;
-  if (error) return <p className="text-red-400 text-xs" data-testid="audit-error">{error}</p>;
-  if (events.length === 0) return <p className="text-zinc-500 text-xs" data-testid="audit-empty">No audit events.</p>;
+  if (loading) return <p className="text-aj-text-muted text-xs">Loading audit trail…</p>;
+  if (error) return <p className="text-aj-critical text-xs" data-testid="audit-error">{error}</p>;
+  if (events.length === 0) return <p className="text-aj-text-muted text-xs" data-testid="audit-empty">No audit events.</p>;
 
   return (
-    <div className="overflow-x-auto rounded-md border border-zinc-800" data-testid="audit-table">
+    <div className="overflow-x-auto rounded-md border border-aj-border" data-testid="audit-table">
       <table className="w-full text-xs">
-        <thead className="bg-zinc-900 border-b border-zinc-800">
-          <tr className="text-left text-zinc-400">
+        <thead className="bg-aj-surface-1 border-b border-aj-border">
+          <tr className="text-left text-aj-text-secondary">
             <th className="px-3 py-2 font-medium">Timestamp</th>
             <th className="px-3 py-2 font-medium">Action</th>
             <th className="px-3 py-2 font-medium">Decision</th>
@@ -81,35 +81,35 @@ function AuditRow({ event }: { event: ControlAuditEvent }) {
   const risk = event.risk;
   return (
     <tr
-      className="border-b border-zinc-800 hover:bg-zinc-900/60"
+      className="border-b border-aj-border hover:bg-aj-surface-2"
       data-testid="audit-row"
       data-decision={decision ?? "none"}
     >
-      <td className="px-3 py-2 text-zinc-500 font-mono whitespace-nowrap">
+      <td className="px-3 py-2 text-aj-text-muted font-mono whitespace-nowrap">
         {new Date(event.timestamp).toLocaleString()}
       </td>
-      <td className="px-3 py-2 text-zinc-200 font-mono">{event.action}</td>
+      <td className="px-3 py-2 text-aj-text font-mono">{event.action}</td>
       <td className="px-3 py-2">
         {decision ? (
           <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${DECISION_COLORS[decision]}`}>
             {decision}
           </span>
         ) : (
-          <span className="text-zinc-600">—</span>
+          <span className="text-aj-text-muted">—</span>
         )}
       </td>
-      <td className={`px-3 py-2 font-mono ${risk ? RISK_COLORS[risk] : "text-zinc-600"}`}>
+      <td className={`px-3 py-2 font-mono ${risk ? RISK_COLORS[risk] : "text-aj-text-muted"}`}>
         {risk ?? "—"}
       </td>
-      <td className="px-3 py-2 text-zinc-300 font-mono">{event.performedBy}</td>
+      <td className="px-3 py-2 text-aj-text-secondary font-mono">{event.performedBy}</td>
       <td className="px-3 py-2 font-mono">
         {event.tenantId ? (
-          <span className="text-emerald-300">{event.tenantId}</span>
+          <span className="text-aj-success">{event.tenantId}</span>
         ) : (
-          <span className="text-zinc-600">—</span>
+          <span className="text-aj-text-muted">—</span>
         )}
       </td>
-      <td className="px-3 py-2 font-mono text-zinc-500" title={event.enforcementAuditId ?? event.eventId}>
+      <td className="px-3 py-2 font-mono text-aj-text-muted" title={event.enforcementAuditId ?? event.eventId}>
         {(event.enforcementAuditId ?? event.eventId).slice(0, 8)}…
       </td>
     </tr>

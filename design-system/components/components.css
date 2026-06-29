@@ -1,0 +1,162 @@
+/* ============================================================
+ * AUDIO JONES — Component starter
+ * Depends on tokens/audio-jones.tokens.css
+ * Dark-first, borders/surfaces over shadows, no AI gradients/glass.
+ * ============================================================ */
+
+.aj {
+  background: var(--aj-base);
+  color: var(--aj-text);
+  font-family: var(--aj-font-body);
+  font-size: var(--aj-fs-body);
+  line-height: var(--aj-lh-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Typography ----------------------------------------- */
+.aj-display,
+.aj-h1, .aj-h2, .aj-h3 {
+  font-family: var(--aj-font-display);
+  font-weight: var(--aj-fw-display);
+  letter-spacing: var(--aj-ls-display);
+  line-height: var(--aj-lh-tight);
+  margin: 0;
+}
+.aj-display { font-size: var(--aj-fs-display); }
+.aj-h1 { font-size: var(--aj-fs-h1); line-height: var(--aj-lh-heading); }
+.aj-h2 { font-size: var(--aj-fs-h2); line-height: var(--aj-lh-heading); }
+.aj-h3 { font-size: var(--aj-fs-h3); line-height: var(--aj-lh-heading); font-weight: var(--aj-fw-bold); }
+
+.aj-eyebrow,
+.aj-label {
+  font-family: var(--aj-font-mono);
+  font-size: var(--aj-fs-label);
+  letter-spacing: var(--aj-ls-label);
+  text-transform: uppercase;
+  color: var(--aj-text-muted);
+}
+
+.aj-lead { font-size: var(--aj-fs-lead); color: var(--aj-text-secondary); }
+.aj-muted { color: var(--aj-text-muted); }
+.aj-data { font-family: var(--aj-font-mono); }
+
+/* ---- Buttons -------------------------------------------- */
+.aj-btn {
+  font-family: var(--aj-font-body);
+  font-size: var(--aj-fs-small);
+  font-weight: var(--aj-fw-semibold);
+  line-height: 1;
+  padding: 12px 18px;
+  border-radius: var(--aj-radius-control);
+  border: 1px solid var(--aj-border);
+  background: transparent;
+  color: var(--aj-text);
+  cursor: pointer;
+  transition: border-color var(--aj-motion-fast) var(--aj-ease),
+              background var(--aj-motion-fast) var(--aj-ease),
+              color var(--aj-motion-fast) var(--aj-ease);
+}
+.aj-btn:hover { border-color: var(--aj-border-strong); }
+
+/* one primary signal CTA per major section */
+.aj-btn--signal {
+  background: var(--aj-signal);
+  border-color: var(--aj-signal);
+  color: var(--aj-signal-ink);
+  font-weight: var(--aj-fw-bold);
+}
+.aj-btn--signal:hover { filter: brightness(1.06); border-color: var(--aj-signal); }
+
+.aj-btn--ghost { border-color: transparent; color: var(--aj-text-secondary); }
+.aj-btn--ghost:hover { color: var(--aj-text); border-color: var(--aj-border); }
+
+.aj-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+/* ---- Card / panel --------------------------------------- */
+.aj-card {
+  background: var(--aj-surface-2);
+  border: 1px solid var(--aj-border);
+  border-radius: var(--aj-radius-card);
+  padding: var(--aj-space-6);
+}
+.aj-panel {
+  background: var(--aj-surface-1);
+  border: 1px solid var(--aj-border);
+  border-radius: var(--aj-radius-card);
+  padding: var(--aj-space-5);
+}
+.aj-card__title { font-family: var(--aj-font-display); font-weight: var(--aj-fw-bold); font-size: var(--aj-fs-subhead); margin: 0 0 var(--aj-space-2); }
+
+/* ---- Section -------------------------------------------- */
+.aj-section {
+  border-top: 1px solid var(--aj-border);
+  padding: var(--aj-space-16) 0;
+}
+.aj-container { max-width: var(--aj-container-app); margin-inline: auto; padding-inline: var(--aj-container-gutter); }
+.aj-container--prose { max-width: var(--aj-container-prose); }
+.aj-container--wide { max-width: var(--aj-container-wide); }
+
+/* ---- Native form controls (lead-capture critical paths) -
+ * Per doctrine: critical lead-capture uses native controls, not
+ * shared button/select abstractions. */
+.aj-input,
+.aj-select,
+.aj-textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--aj-text);
+  background: var(--aj-surface-3);
+  border: 1px solid var(--aj-border);
+  border-radius: var(--aj-radius-control);
+  padding: 12px 14px;
+}
+.aj-input:focus,
+.aj-select:focus,
+.aj-textarea:focus {
+  outline: none;
+  border-color: var(--aj-border-signal);
+}
+.aj-textarea { min-height: 120px; resize: vertical; }
+.aj-field { display: grid; gap: var(--aj-space-2); }
+.aj-field > label { font-family: var(--aj-font-mono); font-size: var(--aj-fs-label); letter-spacing: var(--aj-ls-label); text-transform: uppercase; color: var(--aj-text-secondary); }
+
+/* ---- Badge / status ------------------------------------- */
+.aj-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--aj-font-mono);
+  font-size: var(--aj-fs-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--aj-radius-pill);
+  border: 1px solid var(--aj-border);
+  color: var(--aj-text-secondary);
+}
+.aj-badge--signal  { color: var(--aj-signal);   border-color: var(--aj-signal); }
+.aj-badge--data    { color: var(--aj-data);     border-color: color-mix(in srgb, var(--aj-data) 50%, transparent); }
+.aj-badge--success { color: var(--aj-success);  border-color: color-mix(in srgb, var(--aj-success) 50%, transparent); }
+.aj-badge--warning { color: var(--aj-warning);  border-color: color-mix(in srgb, var(--aj-warning) 50%, transparent); }
+.aj-badge--critical{ color: var(--aj-critical); border-color: color-mix(in srgb, var(--aj-critical) 50%, transparent); }
+
+/* ---- Link ----------------------------------------------- */
+.aj a, a.aj-link { color: var(--aj-data); text-underline-offset: 3px; }
+
+/* ---- Light-split editorial block ------------------------ */
+.aj-paper {
+  background: var(--aj-paper);
+  color: var(--aj-ink);
+  border: 1px solid var(--aj-paper-rule);
+  border-radius: var(--aj-radius-card);
+  padding: var(--aj-space-8);
+}
+.aj-paper .aj-eyebrow { color: #6b6256; }
+
+/* ---- Overlay (only place shadow is allowed) ------------- */
+.aj-overlay {
+  background: var(--aj-surface-2);
+  border: 1px solid var(--aj-border-strong);
+  border-radius: var(--aj-radius-card);
+  box-shadow: var(--aj-elevation-overlay);
+}

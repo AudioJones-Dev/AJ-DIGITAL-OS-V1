@@ -1,0 +1,104 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "_meta": {
+    "system": "Audio Jones — Editorial Intelligence Systems",
+    "thesis": "Apple restraint x Linear product polish x Palantir operational seriousness, on a broadsheet-grade editorial canvas.",
+    "mode": "dark-first",
+    "version": "1.0.0",
+    "updatedAt": "2026-06-29",
+    "note": "Structure adapted from a Firecrawl design-system extraction; brand values are Audio Jones. Signal-yellow is semantic, not decorative."
+  },
+  "color": {
+    "signal": { "$value": "#E8FF5A", "$type": "color", "_role": "primary signal CTA (semantic)" },
+    "signalInk": { "$value": "#080808", "$type": "color", "_role": "foreground on signal" },
+    "data": { "$value": "#4DACFF", "$type": "color", "_role": "links / info / data-viz" },
+    "critical": { "$value": "#FF4545", "$type": "color" },
+    "warning": { "$value": "#FFB340", "$type": "color" },
+    "success": { "$value": "#3DFFB0", "$type": "color" },
+    "canvas": {
+      "base": { "$value": "#080808", "$type": "color" },
+      "surface1": { "$value": "#0F0F0F", "$type": "color" },
+      "surface2": { "$value": "#161616", "$type": "color" },
+      "surface3": { "$value": "#1E1E1E", "$type": "color" }
+    },
+    "text": {
+      "primary": { "$value": "#F2F2F2", "$type": "color" },
+      "secondary": { "$value": "#A8A8A8", "$type": "color" },
+      "muted": { "$value": "#6E6E6E", "$type": "color" }
+    },
+    "border": {
+      "base": { "$value": "#222222", "$type": "color" },
+      "strong": { "$value": "#333333", "$type": "color" },
+      "signal": { "$value": "#E8FF5A", "$type": "color" }
+    },
+    "paper": {
+      "surface": { "$value": "#F4F1E9", "$type": "color", "_role": "light-split editorial paper" },
+      "ink": { "$value": "#080808", "$type": "color" },
+      "rule": { "$value": "#D8D3C6", "$type": "color" }
+    }
+  },
+  "fontFamily": {
+    "display": { "$value": "Syne, \"DM Sans\", ui-sans-serif, system-ui, sans-serif", "$type": "fontFamily" },
+    "body": { "$value": "\"DM Sans\", ui-sans-serif, system-ui, -apple-system, sans-serif", "$type": "fontFamily" },
+    "mono": { "$value": "\"DM Mono\", ui-monospace, \"SFMono-Regular\", Consolas, monospace", "$type": "fontFamily" }
+  },
+  "fontWeight": {
+    "regular": { "$value": 400, "$type": "fontWeight" },
+    "medium": { "$value": 500, "$type": "fontWeight" },
+    "semibold": { "$value": 600, "$type": "fontWeight" },
+    "bold": { "$value": 700, "$type": "fontWeight" },
+    "display": { "$value": 800, "$type": "fontWeight" }
+  },
+  "fontSize": {
+    "label": { "$value": "12px", "$type": "dimension" },
+    "caption": { "$value": "13px", "$type": "dimension" },
+    "small": { "$value": "14px", "$type": "dimension" },
+    "body": { "$value": "16px", "$type": "dimension" },
+    "lead": { "$value": "18px", "$type": "dimension" },
+    "subhead": { "$value": "20px", "$type": "dimension" },
+    "h4": { "$value": "24px", "$type": "dimension" },
+    "h3": { "$value": "32px", "$type": "dimension" },
+    "h2": { "$value": "40px", "$type": "dimension" },
+    "h1": { "$value": "48px", "$type": "dimension" },
+    "display": { "$value": "64px", "$type": "dimension" },
+    "hero": { "$value": "84px", "$type": "dimension" }
+  },
+  "lineHeight": {
+    "tight": { "$value": 1.05, "$type": "number" },
+    "heading": { "$value": 1.2, "$type": "number" },
+    "body": { "$value": 1.6, "$type": "number" }
+  },
+  "letterSpacing": {
+    "label": { "$value": "0.14em", "$type": "dimension" },
+    "display": { "$value": "-0.02em", "$type": "dimension" }
+  },
+  "spacing": {
+    "1": { "$value": "4px", "$type": "dimension" },
+    "2": { "$value": "8px", "$type": "dimension" },
+    "3": { "$value": "12px", "$type": "dimension" },
+    "4": { "$value": "16px", "$type": "dimension" },
+    "5": { "$value": "20px", "$type": "dimension" },
+    "6": { "$value": "24px", "$type": "dimension" },
+    "8": { "$value": "32px", "$type": "dimension" },
+    "10": { "$value": "40px", "$type": "dimension" },
+    "12": { "$value": "48px", "$type": "dimension" },
+    "16": { "$value": "64px", "$type": "dimension" },
+    "20": { "$value": "80px", "$type": "dimension" }
+  },
+  "radius": {
+    "none": { "$value": "0", "$type": "dimension" },
+    "control": { "$value": "4px", "$type": "dimension", "_role": "buttons, inputs, selects" },
+    "card": { "$value": "8px", "$type": "dimension", "_role": "cards, panels" },
+    "pill": { "$value": "999px", "$type": "dimension", "_role": "badges, toggles, avatars" }
+  },
+  "elevation": {
+    "flat": { "$value": "none", "$type": "shadow" },
+    "overlay": { "$value": "0 16px 40px rgba(0,0,0,0.55)", "$type": "shadow", "_role": "menus, modals, popovers only" }
+  },
+  "container": {
+    "prose": { "$value": "680px", "$type": "dimension" },
+    "app": { "$value": "1280px", "$type": "dimension" },
+    "wide": { "$value": "1440px", "$type": "dimension" },
+    "gutter": { "$value": "24px", "$type": "dimension" }
+  }
+}

@@ -9,10 +9,10 @@ interface Props {
 }
 
 const RISK_COLORS: Record<string, string> = {
-  low: "bg-emerald-900 text-emerald-300",
-  medium: "bg-yellow-900 text-yellow-300",
-  high: "bg-red-900 text-red-300",
-  restricted: "bg-red-950 text-red-200",
+  low: "bg-aj-success/15 text-aj-success",
+  medium: "bg-aj-warning/15 text-aj-warning",
+  high: "bg-aj-critical/15 text-aj-critical",
+  restricted: "bg-aj-critical/15 text-aj-critical",
 };
 
 export default function ConnectorRow({ connector }: Props) {
@@ -39,27 +39,27 @@ export default function ConnectorRow({ connector }: Props) {
   }
 
   return (
-    <tr className="border-t border-zinc-800/50 hover:bg-zinc-800/20">
-      <td className="px-4 py-2 font-mono text-xs text-zinc-300">{connector.id}</td>
-      <td className="px-4 py-2 text-sm text-zinc-200">{connector.displayName}</td>
-      <td className="px-4 py-2 text-xs text-zinc-400">{connector.provider}</td>
+    <tr className="border-t border-aj-border hover:bg-aj-surface-2">
+      <td className="px-4 py-2 font-mono text-xs text-aj-text-secondary">{connector.id}</td>
+      <td className="px-4 py-2 text-sm text-aj-text">{connector.displayName}</td>
+      <td className="px-4 py-2 text-xs text-aj-text-secondary">{connector.provider}</td>
       <td className="px-4 py-2">
         <span
           className={`text-xs px-1.5 py-0.5 rounded ${
-            RISK_COLORS[connector.riskLevel] ?? "bg-zinc-800 text-zinc-400"
+            RISK_COLORS[connector.riskLevel] ?? "bg-aj-surface-2 text-aj-text-secondary"
           }`}
         >
           {connector.riskLevel}
         </span>
       </td>
-      <td className="px-4 py-2 text-xs text-zinc-400">
+      <td className="px-4 py-2 text-xs text-aj-text-secondary">
         {connector.capabilities.slice(0, 4).join(", ")}
         {connector.capabilities.length > 4 ? ` +${connector.capabilities.length - 4}` : ""}
       </td>
       <td className="px-4 py-2">
         <span
           className={`text-xs px-1.5 py-0.5 rounded ${
-            enabled ? "bg-emerald-900 text-emerald-300" : "bg-zinc-800 text-zinc-400"
+            enabled ? "bg-aj-success/15 text-aj-success" : "bg-aj-surface-2 text-aj-text-secondary"
           }`}
         >
           {enabled ? "enabled" : "disabled"}
@@ -72,14 +72,14 @@ export default function ConnectorRow({ connector }: Props) {
           disabled={busy}
           className={`text-xs px-2 py-1 rounded font-medium ${
             enabled
-              ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-              : "bg-indigo-700 text-white hover:bg-indigo-600"
+              ? "bg-aj-surface-2 text-aj-text-secondary hover:bg-aj-surface-3"
+              : "bg-aj-signal text-aj-signal-ink hover:opacity-90"
           } disabled:opacity-50`}
         >
           {busy ? "…" : enabled ? "Disable" : "Enable"}
         </button>
         {error && (
-          <p className="text-xs text-red-400 mt-1 max-w-[180px] truncate" title={error}>
+          <p className="text-xs text-aj-critical mt-1 max-w-[180px] truncate" title={error}>
             {error}
           </p>
         )}

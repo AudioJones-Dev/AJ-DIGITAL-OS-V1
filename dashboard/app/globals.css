@@ -1,3 +1,78 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================================
+ * Audio Jones — Editorial Intelligence Systems
+ * Mirrors design-system/tokens/audio-jones.tokens.css (source of truth).
+ * Font families resolve to the next/font variables set in app/layout.tsx.
+ * ============================================================ */
+:root {
+  /* brand / semantic */
+  --aj-signal: #E8FF5A;
+  --aj-signal-ink: #080808;
+  --aj-data: #4DACFF;
+  --aj-critical: #FF4545;
+  --aj-warning: #FFB340;
+  --aj-success: #3DFFB0;
+
+  /* RGB channels (enable Tailwind opacity modifiers, e.g. bg-aj-critical/15) */
+  --aj-signal-rgb: 232 255 90;
+  --aj-data-rgb: 77 172 255;
+  --aj-critical-rgb: 255 69 69;
+  --aj-warning-rgb: 255 179 64;
+  --aj-success-rgb: 61 255 176;
+
+  /* canvas */
+  --aj-base: #080808;
+  --aj-surface-1: #0F0F0F;
+  --aj-surface-2: #161616;
+  --aj-surface-3: #1E1E1E;
+
+  /* text */
+  --aj-text: #F2F2F2;
+  --aj-text-secondary: #A8A8A8;
+  --aj-text-muted: #6E6E6E;
+
+  /* borders */
+  --aj-border: #222222;
+  --aj-border-strong: #333333;
+
+  /* light-split paper */
+  --aj-paper: #F4F1E9;
+  --aj-ink: #080808;
+
+  /* radius (governed: sharper) */
+  --aj-radius-control: 4px;
+  --aj-radius-card: 8px;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    background: var(--aj-base);
+    color: var(--aj-text);
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-syne), var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* DM Mono for labels / data / numeric readouts */
+  code, kbd, samp, pre, .font-mono {
+    font-family: var(--font-dm-mono), ui-monospace, "SFMono-Regular", Consolas, monospace;
+  }
+
+  a {
+    color: var(--aj-data);
+  }
+
+  ::selection {
+    background: var(--aj-signal);
+    color: var(--aj-signal-ink);
+  }
+}
