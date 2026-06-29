@@ -62,6 +62,34 @@ firecrawl --status
 firecrawl scrape "https://firecrawl.dev" -o .firecrawl/install-check.md
 ```
 
+## 2b. MCP server (Claude Code / MCP clients)
+
+The repo ships an MCP server declaration in `.mcp.json` at the root:
+
+```json
+{
+  "mcpServers": {
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": { "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}" }
+    }
+  }
+}
+```
+
+The key is **not** hardcoded — `${FIRECRAWL_API_KEY}` expands from the
+environment, which must be Doppler-injected when the MCP client launches. Start
+the client through Doppler so the variable is present:
+
+```bash
+doppler run -- claude   # or whichever MCP client launches the server
+```
+
+Keyless fallback: drop the `env` block to run `firecrawl-mcp` against the
+rate-limited free tier. Never replace `${FIRECRAWL_API_KEY}` with a literal key
+value — that would commit a secret (see the doctrine reference above).
+
 ## 3. REST API (no install)
 
 When you do not want the CLI, call the REST API directly. This is also how the
