@@ -12,12 +12,30 @@ new `firecrawl` skill (`skills/firecrawl.skill.md`).
 
 ## 1. Credentials
 
-Set `FIRECRAWL_API_KEY` in your local `.env` (see `.env.example`). The key is a
-secret — never commit it. `.env` is gitignored.
+`FIRECRAWL_API_KEY` is managed in **Doppler** (project `aj-digital-os`, config
+`dev` — see `doppler.yaml`), per `docs/security/remote-secret-operations.md`.
+Do not commit it, and do not keep it in a file-backed `.env` for shared/remote
+use. `.env` (gitignored) is only acceptable for explicitly-approved local-only
+runs.
 
-```dotenv
-FIRECRAWL_API_KEY=fc-...
+Set it in Doppler (interactive prompt keeps the value out of shell history):
+
+```bash
+doppler secrets set FIRECRAWL_API_KEY --project aj-digital-os --config dev
+# verify by name only — never print the value:
+doppler secrets --only-names --project aj-digital-os --config dev
 ```
+
+Run the app with Doppler-injected env so the runtime reads the managed secret
+rather than a file:
+
+```bash
+doppler run -- node --import ./dist/env.js dist/cli.js <command>
+```
+
+> **Rotation:** any key pasted into chat/an agent session is treated as exposed
+> and must be rotated — revoke it in the Firecrawl dashboard, then `doppler
+> secrets set FIRECRAWL_API_KEY` the replacement.
 
 Get a key one of two ways:
 
