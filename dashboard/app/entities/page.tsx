@@ -36,8 +36,9 @@ function lastUpdated(items: { updatedAt?: string }[]): string {
 export default async function EntitiesPage({
   searchParams,
 }: {
-  searchParams?: { type?: string };
+  searchParams?: Promise<{ type?: string }>;
 }) {
+  const resolvedSearchParams = await searchParams;
   const summaries = await Promise.all(
     ENTITY_TYPES.map(async (type) => {
       const result = await getEntityList(type, { limit: 100 });
@@ -48,7 +49,7 @@ export default async function EntitiesPage({
   const totalEntities = summaries.reduce((sum, s) => sum + s.count, 0);
   const populated = summaries.filter((s) => s.count > 0).length;
 
-  const selected = searchParams?.type as NormalizedEntityType | undefined;
+  const selected = resolvedSearchParams?.type as NormalizedEntityType | undefined;
   const drilldown = selected
     ? summaries.find((s) => s.type === selected) ?? null
     : null;
