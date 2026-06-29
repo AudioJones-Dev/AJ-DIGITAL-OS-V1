@@ -90,8 +90,8 @@ export default function RunControls({ runId, currentState, onResult }: Props) {
     const base =
       "px-3 py-1.5 rounded text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
     if (disabled) return `${base} bg-aj-surface-2 text-aj-text-muted border border-aj-border`;
-    if (risk === "high") return `${base} bg-red-950/60 hover:bg-red-900/70 text-red-200 border border-red-900`;
-    if (risk === "medium") return `${base} bg-amber-950/40 hover:bg-amber-900/60 text-amber-200 border border-amber-900/60`;
+    if (risk === "high") return `${base} bg-aj-critical/15 hover:bg-aj-critical/20 text-aj-critical border border-aj-critical/40`;
+    if (risk === "medium") return `${base} bg-aj-warning/15 hover:bg-aj-warning/20 text-aj-warning border border-aj-warning/40`;
     return `${base} bg-aj-surface-2 hover:bg-aj-surface-3 text-aj-text border border-aj-border-strong`;
   }
 
@@ -126,10 +126,10 @@ export default function RunControls({ runId, currentState, onResult }: Props) {
           data-kind={message.kind}
           className={`text-xs rounded border px-2 py-1.5 ${
             message.kind === "success"
-              ? "bg-emerald-950/40 border-emerald-900 text-emerald-300"
+              ? "bg-aj-success/15 border-aj-success/40 text-aj-success"
               : message.kind === "approval"
-              ? "bg-amber-950/40 border-amber-900 text-amber-200"
-              : "bg-red-950/40 border-red-900 text-red-300"
+              ? "bg-aj-warning/15 border-aj-warning/40 text-aj-warning"
+              : "bg-aj-critical/15 border-aj-critical/40 text-aj-critical"
           }`}
         >
           {message.text}

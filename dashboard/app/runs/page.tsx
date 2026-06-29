@@ -18,7 +18,7 @@ export default async function RunsPage() {
     <div>
       <h1 className="text-xl font-semibold mb-6">Runs</h1>
       {error ? (
-        <div className="text-red-400 text-sm bg-red-950/50 border border-red-900 rounded-md p-3">
+        <div className="text-aj-critical text-sm bg-aj-critical/15 border border-aj-critical/40 rounded-md p-3">
           {error}
         </div>
       ) : (

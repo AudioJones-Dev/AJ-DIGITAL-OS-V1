@@ -27,11 +27,11 @@ export default async function ConnectorsPage() {
         </div>
         <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
           <p className="text-xs text-aj-text-muted uppercase tracking-wide">Enabled</p>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">{enabledCount}</p>
+          <p className="text-2xl font-bold text-aj-success mt-1">{enabledCount}</p>
         </div>
         <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
           <p className="text-xs text-aj-text-muted uppercase tracking-wide">High / Restricted</p>
-          <p className="text-2xl font-bold text-red-400 mt-1">{highRisk}</p>
+          <p className="text-2xl font-bold text-aj-critical mt-1">{highRisk}</p>
         </div>
       </div>
 

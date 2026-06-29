@@ -13,24 +13,24 @@ const NAMESPACES: CacheNamespace[] = [
 
 const NS_COLORS: Record<CacheNamespace, string> = {
   "context-cache": "bg-aj-surface-3 text-aj-data",
-  "plan-cache": "bg-blue-900 text-blue-200",
+  "plan-cache": "bg-aj-data/15 text-aj-data",
   "score-cache": "bg-purple-900 text-purple-200",
   "report-cache": "bg-teal-900 text-teal-200",
-  "response-cache": "bg-green-900 text-green-200",
+  "response-cache": "bg-aj-success/15 text-aj-success",
 };
 
 const DECISION_COLORS: Record<string, string> = {
-  hit: "bg-emerald-900 text-emerald-300",
+  hit: "bg-aj-success/15 text-aj-success",
   miss: "bg-aj-surface-2 text-aj-text-secondary",
-  stale: "bg-yellow-900 text-yellow-300",
-  blocked: "bg-red-900 text-red-300",
+  stale: "bg-aj-warning/15 text-aj-warning",
+  blocked: "bg-aj-critical/15 text-aj-critical",
   bypass: "bg-orange-900 text-orange-300",
-  cache_write: "bg-blue-900 text-blue-300",
-  cache_hit: "bg-emerald-900 text-emerald-300",
+  cache_write: "bg-aj-data/15 text-aj-data",
+  cache_hit: "bg-aj-success/15 text-aj-success",
   cache_miss: "bg-aj-surface-2 text-aj-text-secondary",
-  cache_stale: "bg-yellow-900 text-yellow-300",
-  cache_invalidated: "bg-red-950 text-red-300",
-  cache_blocked_cross_tenant: "bg-red-900 text-red-200",
+  cache_stale: "bg-aj-warning/15 text-aj-warning",
+  cache_invalidated: "bg-aj-critical/15 text-aj-critical",
+  cache_blocked_cross_tenant: "bg-aj-critical/15 text-aj-critical",
   cache_blocked_policy_mismatch: "bg-orange-900 text-orange-200",
   cache_bypass_high_risk: "bg-orange-900 text-orange-300",
 };
@@ -67,7 +67,7 @@ export default async function CachePage() {
         </div>
         <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
           <p className="text-xs text-aj-text-muted uppercase tracking-wide">Active</p>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">{activeEntries}</p>
+          <p className="text-2xl font-bold text-aj-success mt-1">{activeEntries}</p>
         </div>
         <div className="bg-aj-surface-1 border border-aj-border rounded-lg p-4">
           <p className="text-xs text-aj-text-muted uppercase tracking-wide">Hit Rate</p>
@@ -103,9 +103,9 @@ export default async function CachePage() {
                     <span className="text-xs text-aj-text-muted">{entries.length} entries</span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-aj-text-muted">
-                    <span className="text-emerald-400">{active} active</span>
-                    {stale > 0 && <span className="text-yellow-400">{stale} stale</span>}
-                    {invalidated > 0 && <span className="text-red-400">{invalidated} invalidated</span>}
+                    <span className="text-aj-success">{active} active</span>
+                    {stale > 0 && <span className="text-aj-warning">{stale} stale</span>}
+                    {invalidated > 0 && <span className="text-aj-critical">{invalidated} invalidated</span>}
                   </div>
                 </div>
                 {entries.length > 0 ? (
@@ -129,9 +129,9 @@ export default async function CachePage() {
                             <span
                               className={`text-xs px-1.5 py-0.5 rounded ${
                                 entry.riskLevel === "high"
-                                  ? "bg-red-900 text-red-300"
+                                  ? "bg-aj-critical/15 text-aj-critical"
                                   : entry.riskLevel === "medium"
-                                  ? "bg-yellow-900 text-yellow-300"
+                                  ? "bg-aj-warning/15 text-aj-warning"
                                   : "bg-aj-surface-2 text-aj-text-secondary"
                               }`}
                             >
@@ -142,10 +142,10 @@ export default async function CachePage() {
                             <span
                               className={`text-xs px-1.5 py-0.5 rounded ${
                                 entry.cacheStatus === "active"
-                                  ? "bg-emerald-900 text-emerald-300"
+                                  ? "bg-aj-success/15 text-aj-success"
                                   : entry.cacheStatus === "stale"
-                                  ? "bg-yellow-900 text-yellow-300"
-                                  : "bg-red-900 text-red-300"
+                                  ? "bg-aj-warning/15 text-aj-warning"
+                                  : "bg-aj-critical/15 text-aj-critical"
                               }`}
                             >
                               {entry.cacheStatus}

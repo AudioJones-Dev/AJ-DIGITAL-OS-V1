@@ -9,10 +9,10 @@ interface Props {
 }
 
 const RISK_COLORS: Record<string, string> = {
-  low: "bg-emerald-900 text-emerald-300",
-  medium: "bg-yellow-900 text-yellow-300",
-  high: "bg-red-900 text-red-300",
-  restricted: "bg-red-950 text-red-200",
+  low: "bg-aj-success/15 text-aj-success",
+  medium: "bg-aj-warning/15 text-aj-warning",
+  high: "bg-aj-critical/15 text-aj-critical",
+  restricted: "bg-aj-critical/15 text-aj-critical",
 };
 
 export default function ConnectorRow({ connector }: Props) {
@@ -59,7 +59,7 @@ export default function ConnectorRow({ connector }: Props) {
       <td className="px-4 py-2">
         <span
           className={`text-xs px-1.5 py-0.5 rounded ${
-            enabled ? "bg-emerald-900 text-emerald-300" : "bg-aj-surface-2 text-aj-text-secondary"
+            enabled ? "bg-aj-success/15 text-aj-success" : "bg-aj-surface-2 text-aj-text-secondary"
           }`}
         >
           {enabled ? "enabled" : "disabled"}
@@ -79,7 +79,7 @@ export default function ConnectorRow({ connector }: Props) {
           {busy ? "…" : enabled ? "Disable" : "Enable"}
         </button>
         {error && (
-          <p className="text-xs text-red-400 mt-1 max-w-[180px] truncate" title={error}>
+          <p className="text-xs text-aj-critical mt-1 max-w-[180px] truncate" title={error}>
             {error}
           </p>
         )}

@@ -42,9 +42,9 @@ export default function MAPAttribution({ events }: Props) {
                   <span
                     className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                       status === "completed"
-                        ? "bg-emerald-900/60 text-emerald-300"
+                        ? "bg-aj-success/15 text-aj-success"
                         : status === "failed"
-                        ? "bg-red-900/60 text-red-300"
+                        ? "bg-aj-critical/15 text-aj-critical"
                         : "bg-aj-surface-2 text-aj-text-secondary"
                     }`}
                   >
@@ -56,7 +56,7 @@ export default function MAPAttribution({ events }: Props) {
                     <span
                       className={`px-1.5 py-0.5 rounded text-[10px] ${
                         e.mapScore.mapCompliant
-                          ? "bg-emerald-900/40 text-emerald-300"
+                          ? "bg-aj-success/15 text-aj-success"
                           : "bg-aj-surface-2 text-aj-text-secondary"
                       }`}
                       title={[

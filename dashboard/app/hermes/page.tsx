@@ -22,7 +22,7 @@ export default async function HermesPage() {
       <h1 className="text-xl font-semibold">Hermes Status</h1>
 
       {error ? (
-        <div className="text-red-400 text-sm bg-red-950/50 border border-red-900 rounded-md p-3">
+        <div className="text-aj-critical text-sm bg-aj-critical/15 border border-aj-critical/40 rounded-md p-3">
           {error}
         </div>
       ) : status ? (
@@ -32,8 +32,8 @@ export default async function HermesPage() {
             <span
               className={`text-xs px-3 py-1 rounded-full font-medium ${
                 status.health === "ok"
-                  ? "bg-green-900 text-green-300"
-                  : "bg-red-900 text-red-300"
+                  ? "bg-aj-success/15 text-aj-success"
+                  : "bg-aj-critical/15 text-aj-critical"
               }`}
             >
               {status.health}

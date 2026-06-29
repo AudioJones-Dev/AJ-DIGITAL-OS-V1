@@ -16,12 +16,12 @@ const config: Config = {
     extend: {
       colors: {
         aj: {
-          signal: "var(--aj-signal)",
+          signal: "rgb(var(--aj-signal-rgb) / <alpha-value>)",
           "signal-ink": "var(--aj-signal-ink)",
-          data: "var(--aj-data)",
-          critical: "var(--aj-critical)",
-          warning: "var(--aj-warning)",
-          success: "var(--aj-success)",
+          data: "rgb(var(--aj-data-rgb) / <alpha-value>)",
+          critical: "rgb(var(--aj-critical-rgb) / <alpha-value>)",
+          warning: "rgb(var(--aj-warning-rgb) / <alpha-value>)",
+          success: "rgb(var(--aj-success-rgb) / <alpha-value>)",
           base: "var(--aj-base)",
           "surface-1": "var(--aj-surface-1)",
           "surface-2": "var(--aj-surface-2)",

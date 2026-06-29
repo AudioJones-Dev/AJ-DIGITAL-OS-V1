@@ -4,17 +4,17 @@ import type { SystemEvent, MetricsSnapshot, SystemEventCategory } from "@/lib/ty
 export const dynamic = "force-dynamic";
 
 const CATEGORY_COLORS: Record<SystemEventCategory | string, string> = {
-  run: "bg-blue-900 text-blue-200",
+  run: "bg-aj-data/15 text-aj-data",
   state: "bg-aj-surface-3 text-aj-data",
-  policy: "bg-yellow-900 text-yellow-200",
+  policy: "bg-aj-warning/15 text-aj-warning",
   approval: "bg-orange-900 text-orange-200",
   dag: "bg-purple-900 text-purple-200",
   cache: "bg-teal-900 text-teal-200",
-  retrieval: "bg-green-900 text-green-200",
+  retrieval: "bg-aj-success/15 text-aj-success",
   decision: "bg-pink-900 text-pink-200",
   attribution: "bg-aj-surface-3 text-aj-data",
   tool: "bg-aj-surface-3 text-aj-text",
-  error: "bg-red-900 text-red-200",
+  error: "bg-aj-critical/15 text-aj-critical",
   dashboard: "bg-aj-surface-2 text-aj-text-secondary",
 };
 
@@ -48,9 +48,9 @@ export default async function EventsPage() {
       {metrics && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {([
-            ["Policy: Allow", metrics.policy_allow_count, "text-emerald-400"],
-            ["Policy: Block", metrics.policy_block_count, "text-red-400"],
-            ["Approval Required", metrics.approval_required_count, "text-yellow-400"],
+            ["Policy: Allow", metrics.policy_allow_count, "text-aj-success"],
+            ["Policy: Block", metrics.policy_block_count, "text-aj-critical"],
+            ["Approval Required", metrics.approval_required_count, "text-aj-warning"],
             ["Attribution Emits", metrics.attribution_emit_count, "text-aj-data"],
           ] as [string, number, string][]).map(([label, value, color]) => (
             <div key={label} className="bg-aj-surface-1 border border-aj-border rounded-lg p-3">

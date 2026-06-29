@@ -35,13 +35,13 @@ function StatCard({
 function StateChip({ state }: { state: string }) {
   const colors: Record<string, string> = {
     queued: "bg-aj-surface-3 text-aj-text",
-    planning: "bg-blue-900 text-blue-200",
-    running: "bg-green-900 text-green-200",
-    waiting_for_approval: "bg-yellow-900 text-yellow-200",
+    planning: "bg-aj-data/15 text-aj-data",
+    running: "bg-aj-success/15 text-aj-success",
+    waiting_for_approval: "bg-aj-warning/15 text-aj-warning",
     retrying: "bg-orange-900 text-orange-200",
-    escalated: "bg-red-900 text-red-200",
-    completed: "bg-emerald-900 text-emerald-200",
-    failed: "bg-red-950 text-red-300",
+    escalated: "bg-aj-critical/15 text-aj-critical",
+    completed: "bg-aj-success/15 text-aj-success",
+    failed: "bg-aj-critical/15 text-aj-critical",
     cancelled: "bg-aj-surface-2 text-aj-text-secondary",
   };
   return (
@@ -56,11 +56,11 @@ function ModuleChip({ name, version, ok }: { name: string; version: string; ok: 
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${
         ok
-          ? "bg-emerald-950 border-emerald-900 text-emerald-300"
-          : "bg-red-950 border-red-900 text-red-300"
+          ? "bg-aj-success/15 border-aj-success/40 text-aj-success"
+          : "bg-aj-critical/15 border-aj-critical/40 text-aj-critical"
       }`}
     >
-      <span className={ok ? "text-emerald-500" : "text-red-500"}>●</span>
+      <span className={ok ? "text-aj-success" : "text-aj-critical"}>●</span>
       {name} <span className="opacity-60">{version}</span>
     </span>
   );
@@ -106,7 +106,7 @@ export default async function CommandPage() {
         <div className="flex items-center gap-2">
           <span
             className={`text-xs px-3 py-1 rounded-full font-medium ${
-              h?.ok ? "bg-emerald-900 text-emerald-300" : "bg-red-900 text-red-300"
+              h?.ok ? "bg-aj-success/15 text-aj-success" : "bg-aj-critical/15 text-aj-critical"
             }`}
           >
             {h?.ok ? "OS Online" : "OS Offline"}
@@ -138,23 +138,23 @@ export default async function CommandPage() {
           <StatCard
             label="Active Runs"
             value={activeRuns.length}
-            color={activeRuns.length > 0 ? "text-green-400" : "text-aj-text"}
+            color={activeRuns.length > 0 ? "text-aj-success" : "text-aj-text"}
           />
           <StatCard
             label="Pending Approval"
             value={pendingApproval.length}
-            color={pendingApproval.length > 0 ? "text-yellow-400" : "text-aj-text"}
+            color={pendingApproval.length > 0 ? "text-aj-warning" : "text-aj-text"}
           />
           <StatCard
             label="Failed Runs"
             value={failedRuns.length}
-            color={failedRuns.length > 0 ? "text-red-400" : "text-aj-text"}
+            color={failedRuns.length > 0 ? "text-aj-critical" : "text-aj-text"}
           />
           <StatCard
             label="Policy Blocks"
             value={policyBlock}
             sub={policyTotal > 0 ? `${Math.round((policyBlock / policyTotal) * 100)}% of decisions` : undefined}
-            color={policyBlock > 0 ? "text-red-400" : "text-aj-text"}
+            color={policyBlock > 0 ? "text-aj-critical" : "text-aj-text"}
           />
           <StatCard
             label="Events"
@@ -278,10 +278,10 @@ export default async function CommandPage() {
                     <span
                       className={`text-xs px-2 py-0.5 rounded font-medium ${
                         ev.decisionBand === "strong_alignment"
-                          ? "bg-emerald-900 text-emerald-300"
+                          ? "bg-aj-success/15 text-aj-success"
                           : ev.decisionBand === "moderate_alignment"
-                          ? "bg-yellow-900 text-yellow-300"
-                          : "bg-red-900 text-red-300"
+                          ? "bg-aj-warning/15 text-aj-warning"
+                          : "bg-aj-critical/15 text-aj-critical"
                       }`}
                     >
                       {ev.decision}
@@ -308,11 +308,11 @@ export default async function CommandPage() {
                     <span
                       className={`mt-0.5 text-xs px-1.5 py-0.5 rounded shrink-0 ${
                         ev.category === "error"
-                          ? "bg-red-900 text-red-300"
+                          ? "bg-aj-critical/15 text-aj-critical"
                           : ev.category === "policy"
-                          ? "bg-yellow-900 text-yellow-300"
+                          ? "bg-aj-warning/15 text-aj-warning"
                           : ev.category === "state"
-                          ? "bg-blue-900 text-blue-300"
+                          ? "bg-aj-data/15 text-aj-data"
                           : "bg-aj-surface-2 text-aj-text-secondary"
                       }`}
                     >

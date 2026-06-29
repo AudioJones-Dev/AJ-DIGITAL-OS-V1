@@ -15,6 +15,13 @@
   --aj-warning: #FFB340;         /* warnings */
   --aj-success: #3DFFB0;         /* success */
 
+  /* RGB channels — enable alpha (e.g. rgb(var(--aj-critical-rgb) / 0.15)) */
+  --aj-signal-rgb: 232 255 90;
+  --aj-data-rgb: 77 172 255;
+  --aj-critical-rgb: 255 69 69;
+  --aj-warning-rgb: 255 179 64;
+  --aj-success-rgb: 61 255 176;
+
   /* ---- Canvas (dark-first) -------------------------------- */
   --aj-base: #080808;            /* page canvas */
   --aj-surface-1: #0F0F0F;       /* primary surface / panel */

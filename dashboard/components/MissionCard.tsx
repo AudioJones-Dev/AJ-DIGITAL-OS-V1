@@ -1,10 +1,10 @@
 import type { Mission } from "@/lib/types";
 
 const statusStyle: Record<string, string> = {
-  active: "bg-green-900 text-green-300",
-  paused: "bg-yellow-900 text-yellow-300",
+  active: "bg-aj-success/15 text-aj-success",
+  paused: "bg-aj-warning/15 text-aj-warning",
   retired: "bg-aj-surface-3 text-aj-text-secondary",
-  failed: "bg-red-900 text-red-300",
+  failed: "bg-aj-critical/15 text-aj-critical",
 };
 
 export default function MissionCard({ mission }: { mission: Mission }) {

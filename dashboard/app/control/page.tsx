@@ -19,13 +19,13 @@ interface ControlRunRecord {
 
 const STATE_COLORS: Record<RunControlState, string> = {
   queued: "bg-aj-surface-3 text-aj-text",
-  planning: "bg-blue-900 text-blue-200",
-  running: "bg-green-900 text-green-200",
-  waiting_for_approval: "bg-yellow-900 text-yellow-200",
+  planning: "bg-aj-data/15 text-aj-data",
+  running: "bg-aj-success/15 text-aj-success",
+  waiting_for_approval: "bg-aj-warning/15 text-aj-warning",
   retrying: "bg-orange-900 text-orange-200",
-  escalated: "bg-red-900 text-red-200",
-  completed: "bg-emerald-900 text-emerald-200",
-  failed: "bg-red-950 text-red-300",
+  escalated: "bg-aj-critical/15 text-aj-critical",
+  completed: "bg-aj-success/15 text-aj-success",
+  failed: "bg-aj-critical/15 text-aj-critical",
   cancelled: "bg-aj-surface-2 text-aj-text-secondary",
 };
 

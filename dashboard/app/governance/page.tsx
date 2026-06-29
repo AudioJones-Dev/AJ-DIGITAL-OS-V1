@@ -70,7 +70,7 @@ export default async function GovernancePage() {
                 <p className="text-xs text-aj-text-muted mb-1.5">Forbidden phrases ({forbiddenPhrases.length})</p>
                 <div className="flex flex-wrap gap-1.5">
                   {forbiddenPhrases.slice(0, 10).map((p) => (
-                    <span key={p} className="text-xs bg-red-950 text-red-300 px-2 py-0.5 rounded font-mono">{p}</span>
+                    <span key={p} className="text-xs bg-aj-critical/15 text-aj-critical px-2 py-0.5 rounded font-mono">{p}</span>
                   ))}
                   {forbiddenPhrases.length > 10 && (
                     <span className="text-xs text-aj-text-muted">+{forbiddenPhrases.length - 10} more</span>
@@ -83,9 +83,9 @@ export default async function GovernancePage() {
 
         {/* Legal */}
         {!lg ? <PolicyOffline label="Legal Constraints" /> : (
-          <div className="bg-aj-surface-1 border border-yellow-900/50 rounded-lg p-5">
+          <div className="bg-aj-surface-1 border border-aj-warning/40 rounded-lg p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-yellow-400">Legal Constraints</h2>
+              <h2 className="text-sm font-semibold text-aj-warning">Legal Constraints</h2>
               <span className="text-xs text-aj-text-muted">{prohibitedPatterns.length} blocked patterns</span>
             </div>
             <div className="space-y-3">
@@ -93,7 +93,7 @@ export default async function GovernancePage() {
                 <p className="text-xs text-aj-text-muted mb-1.5">Restricted categories ({restrictedCategories.length})</p>
                 <div className="flex flex-wrap gap-1.5">
                   {restrictedCategories.map((c) => (
-                    <span key={c} className="text-xs bg-yellow-950 text-yellow-300 px-2 py-0.5 rounded font-mono">{c}</span>
+                    <span key={c} className="text-xs bg-aj-warning/15 text-aj-warning px-2 py-0.5 rounded font-mono">{c}</span>
                   ))}
                 </div>
               </div>
@@ -110,8 +110,8 @@ export default async function GovernancePage() {
         )}
 
         {/* SOP */}
-        <div className="bg-aj-surface-1 border border-blue-900/50 rounded-lg p-5">
-          <h2 className="text-sm font-semibold text-blue-400 mb-4">SOPs</h2>
+        <div className="bg-aj-surface-1 border border-aj-data/40 rounded-lg p-5">
+          <h2 className="text-sm font-semibold text-aj-data mb-4">SOPs</h2>
           {!sopC && !sopO ? <p className="text-aj-text-muted text-sm italic">SOP data unavailable</p> : (
             <div className="space-y-4">
               {[{ label: "content_creation", data: sopC }, { label: "offer_generation", data: sopO }].map(({ label, data }) => {
@@ -127,12 +127,12 @@ export default async function GovernancePage() {
                       {requiredSteps.map((s, i) => (
                         <span key={s} className="text-xs text-aj-text-secondary">
                           {i > 0 && <span className="text-aj-text-muted mr-1">→</span>}
-                          <span className={requiredApprovals.includes(s) ? "text-yellow-400 font-medium" : ""}>{s}</span>
+                          <span className={requiredApprovals.includes(s) ? "text-aj-warning font-medium" : ""}>{s}</span>
                         </span>
                       ))}
                     </div>
                     {requiredApprovals.length > 0 && (
-                      <p className="text-xs text-yellow-600 mt-1">Requires approval at: {requiredApprovals.join(", ")}</p>
+                      <p className="text-xs text-aj-warning mt-1">Requires approval at: {requiredApprovals.join(", ")}</p>
                     )}
                   </div>
                 );
@@ -143,9 +143,9 @@ export default async function GovernancePage() {
 
         {/* Offer Governance */}
         {!ofp ? <PolicyOffline label="Offer Governance" /> : (
-          <div className="bg-aj-surface-1 border border-emerald-900/50 rounded-lg p-5">
+          <div className="bg-aj-surface-1 border border-aj-success/40 rounded-lg p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-emerald-400">Offer Governance</h2>
+              <h2 className="text-sm font-semibold text-aj-success">Offer Governance</h2>
               <span className="text-xs text-aj-text-muted">
                 max discount: <span className="text-aj-text-secondary">{String((ofp["discountRules"] as Record<string, unknown> | null)?.["maxDiscountPercentage"] ?? "—")}%</span>
               </span>
@@ -158,7 +158,7 @@ export default async function GovernancePage() {
                   {Object.entries((ofp["priceFloors"] as Record<string, unknown>) ?? {}).map(([tier, price]) => (
                     <tr key={tier}>
                       <td className="py-0.5 text-aj-text-secondary font-mono">{tier}</td>
-                      <td className="py-0.5 text-emerald-400 font-mono">${String(price)}</td>
+                      <td className="py-0.5 text-aj-success font-mono">${String(price)}</td>
                     </tr>
                   ))}
                 </tbody>

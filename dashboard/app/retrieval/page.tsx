@@ -4,13 +4,13 @@ import type { RetrievalDocument, RetrievalTrace } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 const NS_COLORS: Record<string, string> = {
-  system_docs: "bg-blue-900 text-blue-200",
+  system_docs: "bg-aj-data/15 text-aj-data",
   client_docs: "bg-aj-surface-3 text-aj-data",
   brand_voice: "bg-pink-900 text-pink-200",
   workflow_docs: "bg-purple-900 text-purple-200",
   content_assets: "bg-teal-900 text-teal-200",
-  aeo_research: "bg-green-900 text-green-200",
-  attribution_memory: "bg-yellow-900 text-yellow-200",
+  aeo_research: "bg-aj-success/15 text-aj-success",
+  attribution_memory: "bg-aj-warning/15 text-aj-warning",
   audit_memory: "bg-orange-900 text-orange-200",
   tool_docs: "bg-aj-surface-3 text-aj-text",
 };
@@ -18,8 +18,8 @@ const NS_COLORS: Record<string, string> = {
 const SOURCE_TYPE_COLORS: Record<string, string> = {
   markdown: "bg-aj-surface-2 text-aj-text-secondary",
   text: "bg-aj-surface-2 text-aj-text-secondary",
-  json: "bg-blue-900 text-blue-300",
-  jsonl: "bg-blue-900 text-blue-300",
+  json: "bg-aj-data/15 text-aj-data",
+  jsonl: "bg-aj-data/15 text-aj-data",
 };
 
 export default async function RetrievalPage() {
@@ -125,7 +125,7 @@ export default async function RetrievalPage() {
                         {trace.query}
                       </td>
                       <td className="px-4 py-2">
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${trace.resultCount > 0 ? "bg-emerald-900 text-emerald-300" : "bg-aj-surface-2 text-aj-text-secondary"}`}>
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${trace.resultCount > 0 ? "bg-aj-success/15 text-aj-success" : "bg-aj-surface-2 text-aj-text-secondary"}`}>
                           {trace.resultCount}
                         </span>
                       </td>

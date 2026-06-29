@@ -6,32 +6,32 @@ export const dynamic = "force-dynamic";
 
 const NODE_STATUS_COLORS: Record<string, string> = {
   pending: "bg-aj-surface-3 text-aj-text-secondary",
-  running: "bg-green-900 text-green-200",
-  completed: "bg-emerald-900 text-emerald-200",
-  failed: "bg-red-950 text-red-300",
+  running: "bg-aj-success/15 text-aj-success",
+  completed: "bg-aj-success/15 text-aj-success",
+  failed: "bg-aj-critical/15 text-aj-critical",
   skipped: "bg-aj-surface-2 text-aj-text-muted",
-  waiting_for_approval: "bg-yellow-900 text-yellow-200",
+  waiting_for_approval: "bg-aj-warning/15 text-aj-warning",
 };
 
 const NODE_TYPE_COLORS: Record<string, string> = {
-  input: "text-blue-400",
+  input: "text-aj-data",
   transform: "text-purple-400",
   retrieve: "text-teal-400",
   score: "text-aj-data",
   generate: "text-pink-400",
   tool_call: "text-orange-400",
-  approval_gate: "text-yellow-400",
-  publish: "text-green-400",
+  approval_gate: "text-aj-warning",
+  publish: "text-aj-success",
   audit: "text-aj-text-secondary",
   attribution: "text-aj-data",
 };
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-aj-surface-3 text-aj-text",
-  running: "bg-green-900 text-green-200",
-  waiting_for_approval: "bg-yellow-900 text-yellow-200",
-  completed: "bg-emerald-900 text-emerald-200",
-  failed: "bg-red-950 text-red-300",
+  running: "bg-aj-success/15 text-aj-success",
+  waiting_for_approval: "bg-aj-warning/15 text-aj-warning",
+  completed: "bg-aj-success/15 text-aj-success",
+  failed: "bg-aj-critical/15 text-aj-critical",
   cancelled: "bg-aj-surface-2 text-aj-text-secondary",
 };
 
@@ -72,15 +72,15 @@ export default async function DagRunDetailPage({ params }: { params: Promise<{ r
         </div>
         <div className="bg-aj-surface-2 rounded-full h-2 mb-3">
           <div
-            className={`h-2 rounded-full ${failed > 0 ? "bg-red-500" : "bg-aj-data"}`}
+            className={`h-2 rounded-full ${failed > 0 ? "bg-aj-critical" : "bg-aj-data"}`}
             style={{ width: `${pct}%` }}
           />
         </div>
         <div className="flex gap-4 text-xs">
-          <span className="text-emerald-400">✓ {completed} done</span>
-          {running > 0 && <span className="text-green-400">▶ {running} running</span>}
+          <span className="text-aj-success">✓ {completed} done</span>
+          {running > 0 && <span className="text-aj-success">▶ {running} running</span>}
           {pending > 0 && <span className="text-aj-text-secondary">○ {pending} pending</span>}
-          {failed > 0 && <span className="text-red-400">✗ {failed} failed</span>}
+          {failed > 0 && <span className="text-aj-critical">✗ {failed} failed</span>}
         </div>
       </div>
 
@@ -117,7 +117,7 @@ export default async function DagRunDetailPage({ params }: { params: Promise<{ r
                     </span>
                   </td>
                   <td className="px-4 py-2">
-                    <span className={`text-xs ${node.riskLevel === "high" ? "text-red-400" : node.riskLevel === "medium" ? "text-yellow-400" : "text-aj-text-muted"}`}>
+                    <span className={`text-xs ${node.riskLevel === "high" ? "text-aj-critical" : node.riskLevel === "medium" ? "text-aj-warning" : "text-aj-text-muted"}`}>
                       {node.riskLevel}
                     </span>
                   </td>
@@ -125,7 +125,7 @@ export default async function DagRunDetailPage({ params }: { params: Promise<{ r
                   <td className="px-4 py-2 text-aj-text-muted text-xs">
                     {node.completedAt ? new Date(node.completedAt).toLocaleTimeString() : "—"}
                   </td>
-                  <td className="px-4 py-2 text-red-400 text-xs max-w-[160px] truncate">
+                  <td className="px-4 py-2 text-aj-critical text-xs max-w-[160px] truncate">
                     {node.error ?? "—"}
                   </td>
                 </tr>

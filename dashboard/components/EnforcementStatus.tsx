@@ -6,15 +6,15 @@ interface Props {
 }
 
 const DECISION_COLORS: Record<ActionDecision, string> = {
-  allow: "bg-emerald-900 text-emerald-200",
-  block: "bg-red-900 text-red-200",
-  approval_required: "bg-amber-900 text-amber-200",
+  allow: "bg-aj-success/15 text-aj-success",
+  block: "bg-aj-critical/15 text-aj-critical",
+  approval_required: "bg-aj-warning/15 text-aj-warning",
 };
 
 const RISK_COLORS: Record<RiskLevel, string> = {
   low: "bg-aj-surface-2 text-aj-text-secondary",
-  medium: "bg-amber-950/60 text-amber-300 border border-amber-900",
-  high: "bg-red-950/60 text-red-300 border border-red-900",
+  medium: "bg-aj-warning/15 text-aj-warning border border-aj-warning/40",
+  high: "bg-aj-critical/15 text-aj-critical border border-aj-critical/40",
 };
 
 export default function EnforcementStatus({ snapshot }: Props) {
@@ -60,7 +60,7 @@ export default function EnforcementStatus({ snapshot }: Props) {
           value={
             <span
               className={
-                snapshot.approvalRequired ? "text-amber-300 font-medium" : "text-aj-text-muted"
+                snapshot.approvalRequired ? "text-aj-warning font-medium" : "text-aj-text-muted"
               }
               data-testid="approval-required-flag"
             >
@@ -77,7 +77,7 @@ export default function EnforcementStatus({ snapshot }: Props) {
           label="Tenant"
           value={
             snapshot.hasTenantId ? (
-              <span className="font-mono text-emerald-300" data-testid="tenant-status">
+              <span className="font-mono text-aj-success" data-testid="tenant-status">
                 {snapshot.tenantId}
               </span>
             ) : (
@@ -94,7 +94,7 @@ export default function EnforcementStatus({ snapshot }: Props) {
       {snapshot.blockedReason && (
         <div
           data-testid="blocked-reason"
-          className="bg-red-950/40 border border-red-900 rounded p-2 text-xs text-red-300 font-mono"
+          className="bg-aj-critical/15 border border-aj-critical/40 rounded p-2 text-xs text-aj-critical font-mono"
         >
           <span className="text-aj-text-muted not-italic mr-1">blocked:</span>
           {snapshot.blockedReason}
@@ -102,7 +102,7 @@ export default function EnforcementStatus({ snapshot }: Props) {
       )}
 
       {snapshot.approvalId && (
-        <div className="text-xs text-amber-300/90" data-testid="approval-id">
+        <div className="text-xs text-aj-warning" data-testid="approval-id">
           Approval ID: <span className="font-mono">{snapshot.approvalId}</span>
         </div>
       )}

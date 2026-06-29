@@ -15,11 +15,11 @@ interface AgentContext {
 
 const RISK_LABELS: Record<PermissionLevel, { label: string; color: string }> = {
   0: { label: "read-only", color: "text-aj-text-secondary" },
-  1: { label: "low", color: "text-green-400" },
-  2: { label: "medium", color: "text-yellow-400" },
+  1: { label: "low", color: "text-aj-success" },
+  2: { label: "medium", color: "text-aj-warning" },
   3: { label: "elevated", color: "text-orange-400" },
-  4: { label: "high", color: "text-red-400" },
-  5: { label: "critical", color: "text-red-300" },
+  4: { label: "high", color: "text-aj-critical" },
+  5: { label: "critical", color: "text-aj-critical" },
 };
 
 async function fetchAgents(): Promise<AgentContext[]> {
@@ -61,7 +61,7 @@ export default async function AgentsPage() {
                     <td className="px-4 py-2 font-mono text-xs text-aj-text">{agent.agentId}</td>
                     <td className="px-4 py-2 text-aj-text-secondary text-xs">{agent.capabilities.join(", ")}</td>
                     <td className="px-4 py-2">
-                      <span className="px-2 py-0.5 rounded text-xs bg-green-900 text-green-200">active</span>
+                      <span className="px-2 py-0.5 rounded text-xs bg-aj-success/15 text-aj-success">active</span>
                     </td>
                     <td className={`px-4 py-2 text-xs font-medium ${risk.color}`}>
                       L{agent.permissionLevel} — {risk.label}

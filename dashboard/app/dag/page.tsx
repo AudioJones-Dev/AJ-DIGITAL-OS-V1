@@ -5,10 +5,10 @@ export const dynamic = "force-dynamic";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-aj-surface-3 text-aj-text",
-  running: "bg-green-900 text-green-200",
-  waiting_for_approval: "bg-yellow-900 text-yellow-200",
-  completed: "bg-emerald-900 text-emerald-200",
-  failed: "bg-red-950 text-red-300",
+  running: "bg-aj-success/15 text-aj-success",
+  waiting_for_approval: "bg-aj-warning/15 text-aj-warning",
+  completed: "bg-aj-success/15 text-aj-success",
+  failed: "bg-aj-critical/15 text-aj-critical",
   cancelled: "bg-aj-surface-2 text-aj-text-secondary",
 };
 
@@ -89,7 +89,7 @@ export default async function DagPage() {
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-aj-surface-2 rounded-full h-1.5">
                           <div
-                            className={`h-1.5 rounded-full ${failed > 0 ? "bg-red-500" : "bg-aj-data"}`}
+                            className={`h-1.5 rounded-full ${failed > 0 ? "bg-aj-critical" : "bg-aj-data"}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>

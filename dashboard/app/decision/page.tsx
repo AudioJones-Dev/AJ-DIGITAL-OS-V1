@@ -4,21 +4,21 @@ import type { MapEvaluation, CeraCycle } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 const BAND_CONFIG = {
-  strong_alignment: { color: "bg-emerald-900 border-emerald-800", badge: "bg-emerald-900 text-emerald-300", label: "Strong" },
-  moderate_alignment: { color: "bg-yellow-950 border-yellow-900", badge: "bg-yellow-900 text-yellow-300", label: "Moderate" },
-  weak_alignment: { color: "bg-red-950 border-red-900", badge: "bg-red-900 text-red-300", label: "Weak" },
+  strong_alignment: { color: "bg-aj-success/15 border-aj-success/40", badge: "bg-aj-success/15 text-aj-success", label: "Strong" },
+  moderate_alignment: { color: "bg-aj-warning/15 border-aj-warning/40", badge: "bg-aj-warning/15 text-aj-warning", label: "Moderate" },
+  weak_alignment: { color: "bg-aj-critical/15 border-aj-critical/40", badge: "bg-aj-critical/15 text-aj-critical", label: "Weak" },
 };
 
 const DECISION_COLORS: Record<string, string> = {
-  execute: "bg-emerald-900 text-emerald-300",
-  improve: "bg-yellow-900 text-yellow-300",
-  reconsider: "bg-red-900 text-red-300",
+  execute: "bg-aj-success/15 text-aj-success",
+  improve: "bg-aj-warning/15 text-aj-warning",
+  reconsider: "bg-aj-critical/15 text-aj-critical",
 };
 
 const PATH_COLORS: Record<string, string> = {
-  scale: "bg-emerald-900 text-emerald-300",
-  pivot: "bg-yellow-900 text-yellow-300",
-  kill: "bg-red-900 text-red-300",
+  scale: "bg-aj-success/15 text-aj-success",
+  pivot: "bg-aj-warning/15 text-aj-warning",
+  kill: "bg-aj-critical/15 text-aj-critical",
 };
 
 export default async function DecisionPage() {
@@ -71,17 +71,17 @@ export default async function DecisionPage() {
       {/* Band distribution */}
       {evaluations.length > 0 && (
         <div className="flex gap-3">
-          <div className="bg-emerald-900/40 border border-emerald-900 rounded-lg px-4 py-3 flex-1 text-center">
-            <p className="text-2xl font-bold text-emerald-400">{strong}</p>
-            <p className="text-xs text-emerald-600 mt-0.5">Strong (8–9)</p>
+          <div className="bg-aj-success/15 border border-aj-success/40 rounded-lg px-4 py-3 flex-1 text-center">
+            <p className="text-2xl font-bold text-aj-success">{strong}</p>
+            <p className="text-xs text-aj-success mt-0.5">Strong (8–9)</p>
           </div>
-          <div className="bg-yellow-900/40 border border-yellow-900 rounded-lg px-4 py-3 flex-1 text-center">
-            <p className="text-2xl font-bold text-yellow-400">{moderate}</p>
-            <p className="text-xs text-yellow-600 mt-0.5">Moderate (5–7)</p>
+          <div className="bg-aj-warning/15 border border-aj-warning/40 rounded-lg px-4 py-3 flex-1 text-center">
+            <p className="text-2xl font-bold text-aj-warning">{moderate}</p>
+            <p className="text-xs text-aj-warning mt-0.5">Moderate (5–7)</p>
           </div>
-          <div className="bg-red-900/40 border border-red-900 rounded-lg px-4 py-3 flex-1 text-center">
-            <p className="text-2xl font-bold text-red-400">{weak}</p>
-            <p className="text-xs text-red-600 mt-0.5">Weak (0–4)</p>
+          <div className="bg-aj-critical/15 border border-aj-critical/40 rounded-lg px-4 py-3 flex-1 text-center">
+            <p className="text-2xl font-bold text-aj-critical">{weak}</p>
+            <p className="text-xs text-aj-critical mt-0.5">Weak (0–4)</p>
           </div>
         </div>
       )}

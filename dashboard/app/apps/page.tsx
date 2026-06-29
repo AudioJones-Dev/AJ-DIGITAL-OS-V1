@@ -5,13 +5,13 @@ export const dynamic = "force-dynamic";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-aj-surface-3 text-aj-text-secondary",
-  active: "bg-emerald-900 text-emerald-300",
+  active: "bg-aj-success/15 text-aj-success",
   archived: "bg-aj-surface-2 text-aj-text-muted",
-  review: "bg-yellow-900 text-yellow-300",
-  approved: "bg-emerald-900 text-emerald-300",
-  published: "bg-blue-900 text-blue-300",
-  rejected: "bg-red-900 text-red-300",
-  pending: "bg-yellow-900 text-yellow-300",
+  review: "bg-aj-warning/15 text-aj-warning",
+  approved: "bg-aj-success/15 text-aj-success",
+  published: "bg-aj-data/15 text-aj-data",
+  rejected: "bg-aj-critical/15 text-aj-critical",
+  pending: "bg-aj-warning/15 text-aj-warning",
 };
 
 function Section({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
@@ -79,7 +79,7 @@ export default async function AppsPage() {
                   <tr key={offer.entityId} className="border-b border-aj-border hover:bg-aj-surface-2">
                     <td className="px-4 py-2 text-aj-text text-sm truncate max-w-[200px]">{offer.title}</td>
                     <td className="px-4 py-2 text-aj-text-secondary text-xs font-mono">{offer.type}</td>
-                    <td className="px-4 py-2 text-emerald-400 text-xs font-mono">
+                    <td className="px-4 py-2 text-aj-success text-xs font-mono">
                       {offer.currency} {offer.price?.toLocaleString()}
                     </td>
                     <td className="px-4 py-2">

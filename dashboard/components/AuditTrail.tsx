@@ -13,15 +13,15 @@ interface Props {
 }
 
 const DECISION_COLORS: Record<ActionDecision, string> = {
-  allow: "bg-emerald-900/60 text-emerald-300",
-  block: "bg-red-900/60 text-red-300",
-  approval_required: "bg-amber-900/60 text-amber-300",
+  allow: "bg-aj-success/15 text-aj-success",
+  block: "bg-aj-critical/15 text-aj-critical",
+  approval_required: "bg-aj-warning/15 text-aj-warning",
 };
 
 const RISK_COLORS: Record<RiskLevel, string> = {
   low: "text-aj-text-secondary",
-  medium: "text-amber-400",
-  high: "text-red-400",
+  medium: "text-aj-warning",
+  high: "text-aj-critical",
 };
 
 export default function AuditTrail({ runId, refreshKey, initialEvents }: Props) {
@@ -49,7 +49,7 @@ export default function AuditTrail({ runId, refreshKey, initialEvents }: Props) 
   }, [runId, refreshKey]);
 
   if (loading) return <p className="text-aj-text-muted text-xs">Loading audit trail…</p>;
-  if (error) return <p className="text-red-400 text-xs" data-testid="audit-error">{error}</p>;
+  if (error) return <p className="text-aj-critical text-xs" data-testid="audit-error">{error}</p>;
   if (events.length === 0) return <p className="text-aj-text-muted text-xs" data-testid="audit-empty">No audit events.</p>;
 
   return (
@@ -104,7 +104,7 @@ function AuditRow({ event }: { event: ControlAuditEvent }) {
       <td className="px-3 py-2 text-aj-text-secondary font-mono">{event.performedBy}</td>
       <td className="px-3 py-2 font-mono">
         {event.tenantId ? (
-          <span className="text-emerald-300">{event.tenantId}</span>
+          <span className="text-aj-success">{event.tenantId}</span>
         ) : (
           <span className="text-aj-text-muted">—</span>
         )}
