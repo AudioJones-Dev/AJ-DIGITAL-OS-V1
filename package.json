@@ -32,6 +32,7 @@
     "smoke": "node dist/scripts/smoke-cli.js",
     "release:check": "npm run typecheck && npm test && npm run build && npm run smoke && npm pack --dry-run",
     "validate:crm-migration": "npm run build && node dist/scripts/validate-crm-migration.js",
+    "smoke:crm-live": "npm run build && node dist/scripts/crm-live-smoke.js",
     "test": "vitest run",
     "test:crm-rls": "vitest run tests/db/crm-rls.integration.test.ts tests/db/postgres-crm-store.integration.test.ts",
     "test:watch": "vitest",
@@ -39,6 +40,7 @@
   },
   "dependencies": {
     "axios": "^1.16.0",
+    "pg": "^8.22.0",
     "playwright": "^1.59.1",
     "prom-client": "^15.1.3",
     "zod": "^3.24.1"
@@ -47,7 +49,6 @@
     "@types/node": "^25.5.0",
     "@types/pg": "^8.20.0",
     "@vitest/coverage-v8": "^4.1.8",
-    "pg": "^8.22.0",
     "typescript": "^5.8.3",
     "vitest": "^4.1.8"
   },
