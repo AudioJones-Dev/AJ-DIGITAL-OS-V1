@@ -33,16 +33,45 @@ function systemContext(tenantId: string): CrmTenantContext {
   });
 }
 
+/**
+ * Ensures a `crm_tenants` row exists for the smoke tenant. Contacts FK to
+ * crm_tenants, so the tenant must exist before a contact can be created. The
+ * tenant GUC is bound transaction-locally so the insert satisfies RLS whether
+ * or not the connection bypasses it.
+ */
+async function ensureTenant(tenantId: string): Promise<void> {
+  const client = await getCrmPool().connect();
+  try {
+    await client.query("begin");
+    await client.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    await client.query(
+      "insert into public.crm_tenants (tenant_id, name, owner_user_id, tenant_type) " +
+        "values ($1, $2, $3, 'sandbox') on conflict (tenant_id) do nothing",
+      [tenantId, `Smoke ${tenantId}`, "crm-live-smoke"],
+    );
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Removes the smoke contact and tenant (contact first — it FKs the tenant).
+ * No DELETE RLS policy exists, so this only succeeds on a BYPASSRLS connection;
+ * otherwise the operator is warned to clean up the clearly-labelled smoke rows.
+ */
 async function cleanup(tenantId: string, contactId: string): Promise<string> {
-  // No DELETE RLS policy exists for crm_contacts; this only succeeds on a
-  // BYPASSRLS connection. If it cannot remove the row, the operator is warned.
   try {
     const pool = getCrmPool();
-    const res = await pool.query("delete from public.crm_contacts where tenant_id = $1 and contact_id = $2", [
-      tenantId,
-      contactId,
-    ]);
-    return (res.rowCount ?? 0) > 0 ? "removed" : "not-removed";
+    const contact = await pool.query(
+      "delete from public.crm_contacts where tenant_id = $1 and contact_id = $2",
+      [tenantId, contactId],
+    );
+    await pool.query("delete from public.crm_tenants where tenant_id = $1", [tenantId]);
+    return (contact.rowCount ?? 0) > 0 ? "removed" : "not-removed";
   } catch (error) {
     return `failed: ${error instanceof Error ? error.message : String(error)}`;
   }
@@ -76,6 +105,9 @@ async function main(): Promise<number> {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
+    // 0. Bootstrap the tenant (contacts FK to crm_tenants)
+    await ensureTenant(tenantA);
 
     // 1. Create under tenant A
     const created = await service.createContact(systemContext(tenantA), contact);

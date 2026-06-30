@@ -19,6 +19,7 @@ Tenant-native CRM: domain types, schemas, tenant context/permission guards, appr
 - Backed by Postgres via `src/db/crm-postgres-pool.ts` (`getCrmPool` / `closeCrmPool`), configured by **`CRM_DATABASE_URL`** — the Supabase Postgres connection string incl. DB password, distinct from `SUPABASE_SERVICE_ROLE_KEY`. Doppler-managed, referenced by name only, never committed/logged.
 - Surface today: operator CLI `crm` (`src/commands/crm.command.ts`) — `--object contact|lead|opportunity --action create|update|get`. `update opportunity` needs `--approvalStatus approved` (only approval-gated action). HTTP/dashboard exposure is deferred until an auth/tenant-resolution story exists.
 - Live proof: `npm run smoke:crm-live` (`src/scripts/crm-live-smoke.ts`) — connectivity + tenant-scoped round-trip + store-level isolation. Skips without `CRM_DATABASE_URL`.
+- Tenant prerequisite: contacts/leads/opportunities FK to `crm_tenants`, so a tenant row must exist before any object is created. The store/service do not create tenants; the smoke script bootstraps its own. Tenant provisioning (and a CLI/HTTP path for it) is a follow-up.
 
 ## Local Contracts
 
