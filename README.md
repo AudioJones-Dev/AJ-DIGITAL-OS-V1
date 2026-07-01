@@ -493,3 +493,40 @@ Behavior:
 - freshness enforcement via `AJ_WEBHOOK_MAX_SKEW_SECONDS` (default `300`)
 - replay rejection using nonce + webhook id with `AJ_WEBHOOK_REPLAY_TTL_SECONDS` (default `600`)
 - fail-closed behavior if verification cannot be completed or secret is missing
+
+---
+
+## Lead Pipeline — Florida Platform Lift Pros
+
+See [`docs/lead-pipeline.md`](docs/lead-pipeline.md) for full documentation.
+
+### Quick Setup
+
+1. Copy `.env.example` to `.env` and fill in the lead pipeline vars:
+
+```env
+DATABASE_URL=postgres://...          # Neon connection string
+LEAD_STORAGE_PROVIDER=neon           # neon | mock (mock is dev only)
+RESEND_API_KEY=re_...
+INTERNAL_ALERT_EMAIL=contact@floridaplatformliftpros.com
+DEFAULT_FROM_EMAIL=leads@floridaplatformliftpros.com
+ADMIN_ACCESS_TOKEN=your-secret-token
+```
+
+2. Run the Neon migration `sql/006-leads.sql` against your Neon project.
+
+3. Start the server — the lead API is available immediately on the Hermes HTTP port.
+
+### API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/leads` | Submit a new lead |
+| `GET` | `/admin/leads` | Admin CRM dashboard (HTML or JSON) |
+| `PATCH` | `/api/leads/:id` | Update lead status/priority/notes |
+
+### Production Safety Warning
+
+> **Never** set `LEAD_STORAGE_PROVIDER=mock` in production.
+> The server will **throw on startup** and refuse to start if this combination is detected.
+> Always set `LEAD_STORAGE_PROVIDER=neon` and `DATABASE_URL` in production.

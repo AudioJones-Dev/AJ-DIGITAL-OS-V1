@@ -174,6 +174,8 @@ import type {
   NormalizedEntityType,
 } from "../normalization/index.js";
 import { getTelegramStatus as getTelegramBotStatus } from "../telegram/index.js";
+import { handleLeadSubmit } from "../api/leads.js";
+import { handleLeadUpdate, handleAdminLeads } from "../api/leads-admin.js";
 
 const TAG = "[HERMES-API]";
 const DEFAULT_PORT = 7420;
@@ -2086,6 +2088,65 @@ export function startHermesApi(port?: number): void {
               error: err instanceof Error ? err.message : "Bad request",
             }),
           );
+        });
+      return;
+    }
+
+    // ── Lead Pipeline: submit lead ──────────────────────────────────
+    if (req.url === "/api/leads" && req.method === "POST") {
+      collectBody(req)
+        .then((raw) =>
+          handleLeadSubmit(raw).then(({ statusCode, body }) => {
+            res.writeHead(statusCode, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(body));
+          }),
+        )
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, id: null, errors: [err instanceof Error ? err.message : "Bad request"] }));
+        });
+      return;
+    }
+
+    // ── Lead Pipeline: update lead (CRM action) ─────────────────────
+    const leadPatchMatch = req.url?.match(/^\/api\/leads\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|mock-[0-9a-z-]+)(?:\?(.*))?$/i);
+    if (leadPatchMatch && req.method === "PATCH") {
+      const leadId = decodeURIComponent(leadPatchMatch[1]!);
+      const qs = new URLSearchParams(leadPatchMatch[2] ?? "");
+      const queryToken = qs.get("token");
+      const headerToken = (req.headers["x-admin-token"] as string | undefined) ?? null;
+
+      collectBody(req)
+        .then((raw) =>
+          handleLeadUpdate(leadId, raw, queryToken, headerToken).then(({ statusCode, body }) => {
+            res.writeHead(statusCode, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(body));
+          }),
+        )
+        .catch((err: unknown) => {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, data: null, errors: [err instanceof Error ? err.message : "Bad request"] }));
+        });
+      return;
+    }
+
+    // ── Lead Pipeline: admin leads dashboard ────────────────────────
+    const adminLeadsMatch = req.url?.match(/^\/admin\/leads(?:\?(.*))?$/);
+    if (adminLeadsMatch && req.method === "GET") {
+      const qs = new URLSearchParams(adminLeadsMatch[1] ?? "");
+      const queryToken = qs.get("token");
+      const headerToken = (req.headers["x-admin-token"] as string | undefined) ?? null;
+      const forceJson = qs.get("format") === "json";
+      const acceptHeader = (req.headers["accept"] as string | undefined) ?? null;
+
+      handleAdminLeads(queryToken, headerToken, forceJson, acceptHeader)
+        .then(({ statusCode, contentType, body }) => {
+          res.writeHead(statusCode, { "Content-Type": contentType });
+          res.end(body);
+        })
+        .catch((err: unknown) => {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }));
         });
       return;
     }
