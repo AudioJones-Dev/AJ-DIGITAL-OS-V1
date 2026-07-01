@@ -8,6 +8,7 @@
  */
 
 import type {
+  FreshnessPolicy,
   RetrievalNamespace,
   RetrievalPolicy,
   RetrievalPolicyEvaluation,
@@ -20,6 +21,17 @@ export const DEFAULT_RETRIEVAL_POLICY: RetrievalPolicy = {
   readOnlyNamespaces: ["audit_memory", "attribution_memory"],
   globalNamespaces: ["system_docs", "tool_docs"],
   restrictedNamespaces: ["audit_memory"],
+};
+
+/**
+ * Memory-trust doctrine (operator-tunable): how aggressively recall demotes and
+ * flags aging context. Defaults: weight halves every 30 days, flagged stale past
+ * 180 days, never decayed below 0.5 (old-but-relevant context survives).
+ */
+export const DEFAULT_FRESHNESS_POLICY: FreshnessPolicy = {
+  halfLifeDays: 30,
+  staleAfterDays: 180,
+  decayFloor: 0.5,
 };
 
 function isProductionEnv(env: string | undefined): boolean {
