@@ -28,7 +28,7 @@ services:
     container_name: aj-homepage
     restart: unless-stopped
     environment:
-      HOMEPAGE_ALLOWED_HOSTS: "home.agentos.local,agentos.local,localhost:3030"
+      HOMEPAGE_ALLOWED_HOSTS: "home.agentos.local,agentos.local,localhost:3030,home.ajdigital.app"
     ports:
       - "3030:3000"    # direct access in addition to home.agentos.local
     volumes:

@@ -1,23 +1,23 @@
 - Agent OS:
     - Control Plane:
-        href: http://os.agentos.local
+        href: https://os.ajdigital.app
         description: aj-digital-os — scheduler, watcher, runs (:7420/status)
         siteMonitor: http://aj-digital-os:7420/status
     - AI Chat:
-        href: http://chat.agentos.local
+        href: https://chat.ajdigital.app
         description: Open WebUI — chat over Hermes / Ollama
         siteMonitor: http://open-webui:8080
     - Workflows:
-        href: http://flows.agentos.local
+        href: https://flows.ajdigital.app
         description: n8n — automation flows
         siteMonitor: http://n8n:5678
 
 - Observability:
     - Grafana:
-        href: http://metrics.agentos.local
+        href: https://metrics.ajdigital.app
         description: dashboards (core health, infra)
         siteMonitor: http://grafana:3000
     - Prometheus:
-        href: http://prom.agentos.local
+        href: https://prom.ajdigital.app
         description: metrics + alerts
         siteMonitor: http://prometheus:9090
