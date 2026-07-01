@@ -9,7 +9,8 @@ export type ApprovalType =
   | "client_data_export"
   | "browser_purchase"
   | "browser_send"
-  | "mcp_privileged_tool_call";
+  | "mcp_privileged_tool_call"
+  | "offer_approval";
 
 export type ApprovalState = "pending" | "approved" | "denied" | "expired" | "cancelled";
 
