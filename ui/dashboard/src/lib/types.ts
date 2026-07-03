@@ -211,6 +211,42 @@ export interface ReplayData {
   failures: ReplayFailure[];
 }
 
+// ── Approval Inbox Types ───────────────────────────────────────────
+// Mirrors src/security/approvals/approval-types.ts (backend). risk /
+// actionCategory / permissionLevel are typed as string here to avoid
+// coupling the dashboard to backend permission-level unions.
+
+export type ApprovalState = "pending" | "approved" | "denied" | "expired" | "cancelled";
+export type ApprovalChannel = "cli" | "telegram" | "dashboard" | "email" | "manual";
+export type ApprovalEnvironment = "local" | "dev" | "staging" | "production";
+
+export interface ApprovalRequest {
+  approvalId: string;
+  requestedAt: string;
+  expiresAt: string;
+  requestedByAgentId: string;
+  permissionLevel: string;
+  actionCategory: string;
+  risk: string;
+  reason: string;
+  target: string | null;
+  command: string | null;
+  clientId: string | null;
+  environment: ApprovalEnvironment;
+  status: ApprovalState;
+  approvedBy: string | null;
+  approvalChannel: ApprovalChannel | null;
+  auditId: string | null;
+}
+
+export type ApprovalDecision = "approve" | "deny";
+
+export interface ApprovalDecisionResult {
+  ok: boolean;
+  approval: ApprovalRequest | null;
+  error: string | null;
+}
+
 // ── Repair Event Types ─────────────────────────────────────────────
 
 export type FailureClassification = "transient" | "network" | "dependency" | "data_schema" | "auth_config" | "unknown";

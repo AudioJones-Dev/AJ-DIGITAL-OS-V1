@@ -15,6 +15,7 @@ import { ClientAlerts } from "./components/ClientAlerts";
 import { ClientDeliverables } from "./components/ClientDeliverables";
 import { ViewModeSwitcher } from "./components/ViewModeSwitcher";
 import { OnboardingView } from "./components/OnboardingView";
+import { ApprovalInbox } from "./components/ApprovalInbox";
 import { ViewModeProvider, useViewMode } from "./lib/view-mode";
 import type { CSSProperties } from "react";
 
@@ -23,6 +24,7 @@ import type { CSSProperties } from "react";
 const operatorNav = [
   { to: "/", label: "Dashboard" },
   { to: "/agents", label: "Agents" },
+  { to: "/approvals", label: "Approvals" },
   { to: "/workspace", label: "Workspace" },
   { to: "/clients", label: "Clients" },
   { to: "/missions", label: "Missions" },
@@ -111,8 +113,9 @@ function AppShell() {
 
   return (
     <div style={shellStyle}>
+      <a href="#main-content" className="skip-link">Skip to content</a>
       {/* Sidebar */}
-      <nav style={sidebarStyle}>
+      <nav style={sidebarStyle} aria-label="Primary">
         <div style={logoStyle}>AJ DIGITAL OS</div>
         <ViewModeSwitcher />
         <div style={{ height: 12 }} />
@@ -140,10 +143,11 @@ function AppShell() {
       </nav>
 
       {/* Main content */}
-      <main style={contentStyle}>
+      <main id="main-content" tabIndex={-1} style={{ ...contentStyle, outline: "none" }}>
         <Routes>
           <Route path="/" element={<DashboardHome />} />
           <Route path="/agents" element={<AgentsView />} />
+          <Route path="/approvals" element={isClient ? <Navigate to="/" replace /> : <ApprovalInbox />} />
           <Route path="/workspace" element={<WorkspaceBoard />} />
           <Route path="/clients" element={<ClientsView />} />
           <Route path="/missions" element={<MissionsView />} />
