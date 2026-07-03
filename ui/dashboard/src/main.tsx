@@ -26,6 +26,14 @@ const globalCSS = `
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  :focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; border-radius: 2px; }
+  .skip-link {
+    position: absolute; left: 8px; top: -48px; z-index: 1000;
+    padding: 8px 16px; border-radius: 8px;
+    background: #2563eb; color: #fff; font-size: 13px; font-weight: 600;
+    text-decoration: none; transition: top 0.15s;
+  }
+  .skip-link:focus { top: 8px; }
 `;
 
 // Inject global styles
