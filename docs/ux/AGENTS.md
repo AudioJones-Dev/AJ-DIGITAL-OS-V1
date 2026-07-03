@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This folder owns the canonical AJ Digital OS UX doctrine package.
+This folder owns the AJ Digital OS UX doctrine draft surface.
 
 It defines how agents and humans should specify interface behavior for:
 
@@ -17,7 +17,7 @@ It defines how agents and humans should specify interface behavior for:
 ## Local Contract
 
 - Keep this tree documentation-only.
-- Treat `docs/ux/` as the source of truth for UX doctrine, screen specs, and interface guardrails.
+- Treat `docs/ux/` as the draft surface for UX doctrine, screen specs, and interface guardrails; vault-canonical ratification is pending.
 - Align with parent policy in [`../AGENTS.md`](../AGENTS.md), [`../system/`](../system), and [`../specs/`](../specs).
 - Prefer explicit standards over vague design advice.
 - Separate facts, inferences, assumptions, risks, and open questions.

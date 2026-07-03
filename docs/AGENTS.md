@@ -14,6 +14,7 @@ This folder owns AJ Digital OS policy, architecture, operations, deployment, rel
 - `docs/security/` contains security doctrine for secret handling, remote secret operations, and provider-safe operational workflows.
 - `docs/specs/` contains product/module PRDs, Git Spec-ready build specs, and acceptance criteria.
 - `docs/knowledge/` contains LLM Wiki, Obsidian-compatible knowledge-layer workflows, and agent-maintained Markdown synthesis rules.
+- `docs/ux/` contains the UX doctrine draft surface, screen specs, design-system guidance, tenant-aware interface standards, and agentic UI guardrails; vault-canonical ratification is pending.
 - `docs/ops/` and deployment docs support operator workflows and should not silently override canonical policy.
 
 ## Local Contracts
@@ -45,5 +46,6 @@ This folder owns AJ Digital OS policy, architecture, operations, deployment, rel
 - `protocols/` - repository bootstrap and cross-agent execution protocols.
 - `security/` - security doctrine for secret handling, remote secret operations, and provider-safe operational workflows.
 - `specs/` - product/module PRDs, Git Spec-ready build specs, and acceptance criteria.
+- `ux/` - UX doctrine draft surface, screen specs, design-system guidance, and interface guardrails.
 - `system/` - system standards, trust layers, and implementation specs.
 - `ui/` - UI-specific documentation.

@@ -2,11 +2,15 @@
 
 ## Purpose
 
-This index is the entry point for AJ Digital OS UX doctrine.
+This index is the entry point for the AJ Digital OS UX doctrine packet.
+
+## Status
+
+DRAFT / RECOMMEND_ONLY. Vault-canonical ratification is pending.
 
 The UX layer is the human control surface for the operating system. It must make tenant context, role boundaries, approval status, auditability, and business outcome visible without exposing internal orchestration complexity.
 
-## Canonical Tree
+## Packet Tree
 
 - [`00-strategy/UX_DOCUMENTATION_STANDARD.md`](00-strategy/UX_DOCUMENTATION_STANDARD.md)
 - [`00-strategy/PRODUCT_EXPERIENCE_PRINCIPLES.md`](00-strategy/PRODUCT_EXPERIENCE_PRINCIPLES.md)
