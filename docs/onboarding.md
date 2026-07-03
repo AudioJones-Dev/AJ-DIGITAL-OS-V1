@@ -55,6 +55,7 @@ aj-digital-os help
 - `docs/operator-playbook.md`
 - `docs/recovery-playbook.md`
 - `docs/system-architecture.md`
+- `docs/system/AI_OPERATIONS_HARNESS_GATE.md`
 - `docs/publish-preparation-checklist.md`
 - `docs/production-go-live-checklist.md`
 - `docs/versioning-policy.md`
