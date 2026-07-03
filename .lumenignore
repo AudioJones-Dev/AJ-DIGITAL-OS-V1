@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+graphify-out/
+.git/
+.env
+.env.*
+*.log
+data/memory/shared/failures.jsonl
