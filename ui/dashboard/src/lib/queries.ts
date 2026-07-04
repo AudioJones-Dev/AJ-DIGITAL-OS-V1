@@ -1,5 +1,8 @@
 import { supabase } from "./supabase";
 import type {
+  ApprovalDecision,
+  ApprovalDecisionResult,
+  ApprovalRequest,
   Asset,
   Client,
   ClientAgent,
@@ -228,6 +231,48 @@ export async function fetchRepairEvents(): Promise<RepairEvent[]> {
   if (!res.ok) return [];
   const body = await res.json() as { ok: boolean; data?: RepairEvent[] };
   return body.ok && body.data ? body.data : [];
+}
+
+// ── Approvals (approval-service via Hermes API) ────────────────────
+// Backend contract (to be exposed on hermes-status-api, port 7420):
+//   GET  /approvals                    -> { ok, data?: ApprovalRequest[] }
+//   POST /approvals/:id/decision       -> { ok, data?: ApprovalRequest, error? }
+//     body: { decision: "approve"|"deny", actorId, channel: "dashboard" }
+//
+// NOTE: unlike fetchRepairEvents, this THROWS on failure rather than
+// returning []. An empty list must mean "nothing pending" — never
+// "the approvals service is unreachable". Failing closed keeps the
+// error state distinct from the empty state on this trust surface.
+
+export async function fetchApprovals(): Promise<ApprovalRequest[]> {
+  const res = await fetch(`${HERMES_API}/approvals`, {
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`Approvals service unavailable (HTTP ${res.status})`);
+  const body = (await res.json()) as { ok: boolean; data?: ApprovalRequest[]; error?: string };
+  if (!body.ok) throw new Error(body.error ?? "Approvals service returned an error");
+  return body.data ?? [];
+}
+
+export async function decideApproval(input: {
+  approvalId: string;
+  decision: ApprovalDecision;
+  actorId: string;
+}): Promise<ApprovalDecisionResult> {
+  let res: Response;
+  try {
+    res = await fetch(`${HERMES_API}/approvals/${encodeURIComponent(input.approvalId)}/decision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision: input.decision, actorId: input.actorId, channel: "dashboard" }),
+      signal: AbortSignal.timeout(12000),
+    });
+  } catch (err) {
+    return { ok: false, approval: null, error: err instanceof Error ? err.message : "Network error" };
+  }
+  if (!res.ok) return { ok: false, approval: null, error: `HTTP ${res.status}` };
+  const body = (await res.json()) as { ok: boolean; data?: ApprovalRequest; error?: string };
+  return { ok: body.ok, approval: body.data ?? null, error: body.error ?? null };
 }
 
 // ── Subscriptions ──────────────────────────────────────────────────
