@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
 import type { CacheDecision, CacheNamespace } from "./cache-types.js";
+import { resolveRuntimePath } from "../core/runtime-paths.js";
 
 export type CacheAuditEventType =
   | "cache_hit"
@@ -32,14 +33,29 @@ export interface CacheAuditEvent {
   metadata?: Record<string, unknown>;
 }
 
-const CACHE_DIR = join(process.cwd(), "runtime", "cache");
-const AUDIT_PATH = join(CACHE_DIR, "cache-audit.jsonl");
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order.
+function cacheDir(): string {
+  return resolveRuntimePath("cache");
+}
+
+function auditPath(): string {
+  return join(cacheDir(), "cache-audit.jsonl");
+}
+
+export const CACHE_AUDIT_PATHS = {
+  get auditFile(): string {
+    return auditPath();
+  },
+} as const;
+
 const MAX_BUFFER = 500;
 
 const buffer: CacheAuditEvent[] = [];
 
 function ensureDir(): void {
-  if (!existsSync(CACHE_DIR)) mkdirSync(CACHE_DIR, { recursive: true });
+  const dir = cacheDir();
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
 export function logCacheAuditEvent(
@@ -63,7 +79,7 @@ export function logCacheAuditEvent(
 
   try {
     ensureDir();
-    appendFileSync(AUDIT_PATH, JSON.stringify(full) + "\n", "utf-8");
+    appendFileSync(auditPath(), JSON.stringify(full) + "\n", "utf-8");
   } catch {
     // file-system errors are non-fatal
   }
@@ -78,9 +94,10 @@ export function getCacheAuditEvents(filter?: {
   limit?: number;
 }): CacheAuditEvent[] {
   let events: CacheAuditEvent[] = [];
-  if (existsSync(AUDIT_PATH)) {
+  const audit = auditPath();
+  if (existsSync(audit)) {
     try {
-      events = readFileSync(AUDIT_PATH, "utf-8")
+      events = readFileSync(audit, "utf-8")
         .trim()
         .split("\n")
         .filter(Boolean)

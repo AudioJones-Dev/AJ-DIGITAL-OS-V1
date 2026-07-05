@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeEach, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -17,6 +17,12 @@ process.env.AJ_RUNTIME_DIR = TEST_RUNTIME_DIR;
 // Isolate the approvals store too — its production default (data/security/
 // approvals.json) is cwd-relative and shared across parallel workers.
 process.env.AJ_APPROVALS_STORE_PATH = join(TEST_RUNTIME_DIR, "security", "approvals.json");
+
+const SOURCE_POLICIES_DIR = join(process.cwd(), "runtime", "policies");
+const TEST_POLICIES_DIR = join(TEST_RUNTIME_DIR, "policies");
+if (existsSync(SOURCE_POLICIES_DIR)) {
+  cpSync(SOURCE_POLICIES_DIR, TEST_POLICIES_DIR, { recursive: true });
+}
 
 beforeEach(() => {
   process.env.TZ = "UTC";

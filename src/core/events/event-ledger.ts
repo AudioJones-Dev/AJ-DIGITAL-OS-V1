@@ -7,16 +7,19 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, appendFileSync, writeFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 
+import { resolveRuntimePath } from "../runtime-paths.js";
 import type { SystemEvent, SystemEventFilter } from "./event-types.js";
 import { incrementMetric } from "../observability/metrics-store.js";
 
 const SCHEMA_VERSION = "1.0.0";
 
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order.
 export function eventLedgerPath(): string {
-  return join(process.cwd(), "runtime", "events", "system-events.jsonl");
+  return resolveRuntimePath("events", "system-events.jsonl");
 }
 
 function ensureFile(path: string): void {

@@ -8,12 +8,15 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { resolveRuntimePath } from "../runtime-paths.js";
 import type { PolicyDocument } from "./policy-types.js";
 
 const cache = new Map<string, PolicyDocument>();
 
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order.
 export function policiesDir(): string {
-  return join(process.cwd(), "runtime", "policies");
+  return resolveRuntimePath("policies");
 }
 
 export function policyPath(policyFile: string): string {

@@ -1,20 +1,27 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
-import { join } from "node:path";
+import { resolveRuntimePath } from "../core/runtime-paths.js";
 import type { BelExecutionPlan, BelRuntimeState } from "./bel-types.js";
 
-const RUNTIME_DIR = join(process.cwd(), "runtime");
-const STATE_FILE = join(RUNTIME_DIR, "bel-state.json");
-const TEMP_FILE = join(RUNTIME_DIR, "bel-state.json.tmp");
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order.
+function stateFile(): string {
+  return resolveRuntimePath("bel-state.json");
+}
+
+function tempFile(): string {
+  return resolveRuntimePath("bel-state.json.tmp");
+}
 
 function ensureDir(): void {
-  if (!existsSync(RUNTIME_DIR)) {
-    mkdirSync(RUNTIME_DIR, { recursive: true });
+  const dir = resolveRuntimePath();
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
   }
 }
 
 export function loadState(): BelRuntimeState {
   ensureDir();
-  if (!existsSync(STATE_FILE)) {
+  if (!existsSync(stateFile())) {
     return {
       activePlans: {},
       completedPlanIds: [],
@@ -23,7 +30,7 @@ export function loadState(): BelRuntimeState {
     };
   }
   try {
-    return JSON.parse(readFileSync(STATE_FILE, "utf-8")) as BelRuntimeState;
+    return JSON.parse(readFileSync(stateFile(), "utf-8")) as BelRuntimeState;
   } catch {
     return {
       activePlans: {},
@@ -37,11 +44,13 @@ export function loadState(): BelRuntimeState {
 export function saveState(state: BelRuntimeState): void {
   ensureDir();
   const updated = { ...state, lastUpdated: new Date().toISOString() };
-  writeFileSync(TEMP_FILE, JSON.stringify(updated, null, 2), "utf-8");
+  const temp = tempFile();
+  const target = stateFile();
+  writeFileSync(temp, JSON.stringify(updated, null, 2), "utf-8");
   try {
-    renameSync(TEMP_FILE, STATE_FILE);
+    renameSync(temp, target);
   } catch {
-    writeFileSync(STATE_FILE, JSON.stringify(updated, null, 2), "utf-8");
+    writeFileSync(target, JSON.stringify(updated, null, 2), "utf-8");
   }
 }
 

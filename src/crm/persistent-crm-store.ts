@@ -1,5 +1,4 @@
-import path from "node:path";
-
+import { resolveRuntimePath } from "../core/runtime-paths.js";
 import { readJSON, writeJSON } from "../security/persistence/json-file-store.js";
 import type { CrmStore } from "./crm-store.js";
 import type {
@@ -18,7 +17,12 @@ import {
 } from "./crm-schemas.js";
 import { assertTenantScopedRecord } from "./tenant-context.js";
 
-const DEFAULT_CRM_STORE_PATH = path.resolve("runtime", "crm", "crm-store.json");
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order — defaultCrmStore below is constructed
+// at import time.
+function defaultCrmStorePath(): string {
+  return resolveRuntimePath("crm", "crm-store.json");
+}
 
 export interface PersistentCrmStoreData {
   schemaVersion: typeof CRM_SCHEMA_VERSION;
@@ -86,7 +90,15 @@ function assertPrimaryIdUnchanged<TRecord extends CrmTenantScopedRecord>(
 }
 
 export class PersistentCrmStore implements CrmStore {
-  constructor(private readonly filePath: string = DEFAULT_CRM_STORE_PATH) {}
+  private readonly explicitPath: string | undefined;
+
+  constructor(filePath?: string) {
+    this.explicitPath = filePath;
+  }
+
+  private get filePath(): string {
+    return this.explicitPath ?? defaultCrmStorePath();
+  }
 
   async createContact(context: CrmTenantContext, contact: CrmContact): Promise<CrmContact> {
     assertValid(validateCrmContact(contact));

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
 
 import {
+  CACHE_PATHS,
   __resetCacheStore,
   hashInput,
   invalidateCache,
@@ -11,7 +11,7 @@ import {
   writeCache,
 } from "../../src/cache/cache-store.js";
 import { evaluateCachePolicy } from "../../src/cache/cache-policy-engine.js";
-import { getCacheAuditEvents, logCacheAuditEvent } from "../../src/cache/cache-audit-log.js";
+import { CACHE_AUDIT_PATHS, getCacheAuditEvents, logCacheAuditEvent } from "../../src/cache/cache-audit-log.js";
 import { emitCacheAttributionEvent } from "../../src/cache/cache-attribution.js";
 import { scoreOpportunityCached } from "../../src/cache/cache-aeo-integration.js";
 import { planExecutionCached } from "../../src/cache/cache-bel-integration.js";
@@ -23,8 +23,6 @@ import type {
   CacheRiskLevel,
 } from "../../src/cache/cache-types.js";
 
-const CACHE_DIR = join(process.cwd(), "runtime", "cache");
-const AUDIT_PATH = join(CACHE_DIR, "cache-audit.jsonl");
 const POLICY_VERSION = "cache-policy-v1";
 
 const NAMESPACES: CacheNamespace[] = [
@@ -37,14 +35,15 @@ const NAMESPACES: CacheNamespace[] = [
 
 function clearAudit(): void {
   try {
-    if (existsSync(AUDIT_PATH)) rmSync(AUDIT_PATH);
+    const auditPath = CACHE_AUDIT_PATHS.auditFile;
+    if (existsSync(auditPath)) rmSync(auditPath);
   } catch {
     // ignore
   }
 }
 
 beforeEach(() => {
-  if (!existsSync(CACHE_DIR)) mkdirSync(CACHE_DIR, { recursive: true });
+  if (!existsSync(CACHE_PATHS.baseDir)) mkdirSync(CACHE_PATHS.baseDir, { recursive: true });
   __resetCacheStore();
   clearAudit();
 });

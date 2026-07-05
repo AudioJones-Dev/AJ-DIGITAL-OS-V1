@@ -23,6 +23,10 @@ This folder owns AJ Digital OS application source code, CLI commands, runtime mo
 - Keep patches small and reversible.
 - Add or update tests when behavior changes.
 - Prefer additive integration points over modifying core execution paths.
+- File-backed runtime stores must resolve paths through `src/core/runtime-paths.ts`
+  (`resolveRuntimePath` for `runtime/`, `resolveLogsPath` for `logs/`) instead
+  of hard-coding `process.cwd()` paths, so tests and smoke runs can isolate
+  state with `AJ_RUNTIME_DIR`.
 
 ## Verification
 
