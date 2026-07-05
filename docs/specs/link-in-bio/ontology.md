@@ -1,13 +1,15 @@
 ---
 title: MCP-Native Link-in-Bio — Product Ontology
-status: draft
-canonical: false
-version: v0.2
+status: canonical
+canonical: true
+version: v0.3
 scope: multi-tenant-saas
 created: 2026-07-05T00:00:00.000Z
+ratified: 2026-07-05T00:00:00.000Z
+ratified_by: Tyrone (operator)
 owner: AJ Digital LLC / Audio Jones
 canonical_vault: G:\AJ-INTERNAL\AJ-DIGITAL-VAULT
-home: AJ-DIGITAL-OS docs/specs/link-in-bio/ (docs/* lane — draft packet, human-merge-required)
+home: AJ-DIGITAL-OS docs/specs/link-in-bio/ (docs/* lane)
 category: project-ontology
 product: OpenBio (placeholder codename — naming is operator's pen)
 tags:
@@ -30,14 +32,19 @@ related:
 
 # MCP-Native Link-in-Bio — Product Ontology
 
-> [!WARNING] Draft — awaiting operator ratification
-> Project-class artifact, RECOMMEND_ONLY. Drafted by agent, ratified by operator (Tyrone). A **product ontology that cites doctrine**, not new doctrine. No schema object may be created that does not trace to a named concept below. Not a basis for `build/*` schema work until `status: canonical`.
+> [!NOTE] Ratified — canonical
+> Operator-ratified 2026-07-05 (Tyrone). This is the canonical concept contract for the platform. Schema/`build/*` work MAY now proceed, but only by materializing the concepts named here — no schema object may introduce semantics absent from this document. Naming/positioning remains operator's pen (RECOMMEND_ONLY).
+
+## Change log
+- **v0.3** — **RATIFIED (canonical).** Added first-class `Domain` concept (+ `DomainType`, `DomainVerification` enums) for the multi-tenant public-host routing decided with the `*.ajdigital.app` hosting target; `Page.custom_domain` superseded by `Domain`.
+- **v0.2** — Scope resolved to multi-tenant SaaS; `Workspace` promoted to tenant boundary; tenant-isolation invariants made binding.
+- **v0.1** — Initial single-creator concept registry.
 
 ## Doctrine position
 
-This packet is the **Ontology** stage of `Roadmap → Spec → Ontology → Schema → Implementation` ([[ROADMAP_BEFORE_ONTOLOGY_BEFORE_SCHEMA]]). It exists because an earlier draft jumped Roadmap → Schema (the `SCHEMA_BEFORE_DOCTRINE` inversion / [[PREMATURE_IMPLEMENTATION]]). Per [[SCHEMA_MATERIALIZES_ONTOLOGY]] the eventual schema is a mechanical transcription of this document and may introduce no semantics absent here.
+The **Ontology** stage of `Roadmap → Spec → Ontology → Schema → Implementation` ([[ROADMAP_BEFORE_ONTOLOGY_BEFORE_SCHEMA]]). Per [[SCHEMA_MATERIALIZES_ONTOLOGY]] the schema is a mechanical transcription of this document and may introduce no semantics absent here.
 
-**Language convention (RFC-2119):** SHALL / MUST = binding once ratified; SHOULD = strong default; MAY = permitted.
+**Language convention (RFC-2119):** SHALL / MUST = binding; SHOULD = strong default; MAY = permitted.
 
 **Scope: MULTI-TENANT SaaS.** `Workspace` is the tenant and the isolation boundary. Every content concept is workspace-scoped. There is no un-tenanted content.
 
@@ -48,6 +55,7 @@ This packet is the **Ontology** stage of `Roadmap → Spec → Ontology → Sche
 - **INV-2 (G8)** — No read or write SHALL cross a `Workspace` boundary. Every content row carries `workspace_id`; isolation is enforced at the API and the store (RLS), not the UI.
 - **INV-3 (G9)** — Every actor's capabilities are determined by `Role` within the `Workspace`; there are no ambiguous or implied permissions.
 - **INV-4 (Principle #4 / G3)** — Any irreversible or client-impacting agent write routes through `ProposedAction` (propose-then-approve); it SHALL NOT apply silently.
+- **INV-5 (hosting)** — Public surfaces (visitor pages via `Domain`) and agent surfaces (MCP/API) MUST be reachable without Cloudflare Access; only the creator dashboard MAY sit behind Access. A `Domain` of type `Subdomain` resolves under `*.ajdigital.app`; `Custom` resolves a creator-owned host.
 
 ---
 
@@ -58,7 +66,7 @@ Each concept carries: **definition / boundaries**, **attributes**, **relationshi
 ### Workspace  `[tenant boundary]`
 - **Definition** — the tenant: the billing, isolation, and ownership boundary. Owns all creator-side content. The unit the operator must always see (tenant-context, [[PRODUCT_EXPERIENCE_PRINCIPLES]] #3).
 - **Attributes** — name, slug, plan, billing ref, created_at.
-- **Relationships** — has many `Membership`; owns many `Page`, `Product`, `Theme`.
+- **Relationships** — has many `Membership`; owns many `Page`, `Product`, `Theme`, `Domain`.
 - **Lifecycle** — created → active → suspended → archived.
 - **Status** — admitted.
 
@@ -76,10 +84,17 @@ Each concept carries: **definition / boundaries**, **attributes**, **relationshi
 - **Lifecycle** — invited → active → revoked.
 - **Status** — admitted.
 
+### Domain
+- **Definition** — a public host that routes visitors to a `Workspace`'s pages. Either a platform `Subdomain` (`<handle>.bio.ajdigital.app`) or a creator-owned `Custom` host. The routing primitive behind INV-5.
+- **Attributes** — host (unique), `type` (enum `DomainType`), `verification` (enum `DomainVerification`), workspace_id, page_id (nullable — else workspace default page), created_at.
+- **Relationships** — belongs to `Workspace`; optionally maps to one `Page`.
+- **Lifecycle** — created → pending → verified → active → removed.
+- **Status** — admitted. Supersedes the former `Page.custom_domain` attribute.
+
 ### Page
-- **Definition** — one public link-in-bio surface owned by a `Workspace`. Creator-side it is a human control surface; visitor-side it is a client-facing surface.
-- **Attributes** — slug/handle, title, seo, `publishState` (enum `PublishState`), custom_domain (nullable), published_at.
-- **Relationships** — belongs to `Workspace`; has an **ordered** list of `Block`; uses one `Theme`.
+- **Definition** — one public link-in-bio surface owned by a `Workspace`. Creator-side it is a human control surface; visitor-side it is a client-facing surface reached via a `Domain`.
+- **Attributes** — slug/handle, title, seo, `publishState` (enum `PublishState`), published_at.
+- **Relationships** — belongs to `Workspace`; reachable via one or more `Domain`; has an **ordered** list of `Block`; uses one `Theme`.
 - **Lifecycle** — draft → published → unpublished → archived.
 - **Status** — admitted.
 
@@ -148,6 +163,8 @@ Per [[SCHEMA_MATERIALIZES_ONTOLOGY]], **enum values are ontology terms** and pas
 | `EventKind` | View, Click | Extensible under later admission (e.g. Conversion). |
 | `ApprovalState` | Proposed, Approved, Rejected, Applied, Discarded | Drives the propose-then-approve surface. |
 | `ActorKind` | Human, Agent | Auditability primitive. |
+| `DomainType` | Subdomain, Custom | Subdomain = `*.ajdigital.app`; Custom = creator-owned host. |
+| `DomainVerification` | Pending, Verified, Failed | Custom hosts require verification before activation. |
 
 ### `BlockType` payload definitions (concept attribute sets)
 - **Link** — url, label, icon?, subtitle?
@@ -166,7 +183,8 @@ Per [[SCHEMA_MATERIALIZES_ONTOLOGY]], **enum values are ontology terms** and pas
 
 ```
 Workspace 1─* Membership *─1 User
-Workspace 1─* Page          Workspace 1─* Product      Workspace 1─* Theme
+Workspace 1─* Page   1─* Product   1─* Theme   1─* Domain
+Domain    *─1 Page   (nullable; else workspace default page)
 Page      1─* Block          Page      *─1 Theme
 Block     *─1 Product        (only when Block.type = Product; same Workspace)
 Product   1─* Order
@@ -183,9 +201,10 @@ No downstream FK may exist whose relationship is not declared above ([[SCHEMA_MA
 
 ## Home &amp; lane (AJ-DIGITAL-OS)
 
-Placement: `docs/specs/link-in-bio/ontology.md` — per [[../../AGENTS.md]] `docs/specs/` owns product/module PRDs and build specs. Governed by the repo lane protocol:
-- This artifact is a **`docs/*` draft packet** (Claude's lane), branched off `origin/main`. It is **not** merged to `main` (protected, SHA-pinned, HUMAN_REQUIRED). Push / PR / merge require operator `proceed` per `REPO_SAFETY_POLICY.md`.
-- Build (schema, API, MCP server) is the **`build/*` lane (Codex)**, and only after this ontology is ratified.
+Placement: `docs/specs/link-in-bio/ontology.md`. Governed by the repo lane protocol:
+- Ratified canonical concept contract (Claude's `docs/*` lane). Merge to `main` remains HUMAN_REQUIRED per `REPO_SAFETY_POLICY.md`.
+- Build (schema, API, MCP server) is the **`build/*` lane (Codex)**, now unblocked to begin from the schema-materialization packet.
+- Hosting: served under `*.ajdigital.app`; public/agent surfaces bypass Cloudflare Access (INV-5).
 
 ## Relationships to doctrine
 
@@ -195,8 +214,7 @@ Binding canon: [[ROADMAP_BEFORE_ONTOLOGY_BEFORE_SCHEMA]], [[SCHEMA_MATERIALIZES_
 
 1. **Naming** — `OpenBio` is a placeholder. Product name + positioning are your pen.
 2. **Billing model** — per-workspace plan is assumed; confirm whether seats/members are billed (affects `Membership` attributes).
-3. **Custom domains** — Phase 3 assumed; confirm the tenant→domain mapping approach.
 
 ## Status
 
-DRAFT · committed to branch `docs/link-in-bio-ontology-v0.1` (local, unpushed) · schema work BLOCKED until this ontology is ratified (`status: canonical`) by the operator.
+CANONICAL · ratified 2026-07-05 (operator) · schema-materialization packet (`build/*` lane) is now unblocked. Merge of this packet to `main` still HUMAN_REQUIRED.
