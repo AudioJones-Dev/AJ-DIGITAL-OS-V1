@@ -6,7 +6,7 @@ This index catalogs AJ Digital OS LLM Wiki pages maintained under `docs/knowledg
 
 ## Wiki Pages
 
-No wiki pages have been created yet.
+- `wiki/social-ops-doctrine.md` - Draft workflow doctrine for AJ Digital agency social media operations, MCP/connector boundaries, approvals, and Obsidian lane ownership.
 
 ## Source Summaries
 
