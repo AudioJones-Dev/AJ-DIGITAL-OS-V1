@@ -1,6 +1,7 @@
 import { appendFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
+import { resolveLogsPath } from "../../core/runtime-paths.js";
 import { defaultAuditStore } from "../audit/persistent-audit-store.js";
 import type {
   ActionCategory,
@@ -34,7 +35,7 @@ function resolveAuditPath(): string {
   if (customPath && customPath.length > 0) {
     return path.resolve(customPath);
   }
-  return path.resolve("logs", "security", "agent-action-audit.jsonl");
+  return resolveLogsPath("security", "agent-action-audit.jsonl");
 }
 
 function buildRecord(

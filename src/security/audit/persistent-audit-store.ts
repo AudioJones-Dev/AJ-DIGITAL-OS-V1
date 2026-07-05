@@ -8,7 +8,17 @@ import type {
   PermissionLevel,
 } from "../permissions/permission-levels.js";
 
-const DEFAULT_AUDIT_PATH = path.resolve("data", "security", "audit-log.jsonl");
+export const AUDIT_STORE_PATH_ENV = "AJ_AUDIT_STORE_PATH";
+
+// Resolved lazily so AJ_AUDIT_STORE_PATH overrides (tests) apply
+// regardless of module import order.
+function defaultAuditPath(): string {
+  const override = process.env[AUDIT_STORE_PATH_ENV]?.trim();
+  if (override !== undefined && override.length > 0) {
+    return path.resolve(override);
+  }
+  return path.resolve("data", "security", "audit-log.jsonl");
+}
 
 const REDACT_FIELDS = ["command", "target"];
 
@@ -25,10 +35,14 @@ export interface PersistentAuditRecord {
 }
 
 export class PersistentAuditStore {
-  private readonly filePath: string;
+  private readonly explicitPath: string | undefined;
 
-  constructor(filePath: string = DEFAULT_AUDIT_PATH) {
-    this.filePath = filePath;
+  constructor(filePath?: string) {
+    this.explicitPath = filePath;
+  }
+
+  private get filePath(): string {
+    return this.explicitPath ?? defaultAuditPath();
   }
 
   async append(record: PersistentAuditRecord): Promise<void> {
