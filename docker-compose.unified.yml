@@ -35,7 +35,7 @@ services:
       NODE_ENV: production
       HERMES_BIND_HOST: 0.0.0.0
       REDIS_URL: redis://redis:6379
-      POSTGRES_URL: postgres://${POSTGRES_USER:-aj}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-ajdigital}
+      POSTGRES_URL: postgres://${POSTGRES_USER:-aj}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@postgres:5432/${POSTGRES_DB:-ajdigital}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       AIS_CASE_MEMORY_ENABLED: "true"
       AIS_PREDICTION_ERROR_TRACKING_ENABLED: "true"
@@ -70,7 +70,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: "${POSTGRES_USER:-aj}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-change-me}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}"
       POSTGRES_DB: "${POSTGRES_DB:-ajdigital}"
       TZ: "${GENERIC_TIMEZONE:-America/New_York}"
     volumes:
@@ -124,7 +124,7 @@ services:
       N8N_RUNNERS_ENABLED: "true"
       N8N_BASIC_AUTH_ACTIVE: "true"
       N8N_BASIC_AUTH_USER: "${N8N_BASIC_AUTH_USER:-admin}"
-      N8N_BASIC_AUTH_PASSWORD: "${N8N_BASIC_AUTH_PASSWORD:-change-me}"
+      N8N_BASIC_AUTH_PASSWORD: "${N8N_BASIC_AUTH_PASSWORD:?N8N_BASIC_AUTH_PASSWORD must be set in .env}"
       # NOTE: no N8N_ENCRYPTION_KEY — n8n uses the auto-generated key stored in its
       # data volume; forcing one here breaks the existing instance.
       DB_TYPE: postgresdb
@@ -132,7 +132,7 @@ services:
       DB_POSTGRESDB_PORT: 5432
       DB_POSTGRESDB_DATABASE: "${POSTGRES_DB:-ajdigital}"
       DB_POSTGRESDB_USER: "${POSTGRES_USER:-aj}"
-      DB_POSTGRESDB_PASSWORD: "${POSTGRES_PASSWORD:-change-me}"
+      DB_POSTGRESDB_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}"
       QUEUE_BULL_REDIS_HOST: redis
       QUEUE_BULL_REDIS_PORT: 6379
       N8N_DIAGNOSTICS_ENABLED: "false"
@@ -182,7 +182,7 @@ services:
       - "${GRAFANA_PORT:-3000}:3000"
     environment:
       GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
-      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-change-me}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set in .env}"
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - "./ops/grafana/provisioning:/etc/grafana/provisioning:ro"
@@ -206,7 +206,7 @@ services:
       OTEL_EXPORTER_OTLP_INSECURE: "true"
       OTEL_SERVICE_NAME: "open-webui"
       OPENAI_API_BASE_URL: "${HERMES_API_BASE_URL:-http://host.docker.internal:8642/v1}"
-      OPENAI_API_KEY: "${HERMES_API_KEY:-change-me}"
+      OPENAI_API_KEY: "${HERMES_API_KEY:?HERMES_API_KEY must be set in .env}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -213,8 +213,21 @@ export async function createMissionRun(input: {
 
 const HERMES_API = import.meta.env.VITE_HERMES_API_URL ?? "http://127.0.0.1:7420";
 
+// Bearer token for the Hermes status API (protected routes). Baked into the
+// bundle at build time — acceptable only because this dashboard is an
+// operator-only surface (local / Cloudflare Access), never a public deploy.
+const HERMES_TOKEN: string = import.meta.env.VITE_HERMES_STATUS_API_KEY ?? "";
+
+function hermesHeaders(extra?: Record<string, string>): Record<string, string> {
+  return {
+    ...(HERMES_TOKEN ? { Authorization: `Bearer ${HERMES_TOKEN}` } : {}),
+    ...(extra ?? {}),
+  };
+}
+
 export async function fetchReplayData(runRef: string): Promise<ReplayData | null> {
   const res = await fetch(`${HERMES_API}/replay/${encodeURIComponent(runRef)}`, {
+    headers: hermesHeaders(),
     signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) return null;
@@ -226,6 +239,7 @@ export async function fetchReplayData(runRef: string): Promise<ReplayData | null
 
 export async function fetchRepairEvents(): Promise<RepairEvent[]> {
   const res = await fetch(`${HERMES_API}/repairs`, {
+    headers: hermesHeaders(),
     signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) return [];
@@ -246,6 +260,7 @@ export async function fetchRepairEvents(): Promise<RepairEvent[]> {
 
 export async function fetchApprovals(): Promise<ApprovalRequest[]> {
   const res = await fetch(`${HERMES_API}/approvals`, {
+    headers: hermesHeaders(),
     signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) throw new Error(`Approvals service unavailable (HTTP ${res.status})`);
@@ -263,7 +278,7 @@ export async function decideApproval(input: {
   try {
     res = await fetch(`${HERMES_API}/approvals/${encodeURIComponent(input.approvalId)}/decision`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: hermesHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ decision: input.decision, actorId: input.actorId, channel: "dashboard" }),
       signal: AbortSignal.timeout(12000),
     });
@@ -309,7 +324,7 @@ export async function createCheckoutSession(input: {
 }): Promise<{ ok: boolean; url: string | null; error: string | null }> {
   const res = await fetch(`${HERMES_API}/api/stripe/create-checkout-session`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: hermesHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({
       email: input.email,
       tier: input.tier,

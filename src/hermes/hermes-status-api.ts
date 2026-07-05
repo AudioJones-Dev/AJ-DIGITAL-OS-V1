@@ -8,7 +8,8 @@
  * Only binds to localhost — not exposed externally.
  */
 
-import { createServer, type Server } from "node:http";
+import { createServer, type IncomingMessage, type Server } from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { getIntelligenceSnapshot } from "../intelligence/intelligence-engine.js";
 import { registry } from "../observability/metrics.js";
@@ -457,6 +458,49 @@ function collectBody(req: import("node:http").IncomingMessage): Promise<string> 
   });
 }
 
+// ── Edge security: bearer auth + origin-locked CORS ─────────────────────────
+// Read-only status/metrics stay public (Prometheus scrapes /metrics without a
+// token); the Stripe webhook authenticates itself via Stripe-Signature.
+const PUBLIC_ROUTES: Array<{ method: string; match: (path: string) => boolean }> = [
+  { method: "GET", match: (p) => p === "/status" || p === "/" },
+  { method: "GET", match: (p) => p === "/metrics" },
+  { method: "POST", match: (p) => p === "/api/stripe/webhook" },
+];
+
+function isPublicRoute(method: string | undefined, url: string | undefined): boolean {
+  if (!method || !url) return false;
+  const pathname = url.split("?")[0] ?? url;
+  return PUBLIC_ROUTES.some((r) => r.method === method && r.match(pathname));
+}
+
+function configuredApiKey(): string | null {
+  // Note: HERMES_API_KEY (no STATUS) is a different credential — it belongs to
+  // the OpenAI-compatible API on :8642 consumed by Open WebUI. Do not reuse it.
+  const key = process.env.HERMES_STATUS_API_KEY?.trim();
+  if (!key || key === "change-me") return null;
+  return key;
+}
+
+function isAuthorized(req: IncomingMessage): boolean {
+  const key = configuredApiKey();
+  if (!key) return false; // fail closed: no configured key means no protected access
+  const header = req.headers.authorization ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : "";
+  if (!token) return false;
+  const provided = Buffer.from(token);
+  const expected = Buffer.from(key);
+  return provided.length === expected.length && timingSafeEqual(provided, expected);
+}
+
+function allowedOrigins(): Set<string> {
+  return new Set(
+    (process.env.HERMES_ALLOWED_ORIGINS ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
 /**
  * Start the Hermes status API on localhost.
  */
@@ -469,14 +513,38 @@ export function startHermesApi(port?: number): void {
   const p = port ?? (Number(process.env.HERMES_STATUS_PORT) || DEFAULT_PORT);
 
   server = createServer((req, res) => {
-    // CORS headers for dashboard access
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Stripe-Signature");
+    // Origin-locked CORS: echo the Origin header only when it is explicitly
+    // listed in HERMES_ALLOWED_ORIGINS (comma-separated). No match, no CORS —
+    // browsers on unlisted origins cannot read responses or send non-simple
+    // requests. Same-origin and non-browser callers are unaffected.
+    const origin = req.headers.origin;
+    if (origin && allowedOrigins().has(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Vary", "Origin");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Stripe-Signature");
+    }
 
     if (req.method === "OPTIONS") {
       res.writeHead(204);
       res.end();
+      return;
+    }
+
+    // Bearer auth for every route outside the public allowlist. Fail closed:
+    // with no HERMES_API_KEY configured, protected routes return 503 rather
+    // than falling open.
+    if (!isPublicRoute(req.method, req.url) && !isAuthorized(req)) {
+      const keyConfigured = configuredApiKey() !== null;
+      res.writeHead(keyConfigured ? 401 : 503, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          ok: false,
+          error: keyConfigured
+            ? "unauthorized: missing or invalid bearer token"
+            : "service unavailable: HERMES_STATUS_API_KEY is not configured",
+        }),
+      );
       return;
     }
 
