@@ -6,8 +6,9 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { dirname } from "node:path";
 
+import { resolveRuntimePath } from "../runtime-paths.js";
 import type {
   EventMetrics,
   MetricsSnapshot,
@@ -30,8 +31,10 @@ const KNOWN_METRICS: ReadonlyArray<string> = [
   "attribution_failure_count",
 ];
 
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order.
 export function metricsPath(): string {
-  return join(process.cwd(), "runtime", "observability", "metrics.json");
+  return resolveRuntimePath("observability", "metrics.json");
 }
 
 function ensureFile(path: string): void {

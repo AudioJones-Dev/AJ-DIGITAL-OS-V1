@@ -7,15 +7,17 @@
  */
 
 import { appendFileSync, existsSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { resolveLogsPath } from "../core/runtime-paths.js";
 
-const LOGS_DIR = join(process.cwd(), "logs");
-const LOG_FILE = join(LOGS_DIR, "bel-execution.log");
+function logFile(): string {
+  return resolveLogsPath("bel-execution.log");
+}
 
 // Ensure logs directory exists on module load
 try {
-  if (!existsSync(LOGS_DIR)) {
-    mkdirSync(LOGS_DIR, { recursive: true });
+  const logsDir = resolveLogsPath();
+  if (!existsSync(logsDir)) {
+    mkdirSync(logsDir, { recursive: true });
   }
 } catch {
   // Silent
@@ -61,7 +63,7 @@ export function logExecution(entry: McpExecutionLogEntry): void {
   console.log("[MCP-LOG]", JSON.stringify(safe));
 
   try {
-    appendFileSync(LOG_FILE, JSON.stringify(safe) + "\n", "utf-8");
+    appendFileSync(logFile(), JSON.stringify(safe) + "\n", "utf-8");
   } catch {
     // Silent — don't break execution if file write fails
   }

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   mkdtempSync,
   mkdirSync,
@@ -22,6 +22,7 @@ import { emitGovernanceEvent } from "../../src/governance/governance-attribution
 import type { OfferInput } from "../../src/governance/governance-types.js";
 
 const ORIGINAL_CWD = process.cwd();
+const ORIGINAL_RUNTIME_DIR = process.env.AJ_RUNTIME_DIR;
 let sandboxDir: string;
 
 const POLICY_FILES = [
@@ -63,8 +64,17 @@ beforeEach(() => {
   const runtimeDir = join(sandboxDir, "runtime");
   mkdirSync(runtimeDir, { recursive: true });
   copyPoliciesInto(runtimeDir);
+  process.env.AJ_RUNTIME_DIR = runtimeDir;
   vi.spyOn(process, "cwd").mockReturnValue(sandboxDir);
   clearPolicyCache();
+});
+
+afterEach(() => {
+  if (ORIGINAL_RUNTIME_DIR !== undefined) {
+    process.env.AJ_RUNTIME_DIR = ORIGINAL_RUNTIME_DIR;
+  } else {
+    delete process.env.AJ_RUNTIME_DIR;
+  }
 });
 
 describe("Governance — Brand Voice", () => {

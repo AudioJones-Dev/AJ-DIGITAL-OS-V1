@@ -21,6 +21,10 @@ This folder owns AJ Digital OS automated tests, fixtures, and validation coverag
 - Prefer deterministic fixtures and explicit assertions.
 - Keep test names descriptive enough for handoff.
 - If a test exposes an existing bug, report the bug rather than hiding the failure.
+- Tests that touch file-backed runtime or log stores should use the exported
+  source path helpers and the shared `AJ_RUNTIME_DIR` isolation from
+  `tests/setup/test-env.ts`; do not hard-code `<cwd>/runtime` or `<cwd>/logs`
+  cleanup paths.
 
 ## Verification
 

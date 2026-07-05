@@ -1,15 +1,16 @@
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 
 import type { AttributionChannel, AttributionEvent, AttributionSummary } from "./attribution-types.js";
 import { getEventsByAgent } from "./attribution-tracker.js";
+import { resolveLogsPath } from "../core/runtime-paths.js";
 
-const LOGS_DIR = path.join(process.cwd(), "logs");
-const EVENTS_FILE = path.join(LOGS_DIR, "attribution-events.jsonl");
+function eventsFile(): string {
+  return resolveLogsPath("attribution-events.jsonl");
+}
 
 async function loadFromLog(): Promise<AttributionEvent[]> {
   try {
-    const content = await readFile(EVENTS_FILE, "utf-8");
+    const content = await readFile(eventsFile(), "utf-8");
     const events: AttributionEvent[] = [];
     for (const line of content.split("\n")) {
       const trimmed = line.trim();
