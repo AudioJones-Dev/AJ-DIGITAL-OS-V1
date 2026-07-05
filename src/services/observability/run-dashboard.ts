@@ -2,6 +2,12 @@
 import path from "node:path";
 
 import { logger } from "../../core/logger.js";
+import { listDagRuns } from "../../bel/dag/dag-store.js";
+import type {
+  BelDagNodeStatus,
+  BelDagRunState,
+  BelDagRunStatus,
+} from "../../bel/dag/dag-types.js";
 import type { RunStatus } from "../../types/run.types.js";
 import {
   RunSummaryService,
@@ -29,6 +35,27 @@ export interface RunDashboardItem {
   warningCount: number;
   errorCount: number;
   eventCount: number;
+}
+
+export interface DagDashboardItem {
+  runId: string;
+  dagId: string;
+  status: BelDagRunStatus;
+  environment: string;
+  tenantId?: string;
+  nodeCount: number;
+  waitingNodeCount: number;
+  failedNodeCount: number;
+  updatedAt: string;
+}
+
+export interface DagDashboardCounts {
+  pending: number;
+  running: number;
+  waitingForApproval: number;
+  completed: number;
+  failed: number;
+  cancelled: number;
 }
 
 export interface ModelHealthCounts {
@@ -84,6 +111,7 @@ export interface ModelHealthTrendSummary {
 export interface RunDashboardResult {
   ok: boolean;
   totalRuns: number;
+  totalDagRuns: number;
   sourceTotalRuns: number;
   activeModelFilter?: RunModelFilter;
   counts: {
@@ -101,6 +129,8 @@ export interface RunDashboardResult {
   providerDistributionWindows: ProviderDistributionWindows;
   modelHealthTrend: ModelHealthTrendSummary;
   recentRuns: RunDashboardItem[];
+  recentDagRuns: DagDashboardItem[];
+  dagCounts: DagDashboardCounts;
   recentFailures: RunDashboardItem[];
   pendingApprovals: RunDashboardItem[];
   recentlyPublished: RunDashboardItem[];
@@ -115,6 +145,7 @@ export class RunDashboardService {
   constructor(
     private readonly runSummaryService = new RunSummaryService(),
     private readonly runsDirectory = path.resolve("data", "runs"),
+    private readonly dagRunReader: typeof listDagRuns = listDagRuns,
   ) {}
 
   /**
@@ -132,6 +163,7 @@ export class RunDashboardService {
     const errors: string[] = [];
 
     const runIds = await this.listRunIds(warnings, errors);
+    const dagRuns = this.safeListDagRuns(warnings, errors);
     const summaries = await this.safeReadRunSummaries(runIds, warnings, errors);
     const now = Date.now();
     const okSummaries = summaries.filter((summary) => summary.ok);
@@ -139,9 +171,12 @@ export class RunDashboardService {
     const modelHealthWindows = this.countModelHealthWindows(filteredSummaries, now);
     const providerDistributionWindows = this.countProviderWindows(filteredSummaries, now);
     const items = filteredSummaries.map((summary) => this.buildDashboardItem(summary));
+    const dagItems = dagRuns.map((run) => this.buildDagDashboardItem(run));
 
     const sortedItems = this.sortByRecency(items);
+    const sortedDagItems = this.sortDagByRecency(dagItems);
     const cappedRecentRuns = this.capItems(sortedItems, limit);
+    const cappedRecentDagRuns = this.capItems(sortedDagItems, limit);
     const recentFailures = this.capItems(sortedItems.filter((item) => this.isFailureRun(item)), limit);
     const pendingApprovals = this.capItems(sortedItems.filter((item) => this.isPendingApprovalRun(item)), limit);
     const recentlyPublished = this.capItems(sortedItems.filter((item) => this.isPublishedRun(item)), limit);
@@ -155,6 +190,7 @@ export class RunDashboardService {
     return {
       ok: errors.length === 0,
       totalRuns: items.length,
+      totalDagRuns: dagItems.length,
       sourceTotalRuns: okSummaries.length,
       ...(activeModelFilter ? { activeModelFilter } : {}),
       counts: this.countStatuses(items),
@@ -164,6 +200,8 @@ export class RunDashboardService {
       providerDistributionWindows,
       modelHealthTrend: this.buildModelHealthTrendSummary(modelHealthWindows),
       recentRuns: cappedRecentRuns,
+      recentDagRuns: cappedRecentDagRuns,
+      dagCounts: this.countDagStatuses(dagItems),
       recentFailures,
       pendingApprovals,
       recentlyPublished,
@@ -221,6 +259,19 @@ export class RunDashboardService {
     return summaries;
   }
 
+  private safeListDagRuns(warnings: string[], errors: string[]): BelDagRunState[] {
+    try {
+      return this.dagRunReader();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      errors.push(`Failed to enumerate DAG runs: ${message}`);
+      logger.error("Run dashboard failed to enumerate DAG runs.", {
+        error: message,
+      });
+      return [];
+    }
+  }
+
   private buildDashboardItem(summary: RunSummaryResult): RunDashboardItem {
     return {
       runId: summary.runId,
@@ -237,6 +288,20 @@ export class RunDashboardService {
       warningCount: summary.warnings.length,
       errorCount: summary.errors.length,
       eventCount: summary.eventCount,
+    };
+  }
+
+  private buildDagDashboardItem(run: BelDagRunState): DagDashboardItem {
+    return {
+      runId: run.runId,
+      dagId: run.dagId,
+      status: run.status,
+      environment: run.environment,
+      ...(run.tenantId ? { tenantId: run.tenantId } : {}),
+      nodeCount: run.nodes.length,
+      waitingNodeCount: this.countDagNodesByStatus(run, "waiting_for_approval"),
+      failedNodeCount: this.countDagNodesByStatus(run, "failed"),
+      updatedAt: run.updatedAt,
     };
   }
 
@@ -289,9 +354,17 @@ export class RunDashboardService {
     return [...items].sort((left, right) => this.getRecencyValue(right) - this.getRecencyValue(left));
   }
 
+  private sortDagByRecency(items: DagDashboardItem[]): DagDashboardItem[] {
+    return [...items].sort((left, right) => this.getDagRecencyValue(right) - this.getDagRecencyValue(left));
+  }
+
   private getRecencyValue(item: RunDashboardItem): number {
     const timestamp = item.updatedAt;
     return timestamp ? Date.parse(timestamp) || 0 : 0;
+  }
+
+  private getDagRecencyValue(item: DagDashboardItem): number {
+    return Date.parse(item.updatedAt) || 0;
   }
 
   private countStatuses(items: RunDashboardItem[]): RunDashboardResult["counts"] {
@@ -333,6 +406,46 @@ export class RunDashboardService {
     }
 
     return counts;
+  }
+
+  private countDagStatuses(items: DagDashboardItem[]): DagDashboardCounts {
+    const counts: DagDashboardCounts = {
+      pending: 0,
+      running: 0,
+      waitingForApproval: 0,
+      completed: 0,
+      failed: 0,
+      cancelled: 0,
+    };
+
+    for (const item of items) {
+      switch (item.status) {
+        case "pending":
+          counts.pending += 1;
+          break;
+        case "running":
+          counts.running += 1;
+          break;
+        case "waiting_for_approval":
+          counts.waitingForApproval += 1;
+          break;
+        case "completed":
+          counts.completed += 1;
+          break;
+        case "failed":
+          counts.failed += 1;
+          break;
+        case "cancelled":
+          counts.cancelled += 1;
+          break;
+      }
+    }
+
+    return counts;
+  }
+
+  private countDagNodesByStatus(run: BelDagRunState, status: BelDagNodeStatus): number {
+    return run.nodes.filter((node) => node.status === status).length;
   }
 
   private countModelHealth(summaries: RunSummaryResult[]): ModelHealthCounts {
@@ -574,7 +687,7 @@ export class RunDashboardService {
     return item.status === "executed" && (!!item.publishedPath || item.publishedFiles.length > 0);
   }
 
-  private capItems(items: RunDashboardItem[], limit: number | undefined): RunDashboardItem[] {
+  private capItems<T>(items: T[], limit: number | undefined): T[] {
     return limit === undefined ? items : items.slice(0, limit);
   }
 
