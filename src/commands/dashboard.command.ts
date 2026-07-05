@@ -1,5 +1,6 @@
 import {
   RunDashboardService,
+  type DagDashboardItem,
   type RunDashboardItem,
   type RunDashboardResult,
   type RunModelFilter,
@@ -57,7 +58,10 @@ export class DashboardCommand {
     console.log("AJ DIGITAL OS DASHBOARD");
     console.log("=======================");
 
-    if (dashboard.totalRuns === 0) {
+    const hasRuns = dashboard.totalRuns > 0;
+    const hasDagRuns = dashboard.totalDagRuns > 0;
+
+    if (!hasRuns && !hasDagRuns) {
       console.log(
         dashboard.activeModelFilter
           ? "No runs matched the active model filters."
@@ -72,22 +76,44 @@ export class DashboardCommand {
       return;
     }
 
-    console.log(`Total Runs: ${dashboard.totalRuns}`);
-    if (dashboard.activeModelFilter) {
-      console.log(`Source Runs: ${dashboard.sourceTotalRuns}`);
-      this.renderActiveFilters(dashboard.activeModelFilter);
+    if (!hasRuns) {
+      console.log(
+        dashboard.activeModelFilter
+          ? "No runs matched the active model filters."
+          : "No runs found.",
+      );
+      if (dashboard.activeModelFilter) {
+        console.log(`Source Runs: ${dashboard.sourceTotalRuns}`);
+        this.renderActiveFilters(dashboard.activeModelFilter);
+      }
+    } else {
+      console.log(`Total Runs: ${dashboard.totalRuns}`);
+      if (dashboard.activeModelFilter) {
+        console.log(`Source Runs: ${dashboard.sourceTotalRuns}`);
+        this.renderActiveFilters(dashboard.activeModelFilter);
+      }
+      console.log("");
+      console.log("Counts");
+      console.log(`- Queued: ${dashboard.counts.queued}`);
+      console.log(`- Pending Approval: ${dashboard.counts.pendingApproval}`);
+      console.log(`- Approved: ${dashboard.counts.approved}`);
+      console.log(`- Executed: ${dashboard.counts.executed}`);
+      console.log(`- Rejected: ${dashboard.counts.rejected}`);
+      console.log(`- Revision Requested: ${dashboard.counts.revisionRequested}`);
+      console.log(`- Failed: ${dashboard.counts.failed}`);
+      this.renderModelHealth(dashboard);
+      this.renderModelTrend(dashboard);
     }
-    console.log("");
-    console.log("Counts");
-    console.log(`- Queued: ${dashboard.counts.queued}`);
-    console.log(`- Pending Approval: ${dashboard.counts.pendingApproval}`);
-    console.log(`- Approved: ${dashboard.counts.approved}`);
-    console.log(`- Executed: ${dashboard.counts.executed}`);
-    console.log(`- Rejected: ${dashboard.counts.rejected}`);
-    console.log(`- Revision Requested: ${dashboard.counts.revisionRequested}`);
-    console.log(`- Failed: ${dashboard.counts.failed}`);
-    this.renderModelHealth(dashboard);
-    this.renderModelTrend(dashboard);
+
+    if (hasDagRuns) {
+      this.renderDagSummary(dashboard);
+    }
+
+    if (!hasRuns) {
+      this.renderWarnings(dashboard.warnings);
+      this.renderErrors(dashboard.errors);
+      return;
+    }
 
     this.renderRunList("Pending Approvals", dashboard.pendingApprovals);
     this.renderRunList("Recent Failures", dashboard.recentFailures);
@@ -108,6 +134,33 @@ export class DashboardCommand {
 
     for (const item of items) {
       console.log(this.formatRunItem(item, includePublishedPath));
+    }
+  }
+
+  private renderDagSummary(dashboard: RunDashboardResult): void {
+    console.log("");
+    console.log("DAG Runs");
+    console.log(`- Total DAG Runs: ${dashboard.totalDagRuns}`);
+    console.log(`- Pending: ${dashboard.dagCounts.pending}`);
+    console.log(`- Running: ${dashboard.dagCounts.running}`);
+    console.log(`- Waiting Approval: ${dashboard.dagCounts.waitingForApproval}`);
+    console.log(`- Completed: ${dashboard.dagCounts.completed}`);
+    console.log(`- Failed: ${dashboard.dagCounts.failed}`);
+    console.log(`- Cancelled: ${dashboard.dagCounts.cancelled}`);
+    this.renderDagRunList("Recent DAG Runs", dashboard.recentDagRuns);
+  }
+
+  private renderDagRunList(title: string, items: DagDashboardItem[]): void {
+    console.log("");
+    console.log(title);
+
+    if (items.length === 0) {
+      console.log("- None");
+      return;
+    }
+
+    for (const item of items) {
+      console.log(this.formatDagRunItem(item));
     }
   }
 
@@ -283,6 +336,22 @@ export class DashboardCommand {
     if (includePublishedPath) {
       parts.push(item.publishedPath ?? "-");
     }
+
+    return `- ${parts.join(" | ")}`;
+  }
+
+  private formatDagRunItem(item: DagDashboardItem): string {
+    const parts = [
+      item.runId,
+      item.dagId,
+      item.status,
+      item.environment,
+      item.tenantId ?? "-",
+      `nodes=${item.nodeCount}`,
+      `waiting=${item.waitingNodeCount}`,
+      `failed=${item.failedNodeCount}`,
+      item.updatedAt,
+    ];
 
     return `- ${parts.join(" | ")}`;
   }
