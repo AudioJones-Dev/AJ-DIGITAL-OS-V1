@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { existsSync, rmSync } from "node:fs";
-import { join } from "node:path";
 
-const NORMALIZATION_DIR = join(process.cwd(), "runtime", "normalization");
-const ASSET_FILE = join(NORMALIZATION_DIR, "asset.json");
-const AUDIT_FILE = join(NORMALIZATION_DIR, "normalization-audit.jsonl");
+import { NORMALIZATION_PATHS } from "../../src/normalization/normalization-store.js";
+
+const ASSET_FILE = NORMALIZATION_PATHS.entityFile("asset");
+const AUDIT_FILE = NORMALIZATION_PATHS.auditFile;
 
 beforeEach(() => {
   for (const path of [ASSET_FILE, AUDIT_FILE]) {

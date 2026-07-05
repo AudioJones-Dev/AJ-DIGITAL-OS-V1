@@ -32,6 +32,11 @@ export async function readJSON<T>(
   }
 }
 
+// Captured at module load so retry backoff uses wall-clock time even when a
+// test harness installs fake timers (a mocked setTimeout never fires, which
+// turns a 20ms backoff into a hang).
+const realSetTimeout = setTimeout;
+
 /**
  * Rename with retry for Windows EPERM/EBUSY races.
  * Uses a unique tmp suffix per call so concurrent writes never collide.
@@ -44,7 +49,7 @@ async function renameWithRetry(src: string, dest: string, retries = 5): Promise<
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException).code;
       if (attempt < retries - 1 && (code === "EPERM" || code === "EBUSY")) {
-        await new Promise<void>((resolve) => setTimeout(resolve, 20 * (attempt + 1)));
+        await new Promise<void>((resolve) => realSetTimeout(resolve, 20 * (attempt + 1)));
         continue;
       }
       throw err;

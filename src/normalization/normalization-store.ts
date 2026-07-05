@@ -15,6 +15,7 @@ import {
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
+import { resolveRuntimePath } from "../core/runtime-paths.js";
 import type {
   NormalizationAuditEvent,
   NormalizationAuditEventType,
@@ -23,15 +24,23 @@ import type {
   NormalizedEntityType,
 } from "./normalization-types.js";
 
-const NORMALIZATION_DIR = join(process.cwd(), "runtime", "normalization");
-const AUDIT_PATH = join(NORMALIZATION_DIR, "normalization-audit.jsonl");
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order.
+function normalizationDir(): string {
+  return resolveRuntimePath("normalization");
+}
+
+function auditPath(): string {
+  return join(normalizationDir(), "normalization-audit.jsonl");
+}
 
 function entityFile(entityType: NormalizedEntityType): string {
-  return join(NORMALIZATION_DIR, `${entityType}.json`);
+  return join(normalizationDir(), `${entityType}.json`);
 }
 
 function ensureDir(): void {
-  if (!existsSync(NORMALIZATION_DIR)) mkdirSync(NORMALIZATION_DIR, { recursive: true });
+  const dir = normalizationDir();
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
 function readJsonArray<T>(path: string): T[] {
@@ -110,7 +119,7 @@ export function appendNormalizationAudit(
     ...(event.tenantId !== undefined ? { tenantId: event.tenantId } : {}),
   };
   try {
-    appendFileSync(AUDIT_PATH, JSON.stringify(full) + "\n", "utf-8");
+    appendFileSync(auditPath(), JSON.stringify(full) + "\n", "utf-8");
   } catch {
     // best-effort
   }
@@ -125,10 +134,11 @@ export function getNormalizationAuditEvents(filter?: {
   limit?: number;
 }): NormalizationAuditEvent[] {
   ensureDir();
-  if (!existsSync(AUDIT_PATH)) return [];
+  const audit = auditPath();
+  if (!existsSync(audit)) return [];
   let events: NormalizationAuditEvent[] = [];
   try {
-    events = readFileSync(AUDIT_PATH, "utf-8")
+    events = readFileSync(audit, "utf-8")
       .trim()
       .split("\n")
       .filter(Boolean)
@@ -155,7 +165,11 @@ export function getNormalizationAuditEvents(filter?: {
 }
 
 export const NORMALIZATION_PATHS = {
-  baseDir: NORMALIZATION_DIR,
-  auditFile: AUDIT_PATH,
+  get baseDir(): string {
+    return normalizationDir();
+  },
+  get auditFile(): string {
+    return auditPath();
+  },
   entityFile,
 } as const;

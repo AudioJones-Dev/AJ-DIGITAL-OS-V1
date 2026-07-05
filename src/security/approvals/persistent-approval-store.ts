@@ -4,16 +4,30 @@ import { readJSON, writeJSON } from "../persistence/json-file-store.js";
 import type { ApprovalRequest, ApprovalState } from "./approval-types.js";
 import type { ApprovalStore } from "./approval-store.js";
 
-const DEFAULT_APPROVALS_PATH = path.resolve("data", "security", "approvals.json");
+export const APPROVALS_STORE_PATH_ENV = "AJ_APPROVALS_STORE_PATH";
+
+// Resolved lazily so AJ_APPROVALS_STORE_PATH overrides (tests) apply
+// regardless of module import order.
+function defaultApprovalsPath(): string {
+  const override = process.env[APPROVALS_STORE_PATH_ENV]?.trim();
+  if (override !== undefined && override.length > 0) {
+    return path.resolve(override);
+  }
+  return path.resolve("data", "security", "approvals.json");
+}
 
 type ApprovalsData = Record<string, ApprovalRequest>;
 
 export class PersistentApprovalStore implements ApprovalStore {
-  private readonly filePath: string;
+  private readonly explicitPath: string | undefined;
   private cache: Map<string, ApprovalRequest> | null = null;
 
-  constructor(filePath: string = DEFAULT_APPROVALS_PATH) {
-    this.filePath = filePath;
+  constructor(filePath?: string) {
+    this.explicitPath = filePath;
+  }
+
+  private get filePath(): string {
+    return this.explicitPath ?? defaultApprovalsPath();
   }
 
   private async load(): Promise<Map<string, ApprovalRequest>> {
