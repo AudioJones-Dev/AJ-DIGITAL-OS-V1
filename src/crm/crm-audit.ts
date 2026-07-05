@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import path from "node:path";
 
+import { resolveRuntimePath } from "../core/runtime-paths.js";
 import { appendLog, readLogs } from "../security/persistence/jsonl-log-store.js";
 import type {
   CrmActorType,
@@ -9,7 +9,12 @@ import type {
   CrmTenantContext,
 } from "./crm-types.js";
 
-const DEFAULT_CRM_AUDIT_PATH = path.resolve("runtime", "crm", "crm-audit.jsonl");
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order — defaultCrmAuditLog below is constructed
+// at import time.
+function defaultCrmAuditPath(): string {
+  return resolveRuntimePath("crm", "crm-audit.jsonl");
+}
 
 export type CrmAuditEventType =
   | "crm_contact_created"
@@ -46,7 +51,15 @@ export interface CrmAuditFilter {
 }
 
 export class PersistentCrmAuditLog {
-  constructor(private readonly filePath: string = DEFAULT_CRM_AUDIT_PATH) {}
+  private readonly explicitPath: string | undefined;
+
+  constructor(filePath?: string) {
+    this.explicitPath = filePath;
+  }
+
+  private get filePath(): string {
+    return this.explicitPath ?? defaultCrmAuditPath();
+  }
 
   async append(
     event: Omit<CrmAuditEvent, "eventId" | "timestamp"> & {

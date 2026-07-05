@@ -1,15 +1,18 @@
 import { existsSync, mkdirSync, appendFileSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { AuditEvent } from "./run-control-types.js";
+import { resolveLogsPath } from "../../core/runtime-paths.js";
 
-const LOG_PATH = join(process.cwd(), "logs", "control-audit.jsonl");
 const MAX_BUFFER = 500;
 
 const buffer: AuditEvent[] = [];
 
+function logPath(): string {
+  return resolveLogsPath("control-audit.jsonl");
+}
+
 function ensureDir(): void {
-  const dir = join(process.cwd(), "logs");
+  const dir = resolveLogsPath();
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
@@ -33,16 +36,17 @@ export function logAuditEvent(event: Omit<AuditEvent, "eventId" | "timestamp">):
   };
   buffer.push(full);
   if (buffer.length > MAX_BUFFER) buffer.shift();
-  appendFileSync(LOG_PATH, JSON.stringify(full) + "\n", "utf-8");
+  appendFileSync(logPath(), JSON.stringify(full) + "\n", "utf-8");
   return full;
 }
 
 export function getAuditEvents(runId?: string, limit?: number): AuditEvent[] {
   let events: AuditEvent[] = [];
 
-  if (existsSync(LOG_PATH)) {
+  const path = logPath();
+  if (existsSync(path)) {
     try {
-      events = readFileSync(LOG_PATH, "utf-8")
+      events = readFileSync(path, "utf-8")
         .trim()
         .split("\n")
         .filter(Boolean)

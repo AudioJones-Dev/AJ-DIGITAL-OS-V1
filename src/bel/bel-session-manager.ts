@@ -8,19 +8,23 @@
 
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { resolveRuntimePath } from "../core/runtime-paths.js";
 import type { BelSession } from "./bel-types.js";
 
 const TAG = "[BEL-SESSION]";
 
-const RUNTIME_DIR = join(process.cwd(), "runtime");
-const SESSIONS_FILE = join(RUNTIME_DIR, "bel-sessions.json");
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order.
+function sessionsFile(): string {
+  return resolveRuntimePath("bel-sessions.json");
+}
 
 const sessions = new Map<string, BelSession>();
 
 function ensureRuntimeDir(): void {
-  if (!existsSync(RUNTIME_DIR)) {
-    mkdirSync(RUNTIME_DIR, { recursive: true });
+  const dir = resolveRuntimePath();
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
   }
 }
 
@@ -31,7 +35,7 @@ function persistSessions(): void {
     for (const [key, session] of sessions.entries()) {
       data[key] = session;
     }
-    writeFileSync(SESSIONS_FILE, JSON.stringify(data, null, 2), "utf-8");
+    writeFileSync(sessionsFile(), JSON.stringify(data, null, 2), "utf-8");
   } catch {
     // Silent — don't crash if persistence fails
   }
@@ -40,8 +44,8 @@ function persistSessions(): void {
 // Hydrate from disk on module load
 try {
   ensureRuntimeDir();
-  if (existsSync(SESSIONS_FILE)) {
-    const data = JSON.parse(readFileSync(SESSIONS_FILE, "utf-8")) as Record<string, BelSession>;
+  if (existsSync(sessionsFile())) {
+    const data = JSON.parse(readFileSync(sessionsFile(), "utf-8")) as Record<string, BelSession>;
     for (const [key, session] of Object.entries(data)) {
       sessions.set(key, session);
     }

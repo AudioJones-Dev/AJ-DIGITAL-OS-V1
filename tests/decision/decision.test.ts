@@ -1,17 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { existsSync, rmSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-
-const DECISION_DIR = join(process.cwd(), "runtime", "decision");
-const EVALUATIONS_FILE = join(DECISION_DIR, "map-evaluations.json");
-const CYCLES_FILE = join(DECISION_DIR, "cera-cycles.json");
-const AUDIT_FILE = join(DECISION_DIR, "decision-audit.jsonl");
-
-beforeEach(() => {
-  for (const path of [EVALUATIONS_FILE, CYCLES_FILE, AUDIT_FILE]) {
-    if (existsSync(path)) rmSync(path);
-  }
-});
 
 import {
   calculateMapScore,
@@ -31,6 +19,7 @@ import {
 } from "../../src/decision/decision-policy.js";
 
 import {
+  DECISION_PATHS,
   saveEvaluation,
   getEvaluation,
   listEvaluations,
@@ -43,6 +32,16 @@ import * as decisionAttribution from "../../src/decision/decision-attribution.js
 import * as attributionTracker from "../../src/attribution/attribution-tracker.js";
 
 import type { DecisionInput } from "../../src/decision/decision-types.js";
+
+beforeEach(() => {
+  for (const path of [
+    DECISION_PATHS.evaluationsFile,
+    DECISION_PATHS.cyclesFile,
+    DECISION_PATHS.auditFile,
+  ]) {
+    if (existsSync(path)) rmSync(path);
+  }
+});
 
 function baseInput(overrides: Partial<DecisionInput> = {}): DecisionInput {
   return {
@@ -321,7 +320,7 @@ describe("file-backed store", () => {
     const evaluation = evaluateMap(baseInput({ title: "Persisted" }));
     saveEvaluation(evaluation);
 
-    expect(existsSync(EVALUATIONS_FILE)).toBe(true);
+    expect(existsSync(DECISION_PATHS.evaluationsFile)).toBe(true);
     const fetched = getEvaluation(evaluation.evaluationId);
     expect(fetched).toBeDefined();
     expect(fetched?.title).toBe("Persisted");
@@ -344,8 +343,8 @@ describe("file-backed store", () => {
       event: "map_evaluation_created",
       payload: { mapScore: evaluation.mapScore },
     });
-    expect(existsSync(AUDIT_FILE)).toBe(true);
-    const raw = readFileSync(AUDIT_FILE, "utf-8");
+    expect(existsSync(DECISION_PATHS.auditFile)).toBe(true);
+    const raw = readFileSync(DECISION_PATHS.auditFile, "utf-8");
     expect(raw).toContain("map_evaluation_created");
   });
 });

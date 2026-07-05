@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -50,6 +50,7 @@ import { buildCommandEnvelope } from "../../src/core/commands/command-envelope.j
 import { executeCommand } from "../../src/core/commands/command-executor.js";
 
 const ORIGINAL_CWD = process.cwd();
+const ORIGINAL_RUNTIME_DIR = process.env.AJ_RUNTIME_DIR;
 let sandboxDir: string;
 
 function copyPoliciesInto(targetRuntime: string): void {
@@ -77,11 +78,20 @@ beforeEach(() => {
   const runtimeDir = join(sandboxDir, "runtime");
   mkdirSync(runtimeDir, { recursive: true });
   copyPoliciesInto(runtimeDir);
+  process.env.AJ_RUNTIME_DIR = runtimeDir;
   vi.spyOn(process, "cwd").mockReturnValue(sandboxDir);
   clearPolicyCache();
   resetEventLedger();
   resetIdempotencyStore();
   resetMetrics();
+});
+
+afterEach(() => {
+  if (ORIGINAL_RUNTIME_DIR !== undefined) {
+    process.env.AJ_RUNTIME_DIR = ORIGINAL_RUNTIME_DIR;
+  } else {
+    delete process.env.AJ_RUNTIME_DIR;
+  }
 });
 
 describe("Operating Core — State Machine v1", () => {

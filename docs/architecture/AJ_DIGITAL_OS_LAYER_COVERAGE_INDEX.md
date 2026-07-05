@@ -1,7 +1,7 @@
 # AJ Digital OS — Layer Coverage Index
 
 **Version:** 1.0
-**Date:** April 25, 2026
+**Date:** July 5, 2026
 **Owner:** AJ Digital LLC
 **Status:** Living Document — update after every major build sprint
 **Canonical Reference:** [AJ_DIGITAL_OS_LAYER_MODEL_SPEC.md](./AJ_DIGITAL_OS_LAYER_MODEL_SPEC.md)
@@ -104,11 +104,17 @@ Every new module added to the system must update this index.
 
 | Field | Value |
 |-------|-------|
-| **Status** | 📋 Planned |
-| **Primary Modules** | None yet |
+| **Status** | 🔶 Partial |
+| **Primary Modules** | `src/normalization/` · `src/core/schemas/schema-registry.ts` |
 | **Runtime Responsibility** | Entity extraction, schema mapping, lead/offer/SOP normalization, attribution event normalization |
-| **Tests** | None |
-| **Notes / Gaps** | Schema Registry (Operating Core v1) provides Zod schemas for core objects. Normalization pipeline itself — entity extraction, field mapping, cleaning — is unbuilt. Priority 2 build. |
+| **Tests** | `tests/normalization/` |
+| **Notes / Gaps** | Field mapping, normalization store, attribution hooks, and deterministic normalizer behavior exist. Remaining gaps: broader entity extraction, richer lead/offer/SOP normalization coverage, production connector inputs, dashboard exposure, and tenant-hardened persistence. |
+
+**Key files:**
+- `src/normalization/normalizer.ts` — normalization entry point
+- `src/normalization/field-mapper.ts` — field mapping utilities
+- `src/normalization/normalization-store.ts` — file-backed normalization records
+- `src/normalization/normalization-attribution.ts` — MAP attribution hooks
 
 ---
 
@@ -195,21 +201,33 @@ Every new module added to the system must update this index.
 
 | Field | Value |
 |-------|-------|
-| **Status** | 🔶 Partial |
-| **Primary Modules** | `src/security/permissions/` · `src/core/policy/` |
+| **Status** | 🔶 Partial (business governance built and Application-Layer-wired; not yet unified under `executeWithEnforcement`) |
+| **Primary Modules** | `src/security/permissions/` · `src/core/policy/` · `src/governance/` |
 | **Runtime Responsibility** | SOP policies, brand rules, approval policies, data access policies, agent behavior constraints, legal boundaries |
-| **Tests** | `tests/security/permissions/` · `tests/core/` |
-| **Notes / Gaps** | Enforcement engine, permission levels, and policy-as-code files cover security governance. Missing: brand voice governance, legal claims constraints, SOP policy files, offer governance, client-specific rule overrides. |
+| **Tests** | `tests/security/permissions/` · `tests/core/` · `tests/governance/` |
+| **Notes / Gaps** | Security governance (enforcement engine, permission levels, action-risk, tenant, environment, and approval policies) is live. Business governance also exists: `src/governance/` evaluates brand voice, legal constraints, SOP constraints, offer governance, agent behavior, and client-specific overrides. `evaluateGovernance()` is invoked by the Application Layer, CLI, lead-to-offer workflow, and Hermes API, and emits MAP attribution. Remaining gap: unify business-governance decisions under the single `executeWithEnforcement()` authority/shared audit and surface outcomes on the dashboard. |
 
 **Key files:**
 - `src/security/permissions/enforced-execution.ts`
 - `src/security/permissions/permission-levels.ts`
 - `src/core/policy/policy-engine.ts`
 - `src/core/policy/policy-loader.ts`
+- `src/governance/governance-engine.ts` — business-governance entry point
+- `src/governance/legal/legal-policy.ts`
+- `src/governance/offer/offer-policy.ts`
+- `src/governance/brand-voice/brand-voice-policy.ts`
+- `src/governance/sop/sop-policy.ts`
+- `src/governance/agent-behavior/agent-behavior-policy.ts`
+- `src/governance/client-rules/client-rule-engine.ts`
 - `runtime/policies/action-risk.policy.json`
 - `runtime/policies/tenant-boundary.policy.json`
 - `runtime/policies/environment.policy.json`
 - `runtime/policies/approval-gates.policy.json`
+- `runtime/policies/brand-voice.policy.json`
+- `runtime/policies/legal-constraints.policy.json`
+- `runtime/policies/sop-constraints.policy.json`
+- `runtime/policies/offer-governance.policy.json`
+- `runtime/policies/agent-behavior.policy.json`
 
 ---
 
@@ -237,11 +255,17 @@ Every new module added to the system must update this index.
 
 | Field | Value |
 |-------|-------|
-| **Status** | 📋 Planned |
-| **Primary Modules** | None yet |
+| **Status** | 🔶 Partial |
+| **Primary Modules** | `src/apps/` · `src/workflows/lead-to-offer.workflow.ts` |
 | **Runtime Responsibility** | Offer Engine, Diagnostic Engine, Content Engine, SEO/AEO Engine, Attribution Dashboard, Proposal Generator |
-| **Tests** | None |
-| **Notes / Gaps** | Individual business applications are unbuilt. The underlying infrastructure (DAG, RAG, CAG, MAP-CERA, attribution) is in place to support them. Build after Connector and Normalization layers are stable. |
+| **Tests** | `tests/apps/` · `tests/workflows/` |
+| **Notes / Gaps** | Offer Engine, Diagnostic Engine, Content Engine, and lead-to-offer workflow now exist with deterministic tests and governance touchpoints. Remaining gaps: production connector inputs, tenant-safe persistence, UI/client portal surfaces, live attribution dashboard, proposal generation, SEO/AEO application workflows, and production enablement runbooks. |
+
+**Key files:**
+- `src/apps/offer-engine/offer-engine.ts`
+- `src/apps/diagnostic-engine/diagnostic-engine.ts`
+- `src/apps/content-engine/content-engine.ts`
+- `src/workflows/lead-to-offer.workflow.ts`
 
 ---
 
@@ -250,10 +274,10 @@ Every new module added to the system must update this index.
 | Field | Value |
 |-------|-------|
 | **Status** | 🔶 Partial |
-| **Primary Modules** | `src/core/observability/` · `src/core/events/` · JSONL logs throughout |
+| **Primary Modules** | `src/core/observability/` · `src/core/events/` · `src/intelligence-layer/token-governance/` · JSONL logs throughout · `docs/system/GRAFANA_OBSERVABILITY_LAYER.md` |
 | **Runtime Responsibility** | Run logs, agent logs, enforcement audit, attribution logs, system event ledger, metrics snapshot |
 | **Tests** | `tests/core/` |
-| **Notes / Gaps** | JSONL audit logs exist across Control Plane, BEL, DAG, Cache, Retrieval, Decision Engine. Operating Core adds unified System Event Ledger and file-backed metrics. Missing: cost tracking per run, tool/API spend, performance metrics (execution time), ROI dashboard, alerting. |
+| **Notes / Gaps** | JSONL audit logs exist across Control Plane, BEL, DAG, Cache, Retrieval, Decision Engine. Operating Core adds unified System Event Ledger and file-backed metrics. Token model-cost capture exists in `src/intelligence-layer/token-governance/`, with per-event cost estimates, stage/agent rollups, and budget policy checks; it is currently in-memory and not wired into a run ledger. A Phase 0 Grafana/Prometheus doctrine pointer exists in `docs/system/GRAFANA_OBSERVABILITY_LAYER.md`; runtime Grafana/Prometheus deployment is governed separately. Remaining gaps: per-run token telemetry persistence, external tool/API spend, per-tenant cost rollup, execution-time metrics, ROI dashboard, and alerting. |
 
 **Key files:**
 - `src/core/events/event-ledger.ts` — canonical system event JSONL
@@ -263,6 +287,7 @@ Every new module added to the system must update this index.
 - `src/cache/cache-audit-log.ts` — cache audit JSONL
 - `runtime/events/system-events.jsonl` — canonical system ledger
 - `runtime/observability/metrics.json` — metrics snapshot
+- `src/intelligence-layer/token-governance/index.ts` — token usage, model-cost estimates, and budget-policy helpers
 
 ---
 
@@ -292,7 +317,7 @@ Every new module added to the system must update this index.
 | **Primary Modules** | None yet |
 | **Runtime Responsibility** | Feedback loops, run evaluation, agent performance review, workflow optimization, cost optimization, prompt optimization |
 | **Tests** | None |
-| **Notes / Gaps** | CERA (Capture, Extract, Refine, Amplify) in the MAP-CERA Decision Engine is the conceptual foundation for this layer. Full optimization pipeline — reading attribution history and improving workflows — is unbuilt. |
+| **Notes / Gaps** | CERA (Capture, Extract, Refine, Amplify) in the MAP-CERA Decision Engine is the conceptual foundation for this layer. Full run-evaluation / feedback-loop / workflow-optimization pipeline remains unbuilt on main. Token-cost efficiency primitives now exist in `src/intelligence-layer/token-governance/` (`computeErrorReductionPer1kTokens`) and can feed this layer when built. |
 
 ---
 
@@ -305,6 +330,18 @@ Every new module added to the system must update this index.
 | **Runtime Responsibility** | Spend reduction tracking, profit growth, revenue attribution, ROI reporting, margin improvement, strategic clarity |
 | **Tests** | None |
 | **Notes / Gaps** | MAP attribution events have `mapScore` fields with Meaningful/Actionable/Profitable dimensions. Full business outcome tracking — actual revenue influenced, actual spend reduced, time saved — is unbuilt. This layer requires L13 Observability and L14 Attribution to be mature first. |
+
+---
+
+## Adjacent Workbench / Model Interface Layer
+
+| Field | Value |
+|-------|-------|
+| **Status** | 📋 Planned / Phase 0 doctrine |
+| **Primary Modules** | `docs/system/OPEN_WEBUI_AI_WORKBENCH_LAYER.md` |
+| **Runtime Responsibility** | Local AI workbench, model-interface surface, prompt testing, model presets, RAG experiments, tools/functions, filters, and pipelines before promotion into governed infrastructure |
+| **Tests** | None — documentation-only pointer |
+| **Notes / Gaps** | Open WebUI is not a numbered core layer in the 16-layer architecture model and is not the governance kernel, system of record, production agent runtime, observability layer, or command launcher. It is documented as a workbench/prototyping surface. Production use requires the promotion gate defined in `docs/system/OPEN_WEBUI_AI_WORKBENCH_LAYER.md` and corresponding vault doctrine. |
 
 ---
 
@@ -322,6 +359,9 @@ Every new module added to the system must update this index.
 - Cache Augmentation Layer (all 5 namespaces)
 - Operational Retrieval Layer (keyword search, context packs)
 - Operating Core command envelope, policy engine, idempotency, schema registry
+- Normalization field mapping and file-backed normalization records
+- Governance evaluation for brand, legal, SOP, offer, agent-behavior, and client overrides
+- Offer, Diagnostic, and Content application engines with deterministic tests
 
 ### Prototype / File-Backed (requires migration)
 
@@ -332,6 +372,7 @@ Every new module added to the system must update this index.
 | Retrieval documents and chunks (`runtime/retrieval/*.json`) | Neon + pgvector |
 | Decision evaluations (`runtime/decision/*.json`) | Neon |
 | DAG runs and outputs (`runtime/dag/*.json`) | Neon |
+| Normalization records (`runtime/normalization/*.json`) | Neon / Postgres |
 | Approval records (`data/security/approvals.json`) | Neon |
 | Idempotency records (`runtime/idempotency/*.json`) | Redis |
 | System event ledger (`runtime/events/system-events.jsonl`) | Event stream or Neon |
@@ -369,13 +410,13 @@ Every new module added to the system must update this index.
 
 | Priority | Layer | Rationale |
 |----------|-------|-----------|
-| 1 | **L10 Governance hardening** | Brand voice policies, SOP constraints, legal claim rules, client-specific policy overrides — required before any Application Layer work |
-| 2 | **L5 Data Normalization** | Standardized entity objects (Lead, Offer, Client, Contact) are prerequisites for Application Layer and Connector Layer |
-| 3 | **L3 Connector / Driver** | Google Drive, Gmail, Calendar, CRM, Airtable — enables real data flow into the system |
-| 4 | **L11 Interface / Shell expansion** | Telegram approval bot, client portal, approval inbox — extends control surface to mobile/remote |
-| 5 | **L15 Optimization** | Feedback loops reading attribution history to improve workflows, agents, and offers |
+| 1 | **L10 Governance unification** | Business governance exists, but `evaluateGovernance()` still needs unification with the single `executeWithEnforcement()` authority/shared audit and dashboard outcomes |
+| 2 | **L5 Data Normalization hardening** | Normalization exists, but broader entity extraction, tenant persistence, and connector-fed records still need production hardening |
+| 3 | **L3 Connector / Driver** | Google Drive, Gmail, Calendar, CRM, Airtable, and other live adapters enable real data flow into the system |
+| 4 | **L11 Interface / Shell expansion** | Telegram approval bot, client portal, approval inbox, and agent status monitor extend the control surface to mobile/remote |
+| 5 | **L15 Optimization** | Feedback loops reading attribution, token cost, and execution history improve workflows, agents, and offers |
 | 6 | **L16 Business Outcome** | ROI tracking, spend reduction evidence, revenue attribution — the commercial reporting layer |
 
 ---
 
-*This document must be updated after every build sprint. Layer status should reflect the actual committed state of main, not planned or in-progress work.*
+*This document must be updated after every build sprint. Layer status should reflect the actual committed state of main, not planned or in-progress work. Before scoping a gap from this index, verify each "Missing"/"Planned" claim against the live repo by checking for the module and exported symbol; this index is hand-maintained and can lag `main`.*

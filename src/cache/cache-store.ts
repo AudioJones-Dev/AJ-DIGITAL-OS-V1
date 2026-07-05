@@ -22,8 +22,13 @@ import type {
 } from "./cache-types.js";
 import { evaluateCachePolicy } from "./cache-policy-engine.js";
 import { logCacheAuditEvent } from "./cache-audit-log.js";
+import { resolveRuntimePath } from "../core/runtime-paths.js";
 
-const CACHE_DIR = join(process.cwd(), "runtime", "cache");
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order.
+function cacheDir(): string {
+  return resolveRuntimePath("cache");
+}
 
 const FILE_FOR_NAMESPACE: Record<CacheNamespace, string> = {
   "context-cache": "context-cache.json",
@@ -42,14 +47,22 @@ export interface CacheStore {
 }
 
 function ensureCacheDir(): void {
-  if (!existsSync(CACHE_DIR)) {
-    mkdirSync(CACHE_DIR, { recursive: true });
+  const dir = cacheDir();
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
   }
 }
 
 function pathFor(namespace: CacheNamespace): string {
-  return join(CACHE_DIR, FILE_FOR_NAMESPACE[namespace]);
+  return join(cacheDir(), FILE_FOR_NAMESPACE[namespace]);
 }
+
+export const CACHE_PATHS = {
+  get baseDir(): string {
+    return cacheDir();
+  },
+  namespaceFile: pathFor,
+} as const;
 
 function loadEntries(namespace: CacheNamespace): CacheEntry[] {
   ensureCacheDir();

@@ -8,19 +8,34 @@ import {
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
+import { resolveRuntimePath } from "../core/runtime-paths.js";
 import type {
   CeraCycle,
   DecisionAuditEvent,
   MapEvaluation,
 } from "./decision-types.js";
 
-const DECISION_DIR = join(process.cwd(), "runtime", "decision");
-const EVALUATIONS_PATH = join(DECISION_DIR, "map-evaluations.json");
-const CYCLES_PATH = join(DECISION_DIR, "cera-cycles.json");
-const AUDIT_PATH = join(DECISION_DIR, "decision-audit.jsonl");
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order.
+function decisionDir(): string {
+  return resolveRuntimePath("decision");
+}
+
+function evaluationsPath(): string {
+  return join(decisionDir(), "map-evaluations.json");
+}
+
+function cyclesPath(): string {
+  return join(decisionDir(), "cera-cycles.json");
+}
+
+function auditPath(): string {
+  return join(decisionDir(), "decision-audit.jsonl");
+}
 
 function ensureDir(): void {
-  if (!existsSync(DECISION_DIR)) mkdirSync(DECISION_DIR, { recursive: true });
+  const dir = decisionDir();
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
 function readJsonArray<T>(path: string): T[] {
@@ -43,19 +58,19 @@ function writeJsonArray<T>(path: string, records: T[]): void {
 // ── Evaluations ───────────────────────────────────────────────────────────
 
 export function saveEvaluation(evaluation: MapEvaluation): MapEvaluation {
-  const records = readJsonArray<MapEvaluation>(EVALUATIONS_PATH);
+  const records = readJsonArray<MapEvaluation>(evaluationsPath());
   const idx = records.findIndex((r) => r.evaluationId === evaluation.evaluationId);
   if (idx >= 0) {
     records[idx] = evaluation;
   } else {
     records.push(evaluation);
   }
-  writeJsonArray(EVALUATIONS_PATH, records);
+  writeJsonArray(evaluationsPath(), records);
   return evaluation;
 }
 
 export function getEvaluation(evaluationId: string): MapEvaluation | undefined {
-  return readJsonArray<MapEvaluation>(EVALUATIONS_PATH).find(
+  return readJsonArray<MapEvaluation>(evaluationsPath()).find(
     (r) => r.evaluationId === evaluationId,
   );
 }
@@ -66,7 +81,7 @@ export function listEvaluations(filter?: {
   decision?: MapEvaluation["decision"];
   limit?: number;
 }): MapEvaluation[] {
-  let records = readJsonArray<MapEvaluation>(EVALUATIONS_PATH);
+  let records = readJsonArray<MapEvaluation>(evaluationsPath());
   if (filter?.tenantId !== undefined) {
     records = records.filter((r) => r.tenantId === filter.tenantId);
   }
@@ -84,19 +99,19 @@ export function listEvaluations(filter?: {
 // ── Cycles ────────────────────────────────────────────────────────────────
 
 export function saveCycle(cycle: CeraCycle): CeraCycle {
-  const records = readJsonArray<CeraCycle>(CYCLES_PATH);
+  const records = readJsonArray<CeraCycle>(cyclesPath());
   const idx = records.findIndex((r) => r.cycleId === cycle.cycleId);
   if (idx >= 0) {
     records[idx] = cycle;
   } else {
     records.push(cycle);
   }
-  writeJsonArray(CYCLES_PATH, records);
+  writeJsonArray(cyclesPath(), records);
   return cycle;
 }
 
 export function getCycle(cycleId: string): CeraCycle | undefined {
-  return readJsonArray<CeraCycle>(CYCLES_PATH).find((r) => r.cycleId === cycleId);
+  return readJsonArray<CeraCycle>(cyclesPath()).find((r) => r.cycleId === cycleId);
 }
 
 export function listCycles(filter?: {
@@ -105,7 +120,7 @@ export function listCycles(filter?: {
   decisionPath?: CeraCycle["decisionPath"];
   limit?: number;
 }): CeraCycle[] {
-  let records = readJsonArray<CeraCycle>(CYCLES_PATH);
+  let records = readJsonArray<CeraCycle>(cyclesPath());
   if (filter?.tenantId !== undefined) {
     records = records.filter((r) => r.tenantId === filter.tenantId);
   }
@@ -140,7 +155,7 @@ export function appendDecisionAuditEvent(
     ...(event.tenantId !== undefined ? { tenantId: event.tenantId } : {}),
   };
   try {
-    appendFileSync(AUDIT_PATH, JSON.stringify(full) + "\n", "utf-8");
+    appendFileSync(auditPath(), JSON.stringify(full) + "\n", "utf-8");
   } catch {
     // audit is best-effort
   }
@@ -154,10 +169,11 @@ export function getDecisionAuditEvents(filter?: {
   limit?: number;
 }): DecisionAuditEvent[] {
   ensureDir();
-  if (!existsSync(AUDIT_PATH)) return [];
+  const audit = auditPath();
+  if (!existsSync(audit)) return [];
   let events: DecisionAuditEvent[] = [];
   try {
-    events = readFileSync(AUDIT_PATH, "utf-8")
+    events = readFileSync(audit, "utf-8")
       .trim()
       .split("\n")
       .filter(Boolean)
@@ -181,8 +197,16 @@ export function getDecisionAuditEvents(filter?: {
 }
 
 export const DECISION_PATHS = {
-  evaluationsFile: EVALUATIONS_PATH,
-  cyclesFile: CYCLES_PATH,
-  auditFile: AUDIT_PATH,
-  baseDir: DECISION_DIR,
+  get evaluationsFile(): string {
+    return evaluationsPath();
+  },
+  get cyclesFile(): string {
+    return cyclesPath();
+  },
+  get auditFile(): string {
+    return auditPath();
+  },
+  get baseDir(): string {
+    return decisionDir();
+  },
 } as const;

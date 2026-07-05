@@ -1,18 +1,20 @@
 import { appendFile, mkdir } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 import type { AttributionEvent } from "./attribution-types.js";
 import { evaluateMAP } from "./map-validator.js";
+import { resolveLogsPath } from "../core/runtime-paths.js";
 
-const LOGS_DIR = path.join(process.cwd(), "logs");
-const EVENTS_FILE = path.join(LOGS_DIR, "attribution-events.jsonl");
 const BUFFER_MAX = 1000;
 
 const buffer: AttributionEvent[] = [];
 
 async function ensureLogsDir(): Promise<void> {
-  await mkdir(LOGS_DIR, { recursive: true });
+  await mkdir(resolveLogsPath(), { recursive: true });
+}
+
+function eventsFile(): string {
+  return resolveLogsPath("attribution-events.jsonl");
 }
 
 export async function emitEvent(
@@ -34,7 +36,7 @@ export async function emitEvent(
 
   try {
     await ensureLogsDir();
-    await appendFile(EVENTS_FILE, JSON.stringify(full) + "\n", "utf-8");
+    await appendFile(eventsFile(), JSON.stringify(full) + "\n", "utf-8");
   } catch {
     // File write errors are non-fatal
   }

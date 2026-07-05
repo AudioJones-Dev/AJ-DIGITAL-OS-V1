@@ -7,8 +7,9 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { dirname } from "node:path";
 
+import { resolveRuntimePath } from "../runtime-paths.js";
 import { incrementMetric } from "../observability/metrics-store.js";
 import type {
   IdempotencyCheckResult,
@@ -18,8 +19,10 @@ import type {
 
 const DEFAULT_TTL_SECONDS = 24 * 60 * 60;
 
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order.
 export function idempotencyStorePath(): string {
-  return join(process.cwd(), "runtime", "idempotency", "idempotency-records.json");
+  return resolveRuntimePath("idempotency", "idempotency-records.json");
 }
 
 function ensureFile(path: string): void {

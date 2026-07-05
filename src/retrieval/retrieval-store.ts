@@ -15,6 +15,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 
+import { resolveRuntimePath } from "../core/runtime-paths.js";
 import type {
   RetrievalChunk,
   RetrievalDocument,
@@ -22,14 +23,28 @@ import type {
   RetrievalTrace,
 } from "./retrieval-types.js";
 
-const RUNTIME_DIR = join(process.cwd(), "runtime", "retrieval");
-const DOCS_PATH = join(RUNTIME_DIR, "documents.json");
-const CHUNKS_PATH = join(RUNTIME_DIR, "chunks.json");
-const TRACES_PATH = join(RUNTIME_DIR, "retrieval-traces.jsonl");
+// Resolved lazily so AJ_RUNTIME_DIR overrides (tests, smoke CLI) apply
+// regardless of module import order.
+function retrievalDir(): string {
+  return resolveRuntimePath("retrieval");
+}
+
+function docsPath(): string {
+  return join(retrievalDir(), "documents.json");
+}
+
+function chunksPath(): string {
+  return join(retrievalDir(), "chunks.json");
+}
+
+function tracesPath(): string {
+  return join(retrievalDir(), "retrieval-traces.jsonl");
+}
 
 function ensureDir(): void {
-  if (!existsSync(RUNTIME_DIR)) {
-    mkdirSync(RUNTIME_DIR, { recursive: true });
+  const dir = retrievalDir();
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
   }
 }
 
@@ -53,19 +68,19 @@ function saveJson<T>(path: string, data: T[]): void {
 // ── Documents ────────────────────────────────────────────────────────
 
 export function saveDocument(doc: RetrievalDocument): RetrievalDocument {
-  const docs = loadJson<RetrievalDocument>(DOCS_PATH);
+  const docs = loadJson<RetrievalDocument>(docsPath());
   const idx = docs.findIndex((d) => d.documentId === doc.documentId);
   if (idx >= 0) {
     docs[idx] = doc;
   } else {
     docs.push(doc);
   }
-  saveJson(DOCS_PATH, docs);
+  saveJson(docsPath(), docs);
   return doc;
 }
 
 export function getDocument(documentId: string): RetrievalDocument | undefined {
-  return loadJson<RetrievalDocument>(DOCS_PATH).find(
+  return loadJson<RetrievalDocument>(docsPath()).find(
     (d) => d.documentId === documentId,
   );
 }
@@ -77,7 +92,7 @@ export interface ListDocumentsFilter {
 }
 
 export function listDocuments(filter?: ListDocumentsFilter): RetrievalDocument[] {
-  let docs = loadJson<RetrievalDocument>(DOCS_PATH);
+  let docs = loadJson<RetrievalDocument>(docsPath());
   if (filter?.namespace !== undefined) {
     docs = docs.filter((d) => d.namespace === filter.namespace);
   }
@@ -95,17 +110,17 @@ export function listDocuments(filter?: ListDocumentsFilter): RetrievalDocument[]
 
 export function saveChunks(chunks: RetrievalChunk[]): RetrievalChunk[] {
   if (chunks.length === 0) return [];
-  const all = loadJson<RetrievalChunk>(CHUNKS_PATH);
+  const all = loadJson<RetrievalChunk>(chunksPath());
   const byId = new Map(all.map((c) => [c.chunkId, c]));
   for (const ch of chunks) {
     byId.set(ch.chunkId, ch);
   }
-  saveJson(CHUNKS_PATH, [...byId.values()]);
+  saveJson(chunksPath(), [...byId.values()]);
   return chunks;
 }
 
 export function getChunksByDocument(documentId: string): RetrievalChunk[] {
-  return loadJson<RetrievalChunk>(CHUNKS_PATH).filter(
+  return loadJson<RetrievalChunk>(chunksPath()).filter(
     (c) => c.documentId === documentId,
   );
 }
@@ -116,7 +131,7 @@ export interface ListChunksFilter {
 }
 
 export function listChunks(filter?: ListChunksFilter): RetrievalChunk[] {
-  let chunks = loadJson<RetrievalChunk>(CHUNKS_PATH);
+  let chunks = loadJson<RetrievalChunk>(chunksPath());
   if (filter?.namespaces !== undefined && filter.namespaces.length > 0) {
     const set = new Set(filter.namespaces);
     chunks = chunks.filter((c) => set.has(c.namespace));
@@ -130,10 +145,10 @@ export function listChunks(filter?: ListChunksFilter): RetrievalChunk[] {
 }
 
 export function deleteChunksByDocument(documentId: string): number {
-  const all = loadJson<RetrievalChunk>(CHUNKS_PATH);
+  const all = loadJson<RetrievalChunk>(chunksPath());
   const remaining = all.filter((c) => c.documentId !== documentId);
   const removed = all.length - remaining.length;
-  saveJson(CHUNKS_PATH, remaining);
+  saveJson(chunksPath(), remaining);
   return removed;
 }
 
@@ -141,7 +156,7 @@ export function deleteChunksByDocument(documentId: string): number {
 
 export function appendRetrievalTrace(trace: RetrievalTrace): RetrievalTrace {
   ensureDir();
-  appendFileSync(TRACES_PATH, JSON.stringify(trace) + "\n", "utf-8");
+  appendFileSync(tracesPath(), JSON.stringify(trace) + "\n", "utf-8");
   return trace;
 }
 
@@ -153,11 +168,12 @@ export interface ListTracesFilter {
 
 export function listRetrievalTraces(filter?: ListTracesFilter): RetrievalTrace[] {
   ensureDir();
-  if (!existsSync(TRACES_PATH)) return [];
+  const traceFile = tracesPath();
+  if (!existsSync(traceFile)) return [];
 
   let traces: RetrievalTrace[] = [];
   try {
-    traces = readFileSync(TRACES_PATH, "utf-8")
+    traces = readFileSync(traceFile, "utf-8")
       .trim()
       .split("\n")
       .filter(Boolean)
@@ -187,8 +203,16 @@ export function getRetrievalTrace(traceId: string): RetrievalTrace | undefined {
 // ── Test/maintenance helpers ─────────────────────────────────────────
 
 export const RETRIEVAL_STORE_PATHS = {
-  RUNTIME_DIR,
-  DOCS_PATH,
-  CHUNKS_PATH,
-  TRACES_PATH,
+  get RUNTIME_DIR(): string {
+    return retrievalDir();
+  },
+  get DOCS_PATH(): string {
+    return docsPath();
+  },
+  get CHUNKS_PATH(): string {
+    return chunksPath();
+  },
+  get TRACES_PATH(): string {
+    return tracesPath();
+  },
 } as const;
