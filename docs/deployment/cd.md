@@ -1,20 +1,22 @@
-# Continuous Deployment — gated auto-deploy
+# Continuous Deployment — manual gated deploy
 
 `.github/workflows/deploy.yml` layers automation on top of `scripts/deploy.ps1`
-**without removing the human gate**. On merge to `main` (or manual dispatch) the
-deploy job starts, then **pauses at the `production` environment approval gate**
-until an operator approves. Only then does the self-hosted runner on the box run
-`deploy.ps1` (backup → pull → build → migrate → compose up → healthcheck).
+**without removing the human gate**. The workflow is currently manual-only:
+Actions → Deploy → Run workflow. It targets the `production` environment so the
+job can pause at an environment approval gate when that gate is configured. Only
+then does the self-hosted runner on the box run `deploy.ps1` (backup → pull →
+build → migrate → compose up → healthcheck).
 
 ```
-merge to main ─▶ deploy job queues ─▶ ⏸ production approval (human click)
-                                              │ approve
-                                              ▼
-                        self-hosted runner runs scripts/deploy.ps1 on the box
+operator dispatch ─▶ deploy job queues ─▶ production approval gate if configured
+                                                   │ approve / run
+                                                   ▼
+                             self-hosted runner runs scripts/deploy.ps1 on the box
 ```
 
 This satisfies the governance kernel (deploy is HUMAN_REQUIRED): nothing ships on
-merge alone — a person always clicks approve.
+merge. A person must intentionally dispatch the workflow, and environment review
+should be configured before using it for production.
 
 ## One-time operator setup
 
@@ -46,7 +48,7 @@ The runner needs, on the box: Docker Desktop running, Node 20+, PowerShell 7
 Repo → Settings → Environments → New environment → `production`.
 - Under **Required reviewers**, add yourself (and anyone else allowed to approve
   deploys). This is the human gate — without it the auto-start would ship
-  unreviewed.
+  unreviewed if a future push trigger is added.
 - Optional: restrict deployment branches to `main`.
 
 ### 3. Repo variable (only if the clone isn't at the default path)
@@ -56,14 +58,17 @@ Repo → Settings → Secrets and variables → Actions → Variables →
 
 ## Using it
 
-- **Automatic:** merge a PR to `main` → go to Actions → the Deploy run is waiting
-  on "Review deployments" → approve → it deploys.
 - **Manual:** Actions → Deploy → Run workflow. Inputs let you `skip_migrate` or
   `skip_backup` for edge cases.
+- **Future automatic option:** after the `production` environment required
+  reviewer and `aj-os-box` runner are verified, add a `push` trigger for `main`
+  in `.github/workflows/deploy.yml`. Do not add that trigger until the gate is
+  confirmed in GitHub settings.
 
 ## Turning it off / rolling back
 
-- Disable auto-start: comment out the `push:` trigger (keep `workflow_dispatch`).
+- Disable deploy workflow: disable the workflow in GitHub Actions or remove the
+  workflow file.
 - Bad deploy: `scripts/rollback.ps1 -Ref <good-sha>` on the box (add
   `-RestoreSetDir` for volume rollback). See [backup-restore.md](./backup-restore.md).
 

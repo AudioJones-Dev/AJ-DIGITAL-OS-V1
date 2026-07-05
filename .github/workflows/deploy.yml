@@ -1,13 +1,10 @@
 name: Deploy
 
-# Auto-deploy trigger layered on scripts/deploy.ps1.
+# Manual deploy trigger layered on scripts/deploy.ps1.
 #
-# GOVERNANCE: deploy is HUMAN_REQUIRED. This workflow AUTO-STARTS on merge to
-# main, but the `deploy` job targets the `production` GitHub Environment, which
-# is configured with a required reviewer. The run therefore PAUSES at the
-# approval gate until an operator clicks "Approve" — nothing ships on merge
-# alone. workflow_dispatch gives the same gated path on demand (e.g. redeploy a
-# specific ref without a new commit).
+# GOVERNANCE: deploy is HUMAN_REQUIRED. Keep this workflow manual until the
+# `production` GitHub Environment and self-hosted runner gate are verified in
+# repo settings. After that, a push-to-main trigger can be added deliberately.
 
 on:
   workflow_dispatch:
@@ -20,9 +17,6 @@ on:
         description: "Skip pre-deploy volume backup (not recommended)"
         type: boolean
         default: false
-  push:
-    branches:
-      - main
 
 # Never let two deploys overlap; do NOT cancel an in-flight deploy mid-run.
 concurrency:
