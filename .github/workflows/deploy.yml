@@ -1,0 +1,78 @@
+name: Deploy
+
+# Manual deploy trigger layered on scripts/deploy.ps1.
+#
+# GOVERNANCE: deploy is HUMAN_REQUIRED. Keep this workflow manual until the
+# `production` GitHub Environment and self-hosted runner gate are verified in
+# repo settings. After that, a push-to-main trigger can be added deliberately.
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_migrate:
+        description: "Skip db-migrate step"
+        type: boolean
+        default: false
+      skip_backup:
+        description: "Skip pre-deploy volume backup (not recommended)"
+        type: boolean
+        default: false
+
+# Never let two deploys overlap; do NOT cancel an in-flight deploy mid-run.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: gated-deploy-to-box
+    # Self-hosted runner ON the box (Docker Desktop + the deploy clone live here).
+    # Label the runner: self-hosted, windows, aj-os-box.
+    runs-on: [self-hosted, windows, aj-os-box]
+    # The approval gate. `production` must have a required reviewer in repo
+    # Settings → Environments — that is the human gate.
+    environment: production
+    timeout-minutes: 30
+
+    steps:
+      - name: Resolve deploy directory
+        id: dir
+        shell: pwsh
+        env:
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+        run: |
+          $dir = if ($env:DEPLOY_DIR) { $env:DEPLOY_DIR } else { "C:\dev\AJ-DIGITAL-OS" }
+          if (-not (Test-Path $dir)) { throw "Deploy directory not found: $dir (set repo variable DEPLOY_DIR)" }
+          "dir=$dir" >> $env:GITHUB_OUTPUT
+          Write-Host "Deploy directory: $dir"
+
+      - name: Run gated deploy
+        shell: pwsh
+        working-directory: ${{ steps.dir.outputs.dir }}
+        env:
+          SKIP_MIGRATE: ${{ inputs.skip_migrate }}
+          SKIP_BACKUP: ${{ inputs.skip_backup }}
+        run: |
+          # deploy.ps1 runs its own preflight (on main, clean tree, docker up,
+          # .env has no placeholder creds), then backup -> pull -> build ->
+          # migrate -> compose up -> healthcheck. It aborts on any failure.
+          $flags = @()
+          if ($env:SKIP_MIGRATE -eq 'true') { $flags += '-SkipMigrate' }
+          if ($env:SKIP_BACKUP  -eq 'true') { $flags += '-SkipBackup' }
+          Write-Host "deploy.ps1 flags: $($flags -join ' ')"
+          ./scripts/deploy.ps1 @flags
+
+      - name: Deploy summary
+        if: always()
+        shell: pwsh
+        working-directory: ${{ steps.dir.outputs.dir }}
+        run: |
+          $sha = (git rev-parse --short HEAD).Trim()
+          $status = if ('${{ job.status }}' -eq 'success') { '✅ succeeded' } else { '❌ failed' }
+          "## Deploy $status" >> $env:GITHUB_STEP_SUMMARY
+          "- Commit: ``$sha``" >> $env:GITHUB_STEP_SUMMARY
+          "- Trigger: ${{ github.event_name }}" >> $env:GITHUB_STEP_SUMMARY
+          "- Approved by: ${{ github.actor }}" >> $env:GITHUB_STEP_SUMMARY
