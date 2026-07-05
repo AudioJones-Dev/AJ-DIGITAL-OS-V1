@@ -6,10 +6,8 @@
  * - db-health:  pings Neon and returns latency
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { checkNeonConnection, executeNeonSql, isNeonConfigured } from "../db/neon-client.js";
+import { runMigrations, type SqlExecutor } from "../db/migrator.js";
 
 interface BaseInput {
   json?: boolean;
@@ -24,7 +22,6 @@ function emitJson(input: BaseInput, payload: unknown): void {
   if (input.json) console.log(JSON.stringify(payload, null, 2));
 }
 
-const SCHEMA_FILE = join(process.cwd(), "sql", "neon-os-schema.sql");
 const TRACKED_TABLES = ["control_runs", "approvals", "dag_runs"] as const;
 type TrackedTable = (typeof TRACKED_TABLES)[number];
 
@@ -32,23 +29,28 @@ type TrackedTable = (typeof TRACKED_TABLES)[number];
 
 export interface DbMigrateCommandInput extends BaseInput {}
 export interface DbMigrateCommandResult extends BaseResult {
-  applied: boolean;
-  statementsRun?: number;
+  applied: number;
+  skipped: number;
+  files?: Array<{ name: string; status: string; error?: string }>;
 }
 
-function splitSqlStatements(sql: string): string[] {
-  return sql
-    .split(/;\s*\n/)
-    .map((stmt) => stmt.trim())
-    .filter((stmt) => stmt.length > 0 && !/^--/.test(stmt));
-}
+/** Neon-backed executor for the migration engine. */
+const neonExecutor: SqlExecutor = async (sql, params = []) => {
+  const res = await executeNeonSql<Record<string, unknown>>(sql, params);
+  return {
+    ok: res.ok,
+    rows: res.data ?? [],
+    ...(res.error ? { error: res.error } : {}),
+  };
+};
 
 export class DbMigrateCommand {
   async run(input: DbMigrateCommandInput): Promise<DbMigrateCommandResult> {
     if (!isNeonConfigured()) {
       const result: DbMigrateCommandResult = {
         ok: false,
-        applied: false,
+        applied: 0,
+        skipped: 0,
         error: "NEON_DATABASE_URL is not set",
       };
       if (input.json) emitJson(input, result);
@@ -56,44 +58,31 @@ export class DbMigrateCommand {
       return result;
     }
 
-    if (!existsSync(SCHEMA_FILE)) {
-      const result: DbMigrateCommandResult = {
-        ok: false,
-        applied: false,
-        error: `Schema file not found at ${SCHEMA_FILE}`,
-      };
-      if (input.json) emitJson(input, result);
-      else console.error(`db-migrate: schema file missing — ${SCHEMA_FILE}`);
-      return result;
-    }
-
-    const sqlText = readFileSync(SCHEMA_FILE, "utf-8");
-    const statements = splitSqlStatements(sqlText);
-
-    let executed = 0;
-    for (const statement of statements) {
-      const result = await executeNeonSql<unknown>(statement, []);
-      if (!result.ok) {
-        const failure: DbMigrateCommandResult = {
-          ok: false,
-          applied: false,
-          statementsRun: executed,
-          error: result.error ?? "Unknown error",
-        };
-        if (input.json) emitJson(input, failure);
-        else console.error(`db-migrate: failed at statement ${executed + 1} — ${result.error}`);
-        return failure;
-      }
-      executed += 1;
-    }
-
+    const outcome = await runMigrations(neonExecutor);
     const result: DbMigrateCommandResult = {
-      ok: true,
-      applied: true,
-      statementsRun: executed,
+      ok: outcome.ok,
+      applied: outcome.applied,
+      skipped: outcome.skipped,
+      files: outcome.files.map((f) => ({
+        name: f.name,
+        status: f.status,
+        ...(f.error ? { error: f.error } : {}),
+      })),
+      ...(outcome.error ? { error: outcome.error } : {}),
     };
-    if (input.json) emitJson(input, result);
-    else console.log(`db-migrate: applied ${executed} statement(s)`);
+
+    if (input.json) {
+      emitJson(input, result);
+    } else if (outcome.ok) {
+      console.log(`db-migrate: ${outcome.applied} applied, ${outcome.skipped} skipped`);
+      for (const f of outcome.files) console.log(`  ${f.status.padEnd(8)} ${f.name}`);
+    } else {
+      console.error(`db-migrate: FAILED — ${outcome.error}`);
+      for (const f of outcome.files) {
+        const suffix = f.error ? ` — ${f.error}` : "";
+        console.error(`  ${f.status.padEnd(8)} ${f.name}${suffix}`);
+      }
+    }
     return result;
   }
 }
