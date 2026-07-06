@@ -26,6 +26,7 @@ This index catalogs AJ Digital OS LLM Wiki pages maintained under `docs/knowledg
 - `wiki/business-memory/structural-reasoning-domain-validation.md` - Working principle note on structural reasoning and domain validation.
 - `wiki/business-memory/audio-jones-brand-philosophy-context.md` - Working interpretation note on Audio Jones brand philosophy and positioning implications.
 - `wiki/business-memory/breakthrough-index.md` - Working index of candidate breakthrough insights; does not approve `breakthrough` as a note type.
+- `wiki/business-memory/business-memory-pilot-kpis.md` - Working knowledge note defining the three active pilot KPIs and candidate future metrics.
 
 ## Source Summaries
 
@@ -42,3 +43,4 @@ No knowledge-layer outputs have been created yet.
 - Business Memory pilot pages are planning and template artifacts only; they do not ingest source material or ratify doctrine by themselves.
 - Business Memory pilot notes are working notes unless Audio explicitly promotes them through the pilot governance rules.
 - Breakthrough preservation notes are working context only and do not expand the approved Business Memory ontology.
+- KPI notes are pilot evaluation context only and do not create dashboards, metrics infrastructure, or expanded COS architecture.
