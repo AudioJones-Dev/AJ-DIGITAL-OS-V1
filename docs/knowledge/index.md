@@ -21,6 +21,11 @@ This index catalogs AJ Digital OS LLM Wiki pages maintained under `docs/knowledg
 - `wiki/business-memory/structure-transferable-domain-validation-required.md` - Working pilot principle note distinguishing transferable structure from domain validation.
 - `wiki/business-memory/business-memory-is-not-ai-memory.md` - Working pilot knowledge note separating governed Business Memory from AI retrieval memory.
 - `wiki/business-memory/reality-root-operational-reality-domain.md` - Working pilot principle note distinguishing Reality as root from Operational Reality as AJ Digital's domain.
+- `wiki/business-memory/session-breakthroughs-2026-07-05.md` - Working preservation note for the major session breakthroughs and their downstream implications.
+- `wiki/business-memory/cognitive-operating-system-context.md` - Working knowledge note preserving internal COS context, lifecycle, and limits.
+- `wiki/business-memory/structural-reasoning-domain-validation.md` - Working principle note on structural reasoning and domain validation.
+- `wiki/business-memory/audio-jones-brand-philosophy-context.md` - Working interpretation note on Audio Jones brand philosophy and positioning implications.
+- `wiki/business-memory/breakthrough-index.md` - Working index of candidate breakthrough insights; does not approve `breakthrough` as a note type.
 
 ## Source Summaries
 
@@ -36,3 +41,4 @@ No knowledge-layer outputs have been created yet.
 - Keep entries source-linked and short enough for agents to scan before querying deeper pages.
 - Business Memory pilot pages are planning and template artifacts only; they do not ingest source material or ratify doctrine by themselves.
 - Business Memory pilot notes are working notes unless Audio explicitly promotes them through the pilot governance rules.
+- Breakthrough preservation notes are working context only and do not expand the approved Business Memory ontology.
