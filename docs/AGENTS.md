@@ -9,6 +9,7 @@ This folder owns AJ Digital OS policy, architecture, operations, deployment, rel
 - `docs/OPERATING_POLICY.md`, `docs/REPO_SAFETY_POLICY.md`, `docs/IMPLEMENTATION_GATES.md`, and `docs/AGENT_HANDOFF_PROTOCOL.md` are canonical policy docs.
 - `docs/system/` contains system-level specifications and standards.
 - `docs/architecture/` contains architecture and integration specifications.
+- `docs/decisions/` contains repo decision history for durable documentation, architecture, governance, and agent-work decisions.
 - `docs/infrastructure/` contains deployment runtime doctrine, infrastructure adapter specs, and cloud/local runtime standards.
 - `docs/protocols/` contains repository bootstrap and cross-agent execution protocols.
 - `docs/security/` contains security doctrine for secret handling, remote secret operations, and provider-safe operational workflows.
@@ -38,6 +39,7 @@ This folder owns AJ Digital OS policy, architecture, operations, deployment, rel
 ## Child DOX Index
 
 - `architecture/` - architecture, integration, and module traceability specs.
+- `decisions/` - durable decision history and decision-log workflow.
 - `deployment/` - deployment and production-readiness documentation.
 - `infrastructure/` - deployment runtime doctrine, infrastructure adapter specs, and cloud/local runtime standards.
 - `knowledge/` - LLM Wiki, Obsidian-compatible knowledge-layer workflows, and agent-maintained Markdown synthesis rules.
