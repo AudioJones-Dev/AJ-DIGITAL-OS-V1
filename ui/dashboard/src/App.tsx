@@ -18,6 +18,7 @@ import { OnboardingView } from "./components/OnboardingView";
 import { ApprovalInbox } from "./components/ApprovalInbox";
 import { ViewModeProvider, useViewMode } from "./lib/view-mode";
 import type { CSSProperties } from "react";
+import "./dashboard.css";
 
 // ── Nav items by mode ──────────────────────────────────────────────
 
@@ -45,31 +46,26 @@ const clientNav = [
 const shellStyle: CSSProperties = {
   display: "flex",
   minHeight: "100vh",
-  fontFamily:
-    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  fontFamily: '"DM Sans", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   color: "#e2e8f0",
-  backgroundColor: "#0f172a",
+  backgroundColor: "#090b0c",
 };
 
 const sidebarStyle: CSSProperties = {
-  width: 220,
-  backgroundColor: "#020617",
+  width: 236,
+  backgroundColor: "#0c0f10",
   color: "#e5e7eb",
   padding: "24px 0",
   display: "flex",
   flexDirection: "column",
   flexShrink: 0,
-  borderRight: "1px solid #1e293b",
+  borderRight: "1px solid #25292b",
 };
 
 const logoStyle: CSSProperties = {
-  fontSize: 15,
-  fontWeight: 700,
-  letterSpacing: "0.04em",
   padding: "0 20px 20px",
-  borderBottom: "1px solid #1e293b",
+  borderBottom: "1px solid #25292b",
   marginBottom: 16,
-  color: "#fff",
 };
 
 const navLinkBase: CSSProperties = {
@@ -77,7 +73,7 @@ const navLinkBase: CSSProperties = {
   padding: "10px 20px",
   fontSize: 13,
   fontWeight: 500,
-  color: "#64748b",
+  color: "#8c9497",
   textDecoration: "none",
   borderLeft: "3px solid transparent",
   transition: "all 0.15s",
@@ -85,15 +81,16 @@ const navLinkBase: CSSProperties = {
 
 const navLinkActive: CSSProperties = {
   ...navLinkBase,
-  color: "#f1f5f9",
-  backgroundColor: "#1e293b",
-  borderLeftColor: "#3b82f6",
+  color: "#f7f8f2",
+  backgroundColor: "#171b1c",
+  borderLeftColor: "#e8ff5a",
 };
 
 const contentStyle: CSSProperties = {
   flex: 1,
-  padding: "32px 40px",
-  maxWidth: 1280,
+  padding: "34px clamp(22px, 4vw, 54px)",
+  width: "100%",
+  maxWidth: 1500,
 };
 
 export default function App() {
@@ -116,7 +113,10 @@ function AppShell() {
       <a href="#main-content" className="skip-link">Skip to content</a>
       {/* Sidebar */}
       <nav style={sidebarStyle} aria-label="Primary">
-        <div style={logoStyle}>AJ DIGITAL OS</div>
+        <div style={logoStyle}>
+          <img src="/audiojones-wordmark-white.svg" alt="Audio Jones" style={{ width: 176, height: "auto" }} />
+          <div className="os-label">AJ DIGITAL OS / BUILD CONTROL</div>
+        </div>
         <ViewModeSwitcher />
         <div style={{ height: 12 }} />
         {navItems.map((item) => (
