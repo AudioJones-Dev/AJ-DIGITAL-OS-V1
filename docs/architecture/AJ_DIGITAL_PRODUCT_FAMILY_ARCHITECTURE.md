@@ -5,6 +5,7 @@
 **Status:** PROPOSED — requires human ratification (see §20)
 **Scope:** Documentation-only. This proposal authorizes no repository merger, archival, migration, code change, or PR action.
 **Prepared from:** Read-only cross-repository audit of the six repositories listed in §2, performed July 30, 2026 against current default branches via the GitHub API.
+**Parent document:** [`docs/strategy/AJ_DIGITAL_COMPANY_PRODUCTIZATION_SPEC.md`](../strategy/AJ_DIGITAL_COMPANY_PRODUCTIZATION_SPEC.md) (v2.0) — company and commercialization authority; per its §21 hierarchy, this architecture document governs repository and capability boundaries beneath it.
 
 ---
 
