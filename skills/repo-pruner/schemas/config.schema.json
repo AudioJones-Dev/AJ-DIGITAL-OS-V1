@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ajdigital.local/schemas/repo-pruner-config.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "scope", "registry", "output_dir", "detectors", "thresholds", "path_classes"],
+  "allOf": [
+    {
+      "if": {"properties": {"scope": {"const": "component"}}},
+      "then": {"required": ["base_ref"]}
+    }
+  ],
+  "properties": {
+    "version": {"const": 1},
+    "scope": {"enum": ["portfolio", "component"]},
+    "base_ref": {"type": "string", "minLength": 1},
+    "registry": {"type": "string", "minLength": 1},
+    "output_dir": {"const": ".pruner"},
+    "detectors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["jscpd", "knip", "madge", "eslint", "tsc", "tests"],
+      "properties": {
+        "jscpd": {"$ref": "#/$defs/jscpd"},
+        "knip": {"$ref": "#/$defs/detector"},
+        "madge": {"$ref": "#/$defs/detector"},
+        "eslint": {"$ref": "#/$defs/eslint"},
+        "tsc": {"$ref": "#/$defs/detector"},
+        "tests": {"$ref": "#/$defs/tests"}
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min_confidence_to_emit", "blast_radius_decision_threshold"],
+      "properties": {
+        "min_confidence_to_emit": {"type": "number", "minimum": 0, "maximum": 1},
+        "blast_radius_decision_threshold": {"type": "integer", "minimum": 0}
+      }
+    },
+    "path_classes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["excluded_globs"],
+      "properties": {"excluded_globs": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}}
+    }
+  },
+  "$defs": {
+    "detector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled"],
+      "properties": {"enabled": {"type": "boolean"}}
+    },
+    "jscpd": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "min_lines": {"type": "integer", "minimum": 1},
+        "min_tokens": {"type": "integer", "minimum": 1}
+      }
+    },
+    "eslint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "complexity": {"type": "integer", "minimum": 1},
+        "max_lines": {"type": "integer", "minimum": 1}
+      }
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "command"],
+      "properties": {
+        "enabled": {"const": false},
+        "command": {"type": "null"}
+      }
+    }
+  }
+}

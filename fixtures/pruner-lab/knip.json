@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["src/index.ts!"],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    ".augment/**/*.{ts,tsx}",
+    ".dmaic/**/*.mjs",
+    "config/**/*.{ts,tsx,mjs}",
+    "skills/**/*.mjs"
+  ],
+  "ignoreIssues": {
+    "src/components/MegaDashboard.tsx": ["exports"],
+    "src/lib/finance-round.ts": ["exports"],
+    "src/lib/quote-round.ts": ["exports"]
+  },
+  "ignoreBinaries": ["jscpd", "madge", "knip"]
+}

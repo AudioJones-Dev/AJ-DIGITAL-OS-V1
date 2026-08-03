@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ajdigital.local/schemas/repo-pruner-registry-extension.v1.json",
+  "type": "object",
+  "required": ["version", "components"],
+  "properties": {
+    "version": {"const": 1},
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "paths", "status", "owner"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "paths": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "test_paths": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "status": {"enum": ["Canonical", "Ready for Sprint", "Experimental", "Needs Refactor", "Blocked", "Deprecated", "Delete Candidate"]},
+          "owner": {"type": "string", "minLength": 1},
+          "protected": {"type": "boolean", "default": false},
+          "protection_reason": {"type": "string", "minLength": 1}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"protected": {"const": true}}, "required": ["protected"]},
+            "then": {"required": ["protection_reason"]}
+          }
+        ]
+      }
+    }
+  }
+}
