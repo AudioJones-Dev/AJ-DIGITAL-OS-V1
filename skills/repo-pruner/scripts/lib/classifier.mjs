@@ -200,6 +200,7 @@ export async function classifyNormalizedRecords({ repoRoot, records, config, reg
     const rules = [...locationRules];
     if (excluded) {
       classification = "excluded";
+      if (rules.length === 0) rules.push("non-code-location-exclusion");
       if (mixedProtection) rules.push("mixed-location-most-conservative");
     } else if (ambiguous) {
       classification = "needs-decision";

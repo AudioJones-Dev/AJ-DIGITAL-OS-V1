@@ -100,6 +100,37 @@ try {
   assert.equal(financeFinding?.classification, "needs-decision", "financial dead code must never be actionable");
   assert.equal(financeFinding?.blast_radius.public_api_touched, true, "financial dead code must mark the protected surface");
 
+  const nonCodeExclusionProbe = await classifyNormalizedRecords({
+    repoRoot: fixture,
+    records: [{
+      id: "dup-non-code-exclusion-probe",
+      detector: "jscpd",
+      kind: "duplication",
+      primary_path: "package-lock.json",
+      locations: [
+        { path: "package-lock.json", line_start: 9, line_end: 31 },
+        { path: "package.json", line_start: 11, line_end: 33 },
+      ],
+      evidence: { duplicated_lines: 23, duplicated_tokens: 80, format: "json" },
+      verify_cmd: "probe",
+    }],
+    config,
+    registryResult,
+    dependencyGraph: {},
+  });
+  const nonCodeExclusionFinding = nonCodeExclusionProbe.findings.find((finding) => finding.id === "dup-non-code-exclusion-probe");
+  assert.equal(nonCodeExclusionFinding?.classification, "excluded", "a non-code location must exclude the whole finding");
+  assert.deepEqual(nonCodeExclusionFinding?.locations.map(({ path, path_class, protected: isProtected }) => ({
+    path,
+    path_class,
+    protected: isProtected,
+  })), [
+    { path: "package-lock.json", path_class: "config", protected: false },
+    { path: "package.json", path_class: "code", protected: false },
+  ], "the regression probe must retain the original mixed config/code path classification");
+  assert.deepEqual(nonCodeExclusionFinding?.rules_applied, ["non-code-location-exclusion"], "a non-code exclusion must name its deterministic rule");
+  assert.deepEqual(validateFinding(nonCodeExclusionFinding), [], "a non-code exclusion must satisfy the finding invariant");
+
   const classified = await classifyNormalizedRecords({
     repoRoot: fixture,
     records: adapterResult.records,
