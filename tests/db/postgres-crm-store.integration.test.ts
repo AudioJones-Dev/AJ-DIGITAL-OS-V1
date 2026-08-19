@@ -161,7 +161,14 @@ function opportunity(tenantId: string, opportunityId = "p2c-opportunity-shared")
   };
 }
 
-runIfDatabase("PostgresCrmStore live DB parity", () => {
+// These suites run migrations, seeds and RLS round-trips against a real
+// Postgres, and the crm-rls-isolation job runs both files in parallel against
+// a single server. Vitest's default 5s per-test timeout is far too tight for
+// that under contention: the hooks already carry explicit 60s/30s timeouts,
+// but the tests were left at the default and timed out intermittently.
+const DB_TEST_TIMEOUT_MS = 30_000;
+
+runIfDatabase("PostgresCrmStore live DB parity", { timeout: DB_TEST_TIMEOUT_MS }, () => {
   let isolated: IsolatedDatabase;
   let pool: Pool;
   let store: PostgresCrmStore;

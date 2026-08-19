@@ -177,7 +177,14 @@ async function visibleTenants(client: CrmTenantDbClient, tableName: string): Pro
   return result.rows.map((row) => row.tenant_id);
 }
 
-runIfDatabase("CRM live RLS isolation", () => {
+// These suites run migrations, seeds and RLS round-trips against a real
+// Postgres, and the crm-rls-isolation job runs both files in parallel against
+// a single server. Vitest's default 5s per-test timeout is far too tight for
+// that under contention: the hooks already carry explicit 60s/30s timeouts,
+// but the tests were left at the default and timed out intermittently.
+const DB_TEST_TIMEOUT_MS = 30_000;
+
+runIfDatabase("CRM live RLS isolation", { timeout: DB_TEST_TIMEOUT_MS }, () => {
   let isolated: IsolatedDatabase;
   let appClient: Client;
   let tenantDb: PgTenantClient;
