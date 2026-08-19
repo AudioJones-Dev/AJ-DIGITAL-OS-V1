@@ -100,3 +100,5 @@ Do not claim production readiness from local checks alone.
 ## Completion Standard
 
 Work is not done until the repo state, changed files, validation outcome, and next operator decision are clear enough for another agent or human to continue safely.
+
+## Imported Claude Cowork project instructions

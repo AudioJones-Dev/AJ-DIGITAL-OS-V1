@@ -1,0 +1,60 @@
+[
+  {
+    "groupId": "01ksv4uv1kr2knl",
+    "primaryAddress": "contact@tyronenelms.com",
+    "name": "Tyrone Nelms - Inquiries",
+    "aliases": [
+      "hello@tyronenelms.com",
+      "inquiries@tyronenelms.com",
+      "media@tyronenelms.com"
+    ],
+    "members": [
+      {
+        "role": "OWNER",
+        "email": "audiojones@ajdigital.app",
+        "memberId": "118184388204138434849",
+        "status": "ACTIVE"
+      }
+    ],
+    "settings": {
+      "allowExternalMembers": "false",
+      "showInGroupDirectory": "false",
+      "enableCollaborativeInbox": "false",
+      "messageModerationLevel": "MODERATE_NONE",
+      "spamModerationLevel": "MODERATE",
+      "whoCanDiscoverGroup": "ALL_MEMBERS_CAN_DISCOVER",
+      "whoCanViewMembership": "ALL_MANAGERS_CAN_VIEW",
+      "whoCanJoin": "INVITED_CAN_JOIN",
+      "whoCanViewGroup": "ALL_MEMBERS_CAN_VIEW",
+      "whoCanPostMessage": "ANYONE_CAN_POST"
+    }
+  },
+  {
+    "groupId": "02et92p012o3rwv",
+    "primaryAddress": "dmarc@tyronenelms.com",
+    "name": "tyronenelms.com - DMARC reports",
+    "aliases": [
+      null
+    ],
+    "members": [
+      {
+        "role": "OWNER",
+        "email": "audiojones@ajdigital.app",
+        "memberId": "118184388204138434849",
+        "status": "ACTIVE"
+      }
+    ],
+    "settings": {
+      "allowExternalMembers": "false",
+      "showInGroupDirectory": "false",
+      "enableCollaborativeInbox": "false",
+      "messageModerationLevel": "MODERATE_NONE",
+      "spamModerationLevel": "ALLOW",
+      "whoCanDiscoverGroup": "ALL_MEMBERS_CAN_DISCOVER",
+      "whoCanViewMembership": "ALL_MANAGERS_CAN_VIEW",
+      "whoCanJoin": "INVITED_CAN_JOIN",
+      "whoCanViewGroup": "ALL_MEMBERS_CAN_VIEW",
+      "whoCanPostMessage": "ANYONE_CAN_POST"
+    }
+  }
+]

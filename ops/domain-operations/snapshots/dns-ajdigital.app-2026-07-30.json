@@ -1,0 +1,254 @@
+[
+  {
+    "id": "c37a0a02dbd40742b1805ce84b68d1c2",
+    "type": "A",
+    "name": "clientportal.ajdigital.app",
+    "content": "76.76.21.21",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "d88d8af22d3890f075e271a0580a581e",
+    "type": "A",
+    "name": "dash.ajdigital.app",
+    "content": "76.76.21.21",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "fb8a09edffd27dce4e7e8f791e5db379",
+    "type": "A",
+    "name": "responseos.ajdigital.app",
+    "content": "76.76.21.21",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "08178f5f6c285a0c6c77619b58383254",
+    "type": "CNAME",
+    "name": "accounts.clientportal.ajdigital.app",
+    "content": "accounts.clerk.services",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "6a932660d70c1e86119f472ca2de665f",
+    "type": "CNAME",
+    "name": "ajos-engine.ajdigital.app",
+    "content": "46a434a9-2c1a-4d75-bf10-0c8e9da3ffc8.cfargotunnel.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "467c99e38157ebb06cddcd82b8792593",
+    "type": "CNAME",
+    "name": "audiojones-engine.ajdigital.app",
+    "content": "46a434a9-2c1a-4d75-bf10-0c8e9da3ffc8.cfargotunnel.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "bd861f33b148a875cd3ce5967879af2c",
+    "type": "CNAME",
+    "name": "cgpei5lgiam5.ajdigital.app",
+    "content": "gv-n36c7wc7c2j7fe.dv.googlehosted.com",
+    "ttl": 3600,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "66dd4490fbb65360dbe2fa7b64fe5447",
+    "type": "CNAME",
+    "name": "chat.ajdigital.app",
+    "content": "46a434a9-2c1a-4d75-bf10-0c8e9da3ffc8.cfargotunnel.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "ecb54cd9cd987951510010434ec2718b",
+    "type": "CNAME",
+    "name": "clerk.clientportal.ajdigital.app",
+    "content": "frontend-api.clerk.services",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "65f3b4f7da7fd1c0e0621a6caf7603d0",
+    "type": "CNAME",
+    "name": "clk2._domainkey.clientportal.ajdigital.app",
+    "content": "dkim2.ggqlv74anzqn.clerk.services",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "5e23dc22af66d8181d2c9ada05ff3eef",
+    "type": "CNAME",
+    "name": "clk._domainkey.clientportal.ajdigital.app",
+    "content": "dkim1.ggqlv74anzqn.clerk.services",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "bf4671e8f6bda534b4b21767e3b364f8",
+    "type": "CNAME",
+    "name": "clkmail.clientportal.ajdigital.app",
+    "content": "mail.ggqlv74anzqn.clerk.services",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "aaa8b166b74b4a180cebe93c3f0ca500",
+    "type": "CNAME",
+    "name": "dev.ajdigital.app",
+    "content": "custom-domains.chatgpt.site",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "956811e59b23c0d0e4e2ebf09a617849",
+    "type": "CNAME",
+    "name": "flows.ajdigital.app",
+    "content": "46a434a9-2c1a-4d75-bf10-0c8e9da3ffc8.cfargotunnel.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "509ad354a7fb2333f10856d6f84e8e36",
+    "type": "CNAME",
+    "name": "home.ajdigital.app",
+    "content": "46a434a9-2c1a-4d75-bf10-0c8e9da3ffc8.cfargotunnel.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "7702a8c8dc74d5c443c687702a1b4bff",
+    "type": "CNAME",
+    "name": "metrics.ajdigital.app",
+    "content": "46a434a9-2c1a-4d75-bf10-0c8e9da3ffc8.cfargotunnel.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "4a6bd674def62caa8893c12780fe8609",
+    "type": "CNAME",
+    "name": "podcast.ajdigital.app",
+    "content": "ajdigital-podcast-landing.pages.dev",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "b8068ab1af87c8d04b794a5787208867",
+    "type": "CNAME",
+    "name": "responseos-engine.ajdigital.app",
+    "content": "46a434a9-2c1a-4d75-bf10-0c8e9da3ffc8.cfargotunnel.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "adaea65cf77d873867f54ce3a66e41a2",
+    "type": "MX",
+    "name": "ajdigital.app",
+    "content": "aspmx.l.google.com",
+    "ttl": 3600,
+    "priority": 1,
+    "proxied": false
+  },
+  {
+    "id": "a067396041c13bce21b1423d76c4bcc3",
+    "type": "MX",
+    "name": "ajdigital.app",
+    "content": "alt1.aspmx.l.google.com",
+    "ttl": 3600,
+    "priority": 5,
+    "proxied": false
+  },
+  {
+    "id": "65c6ed365f4021cf5bb5e061b33da84f",
+    "type": "MX",
+    "name": "ajdigital.app",
+    "content": "alt4.aspmx.l.google.com",
+    "ttl": 3600,
+    "priority": 10,
+    "proxied": false
+  },
+  {
+    "id": "cc6237a7426c0cccafb1abdcfb00cf62",
+    "type": "MX",
+    "name": "ajdigital.app",
+    "content": "alt2.aspmx.l.google.com",
+    "ttl": 3600,
+    "priority": 5,
+    "proxied": false
+  },
+  {
+    "id": "a7f4f7991ce577c2155426f6701fa1a6",
+    "type": "MX",
+    "name": "ajdigital.app",
+    "content": "alt3.aspmx.l.google.com",
+    "ttl": 3600,
+    "priority": 10,
+    "proxied": false
+  },
+  {
+    "id": "e9b0bea695523c7acdf9c20fb2a23dae",
+    "type": "TXT",
+    "name": "a.ajdigital.app",
+    "content": "\"google-site-verification=L-eq9s7NBQgu5CpFwyPCeGUyXeWzRvY0UyaP0UWtmug\"",
+    "ttl": 3600,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "842a10ad518601a434d9ea88d1b537f3",
+    "type": "TXT",
+    "name": "ajdigital.app",
+    "content": "\"v=spf1 include:_spf.google.com ~all\"",
+    "ttl": 3600,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "64b8213dd01321ed1a7101a256652a7e",
+    "type": "TXT",
+    "name": "_cf-custom-hostname.dev.ajdigital.app",
+    "content": "617a9eac-17c4-4c70-9794-4569537238ac",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "8eac82442c8b921b1991c5ff88249403",
+    "type": "TXT",
+    "name": "google._domainkey.ajdigital.app",
+    "content": "\"v=DKIM1; k=rsa;\\010p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA9f7/jxRgeExKjhHttVU8OnXXyq64fsr0inMRfQ7j9OiiLN1qNZ+0fmyiq7w+7iDxVVgz7pe9ux1OBgY500jXpi/5NLw6/qsKuFro4odjTzgYM/bL6oHbOMFDeuwTvGvVUvwTyt9Xxw2umSTh71cFiJks6d/LAV9WBquZF4XLLWUCCpyx5OO+YiRLQmEcekDx/\" \"fzsJDe7CCV7YK3ypGdk1uxbwoOkXH9ZJxwgaxqr7UtlLvgKzc4fmi8bEoQ+Q1+pWS8B2HQqGcpQvKtSpKh7SFeMjwqh5ZqAmd4f/rmgC5S1TFZtQ/Q92mn0OJDkS9PnhHmZTMzpPe9D5apP9VsguwIDAQAB\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "e1b6b6f21461dbf747e922315728c1d7",
+    "type": "TXT",
+    "name": "_openai-site-verification.dev.ajdigital.app",
+    "content": "openai-site-verification=8ddw9XC6ebbcEuCfgvbSuUAH-GXJYizzJZW5vBi-tgU",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  }
+]

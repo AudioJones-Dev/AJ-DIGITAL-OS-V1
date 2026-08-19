@@ -1,0 +1,7 @@
+{
+  "note": "Tenant contains zero Groups. API returned no groups property.",
+  "captured": "2026-07-30",
+  "method": "directory.groups.list customer=my_customer",
+  "groupCount": 0,
+  "groups": []
+}
