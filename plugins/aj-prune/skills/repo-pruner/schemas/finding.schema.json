@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ajdigital.local/schemas/repo-pruner-finding.v1.json",
+  "title": "repo-pruner finding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "detector", "kind", "locations", "evidence", "blast_radius", "confidence", "classification", "current_component_status", "recommended_status", "rules_applied", "verify_cmd"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "detector": {"type": "string", "minLength": 1},
+    "kind": {"enum": ["duplication", "dead-code", "unused-dep", "cycle", "complexity", "oversized", "invalid-annotation"]},
+    "locations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "line_start", "line_end", "path_class", "component_id", "protected"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1, "pattern": "^(?![A-Za-z]:|/|.*(?:^|/)\\.\\.(?:/|$)).+$"},
+          "line_start": {"type": ["integer", "null"], "minimum": 1},
+          "line_end": {"type": ["integer", "null"], "minimum": 1},
+          "path_class": {"enum": ["code", "test", "doc", "prompt", "config", "generated"]},
+          "component_id": {"type": ["string", "null"]},
+          "protected": {"type": "boolean"}
+        }
+      }
+    },
+    "evidence": {"type": "object"},
+    "blast_radius": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files", "dependents", "public_api_touched"],
+      "properties": {
+        "files": {"type": "integer", "minimum": 1},
+        "dependents": {"type": "integer", "minimum": 0},
+        "public_api_touched": {"type": "boolean"}
+      }
+    },
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "classification": {"enum": ["actionable", "needs-decision", "probable-false-positive", "intentional", "excluded"]},
+    "current_component_status": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/status"}]},
+    "recommended_status": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/status"}]},
+    "rules_applied": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "verify_cmd": {"type": "string", "minLength": 1},
+    "analysis_question": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "status": {"enum": ["Canonical", "Ready for Sprint", "Experimental", "Needs Refactor", "Blocked", "Deprecated", "Delete Candidate"]}
+  }
+}
