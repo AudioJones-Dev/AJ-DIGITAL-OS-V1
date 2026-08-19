@@ -85,6 +85,67 @@ Require explicit human approval before:
 
 Use the operator approval word: `proceed`.
 
+## Code Pruning Policy
+
+Code pruning is a governed workflow. Optimize for safe, small, reversible changes rather than maximum deletion count.
+
+A candidate is not safe to remove solely because:
+
+- Search finds no direct references.
+- Tests do not execute it.
+- Coverage does not observe it.
+- A linter or static-analysis tool reports it unused.
+- It appears old or has low Git activity.
+
+Before recommending deletion, inspect applicable indirect entry points:
+
+- HTTP routes, RPC handlers, GraphQL resolvers, webhooks, CLI commands.
+- Background jobs, cron tasks, queues, workers, event consumers.
+- Framework conventions, decorators, reflection, dependency injection.
+- Dynamic imports, plugin registries, file discovery, string-based dispatch.
+- Environment variables, configuration, feature flags, remote config.
+- Public APIs, package exports, SDK surfaces, integration contracts.
+- Customer-specific or tenant-specific configuration.
+
+Classify every pruning candidate:
+
+- `HIGH`: private symbol or file with no direct or indirect reachability and supporting compiler/linter/static evidence.
+- `MEDIUM`: internal module/export with no direct references but plausible indirect invocation.
+- `LOW`: public API, route, webhook, job, callback, plugin, dynamic code, feature-flagged path, migration, integration adapter, or customer-facing contract.
+
+Never automatically delete `MEDIUM` or `LOW` confidence candidates.
+
+Required pruning pipeline:
+
+1. `prune-inventory` — identify candidates; read/report only.
+2. `prune-reachability` — trace direct and indirect reachability; read/report only.
+3. `prune-coverage` — correlate candidates with tests, coverage, runtime evidence, docs, config, and history; read/report only.
+4. `prune-plan` — create ranked, coherent deletion batches; read/report only.
+5. `prune-apply` — apply exactly one explicitly approved batch; write-capable and manual-only.
+6. `prune-verify` — independently validate diff, lint, types, tests, build, and residual references; read/test/report only.
+
+Pruning constraints:
+
+- Do not add dependencies merely to perform pruning without approval.
+- Do not alter public APIs, database migrations, auth, billing, webhooks, deployment behavior, tenant boundaries, or external integration contracts during cleanup without explicit approval.
+- Do not mix feature work or opportunistic refactors into pruning changes.
+- Prefer deleting confirmed dead code over commenting it out.
+- Preserve Git history; do not rewrite commits.
+- Stop when dynamic reachability cannot be established safely.
+- A lack of coverage or runtime observation is supporting evidence only, never proof of dead code.
+- `prune-apply` requires an explicitly approved batch from the current pruning plan; do not infer approval from a general cleanup request.
+- That approval must use the operator approval word above: the literal token `proceed <Batch ID>`. `prune-plan` must request it verbatim and `prune-apply` must verify it before editing. Approval phrased any other way is not authorization.
+
+Every pruning report must include:
+
+1. Candidate or deleted item.
+2. Confidence: `HIGH`, `MEDIUM`, or `LOW`.
+3. Static and runtime evidence.
+4. Dynamic-reachability checks performed.
+5. Files changed, if any.
+6. Validation commands and results.
+7. Remaining risk and rollback path.
+
 ## Validation Reporting
 
 Every final response after file changes must include:
