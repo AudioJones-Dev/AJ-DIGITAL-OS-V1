@@ -1,0 +1,164 @@
+[
+  {
+    "id": "b8ff3187f6c1ed1e96b0d5a6d556896d",
+    "type": "A",
+    "name": "audiojones.com",
+    "content": "76.76.21.21",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "fe93c05bd5175a8bd9c00cd9bab14d35",
+    "type": "CNAME",
+    "name": "k2._domainkey.audiojones.com",
+    "content": "dkim2.mcsv.net",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "3f4de2a42bddfd93a5c50a73c60e228a",
+    "type": "CNAME",
+    "name": "k3._domainkey.audiojones.com",
+    "content": "dkim3.mcsv.net",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "6514104d7bc177f69af9514a4ad34bab",
+    "type": "CNAME",
+    "name": "wihubdh6u23w.audiojones.com",
+    "content": "gv-ivm23m6vck7njc.dv.googlehosted.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "07669b279b71637aaed3b1fba7ff4f1c",
+    "type": "CNAME",
+    "name": "www.audiojones.com",
+    "content": "cname.vercel-dns.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "db06b22f910fa97ae092eebcacbd0ca2",
+    "type": "MX",
+    "name": "audiojones.com",
+    "content": "alt2.aspmx.l.google.com",
+    "ttl": 1,
+    "priority": 5,
+    "proxied": false
+  },
+  {
+    "id": "2ffcf35115f73603e43d40611937ac52",
+    "type": "MX",
+    "name": "audiojones.com",
+    "content": "alt1.aspmx.l.google.com",
+    "ttl": 1,
+    "priority": 5,
+    "proxied": false
+  },
+  {
+    "id": "6d066f4e9ca3d76a0dfe91074093c598",
+    "type": "MX",
+    "name": "audiojones.com",
+    "content": "alt4.aspmx.l.google.com",
+    "ttl": 1,
+    "priority": 10,
+    "proxied": false
+  },
+  {
+    "id": "f55387ab16059e64f5a5df5137b43e8e",
+    "type": "MX",
+    "name": "audiojones.com",
+    "content": "alt3.aspmx.l.google.com",
+    "ttl": 1,
+    "priority": 10,
+    "proxied": false
+  },
+  {
+    "id": "a59f55471f77775bbb8b652c416496c6",
+    "type": "MX",
+    "name": "audiojones.com",
+    "content": "aspmx.l.google.com",
+    "ttl": 1,
+    "priority": 1,
+    "proxied": false
+  },
+  {
+    "id": "c3f9013888c14a3f84976f92ad7344ae",
+    "type": "TXT",
+    "name": "_acme-challenge.audiojones.com",
+    "content": "\"yJDoU31nHzpD7kk7wWok2IW3tKKoi7kzuoZmcd4tW_M\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "c2cfe7fc601a29c9a655686a0e405906",
+    "type": "TXT",
+    "name": "audiojones.com",
+    "content": "\"canva-site-verification=Y6mZvGBh-w3r-mjjC2YJOg\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "db47e9a9a7534338d96fc309be4181e5",
+    "type": "TXT",
+    "name": "audiojones.com",
+    "content": "\"google-site-verification=CJa2l0p37QprDyel-zbuektw7icydjImzANTaRdZ0d0\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "0294f37e7b922a880bdf21f5cac20b72",
+    "type": "TXT",
+    "name": "audiojones.com",
+    "content": "\"v=spf1 include:_spf.google.com include:_spf.mlsend.com ~all\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "258c5d6cadf946d1a604fa3d88c740db",
+    "type": "TXT",
+    "name": "audiojones.com",
+    "content": "\"hosting-site=aj-universe-255f5\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "45901acdc1ec6ba97545518539a7f0ba",
+    "type": "TXT",
+    "name": "_dmarc.audiojones.com",
+    "content": "\"v=DMARC1; p=quarantine; rua=mailto:you@audiojones.com;\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "4f123939b8826cb39e125f7ec6d3908c",
+    "type": "TXT",
+    "name": "google._domainkey.audiojones.com",
+    "content": "\"v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu6Elqethvyz/XBmLh6weGUnyvN+OOHGstuoLaWn7kX6WQTPS4YWSj60Wg+7va9bgyJJc2Ch54s131zFC8vHMfeYrZYb+iJobeTfbagIAXKzXyKxoIJP43vF5nduh3+/aep3e5Rorrv6b+cS3o1LYOpr+8x4763dWSPxw51oOWoRatk89iDtMDkoPq4FDNvVHt8P\" \"HuikGQy9OsDZ2ZFf77cxeWVuReEl9NfvL8UIUV8yOySnM7WLdqzbT08KXc/gnuB+4u+hibwZVeobZBJlzggg7/UmLvpbVZ3LAY3DHpP+GAfq5le2M5GgAzRt7prcRu4a9RnR5CJW1428rvE9kXwIDAQAB\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "0db436e7cf9562effef3a65b71105602",
+    "type": "TXT",
+    "name": "google._domainkey.audiojones.com",
+    "content": "\"v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxBRD46hZgPtRMmkHfubgF7f8jKbPToVpf097/Irx95Q58wBvvM/0vk6OQ2MDzn2AnHlm438FiwfifR9aqMsvhDcZY7EStDvVlxaNBh+RdJHROsGtiVsGC+PxvQqNM1ke6sZAnnaLXWirj5KChO6i3GLKvUY1+r6fzPrmCFF4Z0tiG0/z2BwAjuEsEhitmWjt7\" \"QHBnv6HDsdJwRM/wuZvtlZgUWJJViEQd+9o5bkF8IfktawUOcnzn5c3BdXeTyZ39mWYFA6+JahCKFDx0n3ZHc6rLSb+ao8oKNwSv8jTg9hH7fOtyWZriaaUiewQ4Dw/ydXER6Qpkp4uTfOLP6CJYwIDAQAB\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  }
+]

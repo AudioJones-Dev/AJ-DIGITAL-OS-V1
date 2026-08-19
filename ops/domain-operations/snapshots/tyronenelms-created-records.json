@@ -1,0 +1,26 @@
+[
+  {
+    "id": "0b7bf9856736f858a26487bea56f97f7",
+    "type": "MX",
+    "name": "tyronenelms.com",
+    "content": "smtp.google.com",
+    "priority": 1,
+    "ttl": 3600
+  },
+  {
+    "id": "35c64df290bdf8a0cab4d21e1ee366f6",
+    "type": "TXT",
+    "name": "tyronenelms.com",
+    "content": "v=spf1 include:_spf.google.com ~all",
+    "priority": null,
+    "ttl": 3600
+  },
+  {
+    "id": "0b4fcbff5036a8919a34617dd1aad597",
+    "type": "TXT",
+    "name": "tyronenelms.com",
+    "content": "google-site-verification=ERtQVkqsgpGwid89wrV7hJOSECII5VVWu-c6jqArWgA",
+    "priority": null,
+    "ttl": 3600
+  }
+]

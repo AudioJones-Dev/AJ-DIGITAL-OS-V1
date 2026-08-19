@@ -1,0 +1,77 @@
+# AJ Digital — Domain Operations declarative config
+# Status: PROPOSED (REV 2) — not applied. Blocked on gcloud reauth + Google revalidation.
+# Live state captured 2026-07-30. See ../plans/tyronenelms.com-dry-run.md
+
+domain: tyronenelms.com
+
+registrar:
+  provider: cloudflare
+  registered: 2026-07-19
+  expires: 2027-07-19
+  registrar_lock: true            # RDAP: "client transfer prohibited" — VERIFIED
+  auto_renew: UNVERIFIED          # token lacks Registrar:Read (403/10000) — read-only check pending
+
+dns:
+  provider: cloudflare
+  account_id: aed31038e91e296cb7b644ec2afc68eb
+  zone_id: 119fbdb4d2a04cbaeaa149596dadefdf
+  nameservers: [desiree.ns.cloudflare.com, kolton.ns.cloudflare.com]
+  manage_dns: true
+  records_before: 0               # greenfield — nothing to preserve or reconcile
+  cloudflare_email_routing: disabled   # must stay disabled; conflicts with Google MX
+
+workspace:
+  mode: secondary_domain          # human-approved; supersedes handoff `domain_alias`
+  parent_domain: ajdigital.app
+  destination_user: audiojones@ajdigital.app
+  license_impact: none            # aliases are free; only seats bill
+
+email:
+  mx:
+    mode: greenfield_single       # REV 2 — supersedes the 5-record legacy set
+    records:
+      - { priority: 1, host: smtp.google.com, ttl: 3600 }
+  spf: "v=spf1 include:_spf.google.com ~all"
+  dkim:
+    unique_key_required: true     # NEVER copy the ajdigital.app key
+    key_size: 2048
+    selector: google
+    generation: admin_console     # no public Google API exists for Workspace DKIM
+    value: GENERATED_AT_APPLY
+  dmarc:
+    initial_policy: none
+    record: "v=DMARC1; p=none; rua=mailto:dmarc@tyronenelms.com; fo=1; adkim=r; aspf=r"
+    rua_same_domain: true         # avoids RFC 7489 cross-domain authorization record
+    tighten_after_days: 30        # none -> quarantine -> reject
+  site_verification:
+    method: DNS_TXT
+    value: GENERATED_AT_APPLY
+  aliases:
+    - { address: tyrone@tyronenelms.com, target: audiojones@ajdigital.app, phase: 1 }
+    - { address: dmarc@tyronenelms.com,  target: audiojones@ajdigital.app, phase: 1 }
+    - { address: hello@tyronenelms.com,  target: audiojones@ajdigital.app, phase: 2 }
+    - { address: contact@tyronenelms.com, target: audiojones@ajdigital.app, phase: 2 }
+
+change_summary:
+  dns_add: 5                      # 3 specified now + 2 generated at apply
+  dns_modify: 0
+  dns_delete: 0
+  workspace_domains_add: 1
+  workspace_aliases_add: 2        # +2 optional in phase 2
+
+website:
+  provider: none                  # no site today
+  out_of_scope_this_change: true
+  # future: apex A 76.76.21.21 / www CNAME cname.vercel-dns.com
+
+seo:
+  search_console: false           # deferred — no site to verify yet
+  analytics: false
+  pagespeed_monitoring: false
+
+governance:
+  requires_human_approval: [workspace_domain_add, workspace_alias_create, dns_write]
+  requires_human_execution: [dkim_key_generation]   # Admin console only
+  blocked_on: [gcloud_reauth, google_state_revalidation]
+  before_snapshot: ../snapshots/tyronenelms.com-BEFORE-2026-07-30.json
+  rollback_plan: ../plans/tyronenelms.com-dry-run.md#4-exact-rollback-plan
