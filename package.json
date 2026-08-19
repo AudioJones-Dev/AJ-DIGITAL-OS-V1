@@ -35,7 +35,9 @@
     "test": "vitest run",
     "test:crm-rls": "vitest run tests/db/crm-rls.integration.test.ts tests/db/postgres-crm-store.integration.test.ts",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "eval:golden": "npm run cli -- eval-run --golden --engine bel-dag-runtime --json",
+    "eval:stats": "npm run cli -- eval-stats --json"
   },
   "dependencies": {
     "axios": "^1.16.0",

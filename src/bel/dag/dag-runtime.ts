@@ -22,6 +22,7 @@ import {
   saveDagRun,
   saveNodeOutput,
 } from "./dag-store.js";
+import { emitRunVerdict } from "../../evaluation/eval-emit.js";
 import type {
   BelDagAuditEvent,
   BelDagNode,
@@ -274,6 +275,8 @@ export function completeNode(
 
   if (next.status === "completed") emitDagRunCompleted(next);
   if (next.status === "failed") emitDagRunFailed(next);
+  // L15 Evaluate — sibling verdict emit at the run-completion seam (never throws).
+  if (next.status === "completed" || next.status === "failed") emitRunVerdict(next);
 
   return next;
 }
@@ -289,6 +292,8 @@ export function failNode(
   });
   emitDagNodeFailed(next, node);
   if (next.status === "failed") emitDagRunFailed(next);
+  // L15 Evaluate — sibling verdict emit at the run-completion seam (never throws).
+  if (next.status === "failed") emitRunVerdict(next);
   return next;
 }
 
@@ -513,6 +518,8 @@ export async function executeReadyNodes(state: BelDagRunState): Promise<BelDagRu
 
   if (state.status === "completed") emitDagRunCompleted(state);
   if (state.status === "failed") emitDagRunFailed(state);
+  // L15 Evaluate — sibling verdict emit at the run-completion seam (never throws).
+  if (state.status === "completed" || state.status === "failed") emitRunVerdict(state);
 
   return state;
 }

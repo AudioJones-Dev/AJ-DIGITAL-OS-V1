@@ -423,6 +423,13 @@ export { DagOutputsCommand } from "./dag-outputs.command.js";
 export type { DagOutputsCommandInput, DagOutputsCommandResult } from "./dag-outputs.command.js";
 
 
+export { EvalRunCommand } from "./eval-run.command.js";
+export type { EvalRunCommandInput, EvalRunCommandResult } from "./eval-run.command.js";
+
+export { EvalStatsCommand } from "./eval-stats.command.js";
+export type { EvalStatsCommandInput, EvalStatsCommandResult } from "./eval-stats.command.js";
+
+
 export {
   ConnectorListCommand,
   ConnectorEnableCommand,
