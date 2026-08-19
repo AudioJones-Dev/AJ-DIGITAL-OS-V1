@@ -1,0 +1,38 @@
+{
+  "name": "@aj-digital-os/repo-pruner-skill",
+  "version": "0.4.1-p4",
+  "private": true,
+  "description": "Deterministic P4 evidence emission for the detection-only repo-pruner skill.",
+  "type": "module",
+  "engines": {
+    "node": "24.18.0",
+    "npm": "11.16.0"
+  },
+  "packageManager": "npm@11.16.0",
+  "scripts": {
+    "self-test": "node scripts/self-test.mjs",
+    "test:p2": "node ../../tests/repo-pruner/p2.test.mjs",
+    "test:p3": "node ../../tests/repo-pruner/p3.test.mjs",
+    "test:p4": "node ../../tests/repo-pruner/p4.test.mjs",
+    "validate:syntax": "node --check scripts/run-pruner.mjs && node --check scripts/run-adapters.mjs && node --check scripts/reverify.mjs && node --check scripts/self-test.mjs && node --check scripts/lib/classifier.mjs && node --check scripts/lib/annotations.mjs && node --check scripts/lib/paths.mjs && node --check scripts/lib/emitters.mjs && node --check scripts/lib/detector-runtime.mjs && node --check scripts/lib/adapters/index.mjs && node --check scripts/lib/adapters/knip.mjs && node --check scripts/lib/adapters/tsc.mjs && node --check ../../scripts/sync-agent-skill.mjs && node --check ../../tests/repo-pruner/parity-harness.mjs"
+  },
+  "repoPruner": {
+    "phase": "P4",
+    "specSha256": "F8F54810E561B09C3251FEFB77A62D679D93B633090969D18D7100A88D4BF09B",
+    "detectorsImplemented": true,
+    "classifierImplemented": true,
+    "liveRepositoryRunAuthorized": true,
+    "parityCertified": true
+  },
+  "dependencies": {
+    "@typescript-eslint/parser": "8.65.0",
+    "eslint": "10.8.0",
+    "eslint-plugin-sonarjs": "4.2.0",
+    "jscpd": "5.0.14",
+    "knip": "6.31.0",
+    "madge": "8.0.0",
+    "minimatch": "10.2.6",
+    "typescript": "5.9.3",
+    "yaml": "2.9.0"
+  }
+}

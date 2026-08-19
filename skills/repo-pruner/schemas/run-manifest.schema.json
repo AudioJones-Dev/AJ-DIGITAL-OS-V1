@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ajdigital.local/schemas/repo-pruner-run-manifest.v1.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "spec_sha256", "package_phase", "outcome", "reason", "scope", "detector_execution_started", "actionable_findings_emitted", "runtime"],
+  "properties": {
+    "version": {"const": 1},
+    "spec_sha256": {"type": "string", "pattern": "^[A-F0-9]{64}$"},
+    "package_phase": {"const": "P4"},
+    "outcome": {"enum": ["blocked", "incomplete", "complete", "invalid"]},
+    "reason": {"type": "string", "minLength": 1},
+    "scope": {"enum": ["portfolio", "component"]},
+    "detector_execution_started": {"type": "boolean"},
+    "actionable_findings_emitted": {"type": "integer", "minimum": 0},
+    "runtime": {
+      "type": "object",
+      "required": ["node", "platform", "arch", "certification_eligible"],
+      "properties": {
+        "node": {"type": "string"},
+        "platform": {"type": "string"},
+        "arch": {"type": "string"},
+        "certification_eligible": {"type": "boolean"}
+      }
+    }
+  }
+}
