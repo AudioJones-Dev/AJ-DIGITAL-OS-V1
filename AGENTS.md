@@ -134,6 +134,7 @@ Pruning constraints:
 - Stop when dynamic reachability cannot be established safely.
 - A lack of coverage or runtime observation is supporting evidence only, never proof of dead code.
 - `prune-apply` requires an explicitly approved batch from the current pruning plan; do not infer approval from a general cleanup request.
+- That approval must use the operator approval word above: the literal token `proceed <Batch ID>`. `prune-plan` must request it verbatim and `prune-apply` must verify it before editing. Approval phrased any other way is not authorization.
 
 Every pruning report must include:
 
