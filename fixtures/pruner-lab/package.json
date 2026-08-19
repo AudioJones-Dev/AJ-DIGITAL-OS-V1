@@ -1,0 +1,26 @@
+{
+  "name": "pruner-lab",
+  "version": "0.1.0-p0",
+  "private": true,
+  "description": "P0 fixture contract for repo-pruner. No detector dependencies are installed in P0.",
+  "type": "module",
+  "engines": {
+    "node": "24.18.0",
+    "npm": "11.16.0"
+  },
+  "packageManager": "npm@11.16.0",
+  "dependencies": {
+    "fixture-unused-dependency": "file:vendor/fixture-unused-dependency"
+  },
+  "scripts": {
+    "test": "node scripts/smoke-test.mjs",
+    "fixture:snapshot": "node scripts/snapshot-tree.mjs --write .pruner/before-snapshot.json",
+    "fixture:check-golden": "node scripts/check-expected.mjs --golden-only --findings reference/golden-findings.jsonl",
+    "fixture:check-run": "node scripts/check-expected.mjs --findings .pruner/findings.jsonl --before .pruner/before-snapshot.json"
+  },
+  "repoPrunerFixture": {
+    "phase": "P0",
+    "specSha256": "F8F54810E561B09C3251FEFB77A62D679D93B633090969D18D7100A88D4BF09B",
+    "detectorDependenciesAuthorized": false
+  }
+}
