@@ -45,6 +45,13 @@ For each batch provide:
 9. Diff outline.
 10. Dependencies or required merge order.
 
-End with the exact approval request: `Awaiting explicit approval to apply <Batch ID>.`
+End with the exact approval request:
+
+```text
+Awaiting explicit approval to apply <Batch ID>.
+Reply exactly: proceed <Batch ID>
+```
+
+Approval phrased any other way (for example "approve <Batch ID>" or "looks good") is not authorization; `prune-apply` must refuse it.
 
 Do not make edits.

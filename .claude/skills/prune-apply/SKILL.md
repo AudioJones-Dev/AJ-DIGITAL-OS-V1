@@ -21,7 +21,7 @@ Use only when the operator explicitly invokes `/prune-apply` and identifies an a
 Proceed only when all are true:
 
 1. The batch exists in the current pruning plan.
-2. The operator explicitly approved that exact batch.
+2. The operator approved that exact batch with the literal token `proceed <Batch ID>`, the operator approval word defined in root `AGENTS.md`. Approval phrased any other way is not authorization.
 3. The working tree state is understood.
 4. Unrelated changes can be preserved without interference.
 
@@ -40,7 +40,7 @@ If any precondition fails, stop without editing.
 
 # Safety gates
 
-- Never act on an unnumbered or ambiguous approval.
+- Never act on an unnumbered or ambiguous approval, or on any approval that omits the literal `proceed` token.
 - Never expand the batch to fix unrelated failures.
 - Do not touch protected paths or gated behavior outside the approved plan.
 - Do not merge, rebase, push, deploy, release, or rewrite history.
