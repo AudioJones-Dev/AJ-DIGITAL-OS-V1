@@ -14,7 +14,9 @@ Apply in this order and stop when a terminal rule wins:
 4. Assign every location one class: `code`, `test`, `doc`, `prompt`, `config`,
    or `generated`.
 5. If any location is protected, excluded, or outside `code|test`, classify the
-   entire finding `excluded`.
+   entire finding `excluded`. When a non-code location is the only exclusion
+   reason, record `non-code-location-exclusion` so every emitted finding names
+   at least one deterministic rule.
 6. Apply never-touch domain rules. These produce `needs-decision` and set
    `public_api_touched: true` unless exclusion already won.
 7. Validate `@pruner-ignore`. Bind it to the next parsed declaration or statement;

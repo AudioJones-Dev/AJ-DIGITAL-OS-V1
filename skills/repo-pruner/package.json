@@ -1,6 +1,6 @@
 {
   "name": "@aj-digital-os/repo-pruner-skill",
-  "version": "0.4.1-p4",
+  "version": "0.4.2-p4",
   "private": true,
   "description": "Deterministic P4 evidence emission for the detection-only repo-pruner skill.",
   "type": "module",
