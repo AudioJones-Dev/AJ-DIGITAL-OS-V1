@@ -64,5 +64,23 @@ afterAll(() => {
     delete process.env.AJ_AUDIT_STORE_PATH;
   }
 
-  rmSync(TEST_RUNTIME_DIR, { recursive: true, force: true });
+  // rmSync(recursive) is not atomic: it walks the tree, then rmdir()s the root.
+  // Anything landing in between — an audit-log or approvals append that outlives
+  // the test which triggered it — recreates a file inside the emptied directory,
+  // and the final rmdir() fails with ENOTEMPTY. `force` only suppresses ENOENT.
+  // `maxRetries` is the documented remedy: it retries on exactly EBUSY, EMFILE,
+  // ENFILE, ENOTEMPTY and EPERM with a linear backoff. It defaults to 0, which
+  // is why this surfaced as an intermittent CI failure.
+  try {
+    rmSync(TEST_RUNTIME_DIR, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 50,
+    });
+  } catch (error) {
+    // A leftover temp directory must never fail an otherwise-passing suite;
+    // tmpdir() is reclaimed by the OS regardless. Surface it and move on.
+    console.warn(`[test-env] could not remove ${TEST_RUNTIME_DIR}:`, error);
+  }
 });

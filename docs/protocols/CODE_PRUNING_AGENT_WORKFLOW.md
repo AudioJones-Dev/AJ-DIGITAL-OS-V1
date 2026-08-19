@@ -105,10 +105,12 @@ Deletion requires:
 
 1. A `prune-plan` output.
 2. A numbered or uniquely named batch.
-3. Explicit operator approval of that batch.
+3. Explicit operator approval of that batch using the literal token `proceed <Batch ID>`, per the operator approval word in root `AGENTS.md`.
 4. Invocation of `prune-apply` for that batch.
 
 No agent may infer approval from prior enthusiasm, a broad cleanup objective, or a static-analysis report.
+
+Approval that omits the `proceed` token is not authorization, however clearly it is otherwise expressed. `prune-plan` must request the token explicitly, and `prune-apply` must verify it before editing.
 
 ## Verification contract
 
