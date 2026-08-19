@@ -52,6 +52,6 @@
     "vitest": "^4.1.8"
   },
   "overrides": {
-    "axios": "^1.16.0"
+    "axios": "$axios"
   }
 }
