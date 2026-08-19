@@ -6,6 +6,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Client, Pool } from "pg";
 
 import {
+  dropIsolatedDatabase,
+  endQuietly,
+  guardConnectionErrors,
+} from "./helpers/pg-teardown.js";
+
+import {
   CrmDuplicateRecordError,
   CrmStoreValidationError,
   PostgresCrmStore,
@@ -87,17 +93,21 @@ async function createIsolatedDatabase(adminUrl: string): Promise<IsolatedDatabas
       databaseName,
       roleName,
       async cleanup(): Promise<void> {
-        await admin.query("select pg_terminate_backend(pid) from pg_stat_activity where datname = $1", [databaseName]);
-        await admin.query(`drop database if exists ${quoteIdentifier(databaseName)} with (force)`);
-        await admin.query(`drop role if exists ${quoteIdentifier(roleName)}`);
-        await admin.end();
+        try {
+          await dropIsolatedDatabase(admin, databaseName, roleName, quoteIdentifier);
+        } finally {
+          await endQuietly(admin);
+        }
       },
     };
   } catch (error) {
-    await admin.query("select pg_terminate_backend(pid) from pg_stat_activity where datname = $1", [databaseName]);
-    await admin.query(`drop database if exists ${quoteIdentifier(databaseName)} with (force)`);
-    await admin.query(`drop role if exists ${quoteIdentifier(roleName)}`);
-    await admin.end();
+    // Best-effort cleanup on the setup-failure path: never mask the original error.
+    try {
+      await dropIsolatedDatabase(admin, databaseName, roleName, quoteIdentifier);
+    } catch {
+      // ignored - the rethrown error below is the meaningful one
+    }
+    await endQuietly(admin);
     throw error;
   }
 }
@@ -155,16 +165,22 @@ runIfDatabase("PostgresCrmStore live DB parity", () => {
   let isolated: IsolatedDatabase;
   let pool: Pool;
   let store: PostgresCrmStore;
+  let readPoolErrors: (() => Error[]) | undefined;
 
   beforeAll(async () => {
     isolated = await createIsolatedDatabase(ADMIN_DATABASE_URL as string);
     pool = new Pool({ connectionString: isolated.appUrl, max: 2 });
+    readPoolErrors = guardConnectionErrors(pool);
     store = new PostgresCrmStore(pool);
   }, 60_000);
 
   afterAll(async () => {
-    await pool?.end();
+    await endQuietly(pool);
     await isolated?.cleanup();
+    // A connection error that is not shutdown-class is a real defect, so it
+    // still fails the suite - but it fails here, with a readable message,
+    // instead of as an unhandled 'error' event that Vitest cannot attribute.
+    expect((readPoolErrors?.() ?? []).map((error) => error.message)).toEqual([]);
   }, 30_000);
 
   it("creates, reads, lists, and updates contacts without cross-tenant leakage", async () => {
