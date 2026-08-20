@@ -10,6 +10,10 @@ Decision records explain why a path was chosen so future humans and agents do no
 
 - `DECISION_LOG.md`
 
+## Architecture Decision Records
+
+- `ADR-001-XSTATE-LIFECYCLE-SYNTHESIS-BOUNDARY.md` - accepts XState for later test and modeling dependency evaluation while deferring dependency changes, runtime, persistence, and BEL integration.
+
 ## Rules
 
 - Keep decisions concise and auditable.

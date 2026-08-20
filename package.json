@@ -30,11 +30,12 @@
     "control-plane:start": "node --import ./dist/env.js dist/control-plane/index.js",
     "link:local": "npm run build && npm link",
     "smoke": "node dist/scripts/smoke-cli.js",
-    "release:check": "npm run typecheck && npm test && npm run build && npm run smoke && npm pack --dry-run",
+    "release:check": "npm run typecheck && npm test && npm run test:pruner && npm run build && npm run smoke && npm pack --dry-run",
     "validate:crm-migration": "npm run build && node dist/scripts/validate-crm-migration.js",
     "test": "vitest run",
     "test:crm-rls": "vitest run tests/db/crm-rls.integration.test.ts tests/db/postgres-crm-store.integration.test.ts",
     "test:watch": "vitest",
+    "test:pruner": "node skills/repo-pruner/scripts/self-test.mjs && node tests/repo-pruner/p2.test.mjs && node tests/repo-pruner/p3.test.mjs && node tests/repo-pruner/p4.test.mjs",
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
@@ -52,6 +53,6 @@
     "vitest": "^4.1.8"
   },
   "overrides": {
-    "axios": "^1.16.0"
+    "axios": "$axios"
   }
 }

@@ -58,8 +58,11 @@ sessions/
 # Local tools (not shipped)
 .tools/
 
-# Local skills cache (referenced, not shipped)
-skills/
+# Local skills cache (referenced, not shipped), except canonical repo-pruner.
+skills/*
+!skills/repo-pruner/
+!skills/repo-pruner/**
+skills/repo-pruner/node_modules/
 skills-lock.json
 
 # Ops scaffold is tracked as infrastructure code

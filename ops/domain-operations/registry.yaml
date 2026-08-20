@@ -1,0 +1,203 @@
+# AJ Digital — Central Domain Registry
+# Governance scope: ALL domains. Workspace scope: only where email identity is required.
+# "Managed under AJ Digital" = centrally governed, NOT "every domain becomes an AJ Digital alias."
+#
+# Live data captured 2026-07-30 (read-only):
+#   - zone_id / cf account : Cloudflare API
+#   - expires / lock       : RDAP
+#   - mail_live / spf/dmarc: public DNS resolution via 1.1.1.1
+# Classification fields are RECOMMENDATIONS pending validation against ownership,
+# client agreements, and intended use.
+
+meta:
+  captured: 2026-07-30
+  cloudflare_account: "Bookaudiojones@gmail.com's Account"
+  cloudflare_account_id: aed31038e91e296cb7b644ec2afc68eb
+  registrar_all: cloudflare
+  zone_count: 12
+  registrar_lock_all: true          # every domain: "client transfer prohibited"
+  auto_renew_status: UNVERIFIED     # DNS token lacks Registrar scope (403/10000)
+
+# Read-only registry checks to run per domain each audit cycle
+registry_checks:
+  - registrar_lock         # RDAP status contains clientTransferProhibited  -> VERIFIED for all 12
+  - auto_renew             # requires Cloudflare token with Registrar:Read  -> BLOCKED
+  - expiry_within_90d
+  - nameserver_drift
+  - mail_provider_drift
+  - spf_single_record
+  - dmarc_present
+
+domains:
+  - name: ajdigital.app
+    owner_class: owned-core
+    purpose: workspace-primary
+    email_mode: primary
+    zone_id: 9d9b83c2246c0851d976d79e4b3452a8
+    expires: 2027-01-23
+    registrar_lock: true
+    mail_live: google
+    spf: true
+    dmarc: false                   # GAP -> plans/ajdigital.app-dmarc-remediation.md
+    dns_records: 28
+    tags: [owned-core, production, email-enabled]
+
+  - name: weareajdigital.com
+    owner_class: owned-core
+    purpose: company-website
+    email_mode: selective-aliases   # TARGET
+    workspace_state_actual: USER_ALIAS_DOMAIN   # OBSERVED 2026-07-30 — conflicts with target
+    workspace_parent: ajdigital.app
+    workspace_verified: true
+    zone_id: 1ff93a21d554904db80f9b4f0d6ed319
+    expires: 2027-10-28
+    registrar_lock: true
+    mail_live: google
+    spf: true
+    dmarc: false                   # GAP
+    tags: [owned-core, production, email-enabled]
+    drift: >
+      Already registered as a Google Workspace USER ALIAS DOMAIN, not a secondary domain.
+      Auto-mirrors every user and alias at the same local-part. Target architecture says
+      secondary domain with selective aliases. Converting requires removing the domain alias
+      and re-adding as a secondary domain — disruptive to live mail. NOT in scope; needs its
+      own plan and approval.
+
+  - name: audiojones.com
+    owner_class: owned-core
+    purpose: creator-brand
+    email_mode: selective-aliases   # TARGET
+    workspace_state_actual: USER_ALIAS_DOMAIN   # OBSERVED 2026-07-30 — conflicts with target
+    workspace_parent: ajdigital.app
+    workspace_verified: true
+    zone_id: cc38de090abede2b5304a27a3f5e7ed1
+    expires: 2027-03-11
+    registrar_lock: true
+    mail_live: google
+    spf: true
+    dmarc: true                    # p=quarantine, BUT rua=you@audiojones.com is an
+                                   # uncustomized placeholder -> reports likely undelivered
+    tags: [owned-core, production, email-enabled]
+    drift: >
+      Already a USER ALIAS DOMAIN of ajdigital.app, not a secondary domain. Consequence:
+      audio@audiojones.com ALREADY RESOLVES automatically (mirrors audio@ajdigital.app) —
+      no action needed to obtain it. Same conversion caveat as weareajdigital.com.
+
+# Google-generated artifact, not an owned domain — present in the Workspace domain-alias list:
+#   ajdigital.app.test-google-a.com (parent ajdigital.app, verified) — normal, ignore.
+
+  - name: tyronenelms.com
+    owner_class: owned-core
+    purpose: professional-portfolio
+    email_mode: selective-aliases
+    zone_id: 119fbdb4d2a04cbaeaa149596dadefdf
+    expires: 2027-07-19
+    registrar_lock: true
+    mail_live: none
+    spf: false
+    dmarc: false
+    dns_records: 0                 # empty zone — greenfield
+    tags: [owned-core, staged]     # -> production, email-enabled after apply
+    active_plan: plans/tyronenelms.com-dry-run.md
+
+  - name: eighteetwentysociety.com
+    owner_class: owned-venture
+    purpose: community
+    email_mode: deferred
+    zone_id: c1916c27855bfe5b50f31434500ce55e
+    expires: 2027-07-10
+    registrar_lock: true
+    mail_live: none
+    tags: [owned-venture, staged, dns-only]
+
+  - name: biggzound.com
+    owner_class: owned-venture
+    purpose: music-brand
+    email_mode: deferred
+    zone_id: 333143e382b61ad7b0fce4e2793caba1
+    expires: 2027-07-19
+    registrar_lock: true
+    mail_live: none
+    tags: [owned-venture, staged, dns-only]
+
+  - name: lustresurface.com
+    owner_class: owned-venture
+    purpose: business
+    email_mode: review
+    zone_id: a94221fb1c9255d15f491b3d0023e476
+    expires: 2027-07-09
+    registrar_lock: true
+    mail_live: none
+    tags: [owned-venture, staged, dns-only]
+
+  - name: floridaplatformliftpros.com
+    owner_class: microsite
+    purpose: local-seo
+    email_mode: none
+    zone_id: 618a494cfc3f1c10381267d6333f5dc0
+    expires: 2027-04-25
+    registrar_lock: true
+    mail_live: zoho                # NOT Google — mx.zoho.com / mx2 / mx3
+    spf: true
+    dmarc: false
+    tags: [microsite, client-managed, production]
+    note: >
+      Classified email_mode: none, but live MX shows an active Zoho mailbox.
+      Reconcile intended state with actual before governing this zone.
+
+  - name: floridarampandliftops.com
+    owner_class: client-managed
+    purpose: operations
+    email_mode: review
+    zone_id: 75b0cb8b9e26dd10cdc1fd44b183f107
+    expires: 2027-06-20
+    registrar_lock: true
+    mail_live: none
+    tags: [client-managed, staged, dns-only]
+
+  - name: abebelewis.com
+    owner_class: prospect-reserved
+    purpose: personal-brand
+    email_mode: prohibited-until-approved
+    zone_id: 1c8b8f7c5e0f6981d885b8c1b53ddd17
+    expires: 2027-07-19
+    registrar_lock: true
+    mail_live: none
+    ownership_status: confirmed
+    representation_authority: pending
+    email_enabled: false
+    publishing_approved: false
+    tags: [prospect-reserved, staged, dns-only]
+
+  - name: parisaaliyah.com
+    owner_class: client-managed
+    purpose: personal-brand
+    email_mode: review
+    zone_id: fc09d19f8e20adf9733a70d03043bd6c
+    expires: 2027-07-19
+    registrar_lock: true
+    mail_live: none
+    ownership_status: confirmed
+    representation_authority: review
+    email_enabled: false
+    publishing_approved: false
+    tags: [client-managed, staged, dns-only]
+
+  - name: vladimirlaurent.com
+    owner_class: prospect-reserved
+    purpose: personal-brand
+    email_mode: prohibited-until-approved
+    zone_id: 54d6b7a970a3b14ac15d3dd59395a42e
+    expires: 2027-07-19
+    registrar_lock: true
+    mail_live: none
+    ownership_status: confirmed
+    representation_authority: pending
+    email_enabled: false
+    publishing_approved: false
+    tags: [prospect-reserved, staged, dns-only]
+
+# Named-person safeguard: domain registration ownership and authority to represent a
+# person or business are SEPARATE. No email address, Google Business Profile, or public
+# identity may be created for abebelewis.com, parisaaliyah.com, or vladimirlaurent.com
+# until representation_authority = approved.
