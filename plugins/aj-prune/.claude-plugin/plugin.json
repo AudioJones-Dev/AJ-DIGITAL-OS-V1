@@ -1,7 +1,7 @@
 {
   "name": "aj-prune",
   "description": "Evidence-driven code pruning pipeline: inventory, reachability, coverage, planning, gated application, and verification",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Audio Jones"
   },
