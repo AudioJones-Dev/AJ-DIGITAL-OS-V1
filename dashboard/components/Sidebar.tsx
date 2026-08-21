@@ -31,19 +31,19 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 shrink-0 bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-y-auto">
-      <div className="px-5 py-4 border-b border-zinc-800">
-        <span className="text-xs font-bold text-indigo-400 tracking-widest uppercase">
+    <aside className="w-56 shrink-0 bg-aj-surface-1 border-r border-aj-border flex flex-col overflow-y-auto">
+      <div className="px-5 py-4 border-b border-aj-border">
+        <span className="text-xs font-bold text-aj-data tracking-widest uppercase">
           AJ Digital OS
         </span>
-        <p className="text-zinc-600 text-xs mt-0.5">Command Center</p>
+        <p className="text-aj-text-muted text-xs mt-0.5">Command Center</p>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {nav.map((item, i) => {
           if ("divider" in item) {
             return (
               <div key={i} className="pt-4 pb-1 px-3">
-                <p className="text-xs font-semibold text-zinc-600 uppercase tracking-wider">
+                <p className="text-xs font-semibold text-aj-text-muted uppercase tracking-wider">
                   {item.label}
                 </p>
               </div>
@@ -56,8 +56,8 @@ export default function Sidebar() {
               href={item.href}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 active
-                  ? "bg-indigo-600 text-white"
-                  : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+                  ? "bg-aj-surface-3 text-aj-signal"
+                  : "text-aj-text-secondary hover:bg-aj-surface-2 hover:text-aj-text"
               }`}
             >
               <span className="text-xs opacity-60">{item.icon}</span>
@@ -66,8 +66,8 @@ export default function Sidebar() {
           );
         })}
       </nav>
-      <div className="px-5 py-3 border-t border-zinc-800">
-        <p className="text-zinc-700 text-xs">v1.0 · AJ Digital LLC</p>
+      <div className="px-5 py-3 border-t border-aj-border">
+        <p className="text-aj-text-muted text-xs">v1.0 · AJ Digital LLC</p>
       </div>
     </aside>
   );

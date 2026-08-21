@@ -23,6 +23,8 @@ export const buildThemeCssVariables = (theme: UiTheme = uiTheme): string => {
     `--ui-link: ${theme.colors.link};`,
     `--ui-ai-gradient-start: ${theme.colors.aiGradientStart};`,
     `--ui-ai-gradient-end: ${theme.colors.aiGradientEnd};`,
+    `--ui-signal-ink: ${theme.colors.background};`,
+    `--ui-font-display: ${theme.typography.fontDisplayFamily};`,
     `--ui-font-sans: ${theme.typography.fontFamily};`,
     `--ui-font-mono: ${theme.typography.fontMonoFamily};`,
     `--ui-radius-panel: ${theme.radius.panel};`,
@@ -36,7 +38,8 @@ export const buildThemeCssVariables = (theme: UiTheme = uiTheme): string => {
 export const buildUiStylesheet = (theme: UiTheme = uiTheme): string => {
   const variables = buildThemeCssVariables(theme);
 
-  return `
+  return `@import url("https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap");
+
 :root {
 ${variables}
 }
@@ -49,10 +52,7 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background:
-    radial-gradient(circle at top left, rgba(0, 164, 255, 0.14), transparent 28%),
-    radial-gradient(circle at top right, rgba(255, 200, 87, 0.10), transparent 22%),
-    linear-gradient(180deg, #111936 0%, var(--ui-bg) 55%);
+  background: var(--ui-bg);
   color: var(--ui-text-primary);
   font-family: var(--ui-font-sans);
 }
@@ -79,14 +79,12 @@ body {
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-panel);
   overflow: hidden;
-  background: rgba(11, 16, 32, 0.72);
-  backdrop-filter: blur(16px);
-  box-shadow: var(--ui-shadow-panel);
+  background: var(--ui-panel);
 }
 
 .ui-sidebar,
 .ui-right-panel {
-  background: rgba(18, 26, 51, 0.92);
+  background: var(--ui-panel);
   border-right: 1px solid var(--ui-border);
 }
 
@@ -121,7 +119,7 @@ body {
   align-items: end;
   padding: 18px 20px;
   border-bottom: 1px solid var(--ui-border);
-  background: rgba(18, 26, 51, 0.7);
+  background: var(--ui-panel);
 }
 
 .ui-main-grid {
@@ -145,15 +143,14 @@ body {
   flex-direction: column;
   gap: 10px;
   align-items: center;
-  background: rgba(18, 26, 51, 0.58);
+  background: var(--ui-panel);
 }
 
 .ui-card,
 .ui-panel {
   border: 1px solid var(--ui-border);
-  background: linear-gradient(180deg, rgba(30, 42, 58, 0.86), rgba(18, 26, 51, 0.92));
+  background: var(--ui-card);
   border-radius: var(--ui-radius-card);
-  box-shadow: var(--ui-shadow-glow);
 }
 
 .ui-panel {
@@ -171,16 +168,19 @@ body {
 }
 
 .ui-eyebrow {
+  font-family: var(--ui-font-mono);
   font-size: 11px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ui-text-muted);
 }
 
 .ui-title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 650;
+  font-family: var(--ui-font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .ui-subtitle {
@@ -211,9 +211,9 @@ body {
 .ui-rail-button,
 .ui-action-button {
   border: 1px solid var(--ui-border);
-  background: rgba(21, 33, 63, 0.74);
+  background: var(--ui-elevated);
   color: var(--ui-text-primary);
-  border-radius: 14px;
+  border-radius: 4px;
   cursor: pointer;
   transition: border-color 120ms ease, transform 120ms ease, background 120ms ease;
 }
@@ -230,8 +230,9 @@ body {
 .ui-nav-button.active,
 .ui-session-button.active,
 .ui-rail-button.active {
-  background: linear-gradient(135deg, rgba(0, 164, 255, 0.18), rgba(28, 63, 153, 0.36));
-  border-color: rgba(0, 164, 255, 0.45);
+  background: var(--ui-elevated);
+  border-color: var(--ui-interactive-primary);
+  color: var(--ui-text-primary);
 }
 
 .ui-nav-button,
@@ -275,11 +276,18 @@ body {
 .ui-input,
 .ui-textarea {
   width: 100%;
-  border-radius: 14px;
+  border-radius: 4px;
   border: 1px solid var(--ui-border);
-  background: rgba(11, 16, 32, 0.75);
+  background: var(--ui-elevated);
   color: var(--ui-text-primary);
   padding: 12px 14px;
+}
+
+.ui-select:focus,
+.ui-input:focus,
+.ui-textarea:focus {
+  outline: none;
+  border-color: var(--ui-interactive-primary);
 }
 
 .ui-textarea {
@@ -304,13 +312,14 @@ body {
 }
 
 .ui-action-button.primary {
-  background: linear-gradient(135deg, var(--ui-ai-gradient-start), var(--ui-ai-gradient-end));
-  border-color: transparent;
-  color: white;
+  background: var(--ui-interactive-primary);
+  border-color: var(--ui-interactive-primary);
+  color: var(--ui-signal-ink);
+  font-weight: 700;
 }
 
 .ui-action-button.secondary {
-  background: rgba(21, 33, 63, 0.72);
+  background: var(--ui-elevated);
 }
 
 .ui-action-button[disabled] {
@@ -326,7 +335,7 @@ body {
 
 .ui-message {
   padding: 14px 16px;
-  border-radius: 18px;
+  border-radius: 8px;
   border: 1px solid var(--ui-border);
   max-width: min(92%, 860px);
   line-height: 1.55;
@@ -335,18 +344,19 @@ body {
 
 .ui-message.user {
   align-self: flex-end;
-  background: linear-gradient(135deg, rgba(0, 164, 255, 0.18), rgba(28, 63, 153, 0.36));
+  background: var(--ui-elevated);
+  border-left: 2px solid var(--ui-interactive-primary);
 }
 
 .ui-message.assistant {
   align-self: flex-start;
-  background: rgba(18, 26, 51, 0.82);
+  background: var(--ui-card);
 }
 
 .ui-message.system {
   align-self: center;
-  background: rgba(255, 200, 87, 0.10);
-  border-color: rgba(255, 200, 87, 0.18);
+  background: var(--ui-panel);
+  border-color: var(--ui-border-strong);
   color: var(--ui-text-secondary);
 }
 
@@ -373,7 +383,7 @@ body {
 .ui-badge.success { color: var(--ui-success); }
 .ui-badge.warning { color: var(--ui-warning); }
 .ui-badge.error { color: var(--ui-error); }
-.ui-badge.info { color: var(--ui-interactive-primary); }
+.ui-badge.info { color: var(--ui-link); }
 
 .ui-kv {
   display: grid;
@@ -415,7 +425,7 @@ body {
   padding: 18px;
   text-align: center;
   border: 1px dashed var(--ui-border);
-  border-radius: 14px;
+  border-radius: 8px;
   color: var(--ui-text-muted);
 }
 

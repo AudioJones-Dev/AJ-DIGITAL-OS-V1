@@ -4,37 +4,37 @@ import StatusBadge from "./StatusBadge";
 
 export default function RunsTable({ runs }: { runs: Run[] }) {
   if (runs.length === 0) {
-    return <p className="text-zinc-500 text-sm">No runs found.</p>;
+    return <p className="text-aj-text-muted text-sm">No runs found.</p>;
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-zinc-800 text-left text-zinc-500">
+          <tr className="border-b border-aj-border text-left text-aj-text-muted">
             <th className="pb-3 pr-6 font-medium">Run ID</th>
             <th className="pb-3 pr-6 font-medium">Status</th>
             <th className="pb-3 font-medium">Started At</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-800">
+        <tbody className="divide-y divide-aj-border">
           {runs.map((run) => (
-            <tr key={run.id} className="hover:bg-zinc-900/50 transition-colors">
+            <tr key={run.id} className="hover:bg-aj-surface-2 transition-colors">
               <td className="py-3 pr-6">
                 <Link
                   href={`/runs/${run.run_ref}`}
-                  className="text-indigo-400 hover:text-indigo-300 font-mono text-xs"
+                  className="text-aj-data hover:text-aj-data font-mono text-xs"
                 >
                   {run.run_ref}
                 </Link>
                 {run.mission_type && (
-                  <span className="ml-2 text-zinc-600 text-xs">{run.mission_type}</span>
+                  <span className="ml-2 text-aj-text-muted text-xs">{run.mission_type}</span>
                 )}
               </td>
               <td className="py-3 pr-6">
                 <StatusBadge status={run.status} />
               </td>
-              <td className="py-3 text-zinc-400 font-mono text-xs">
+              <td className="py-3 text-aj-text-secondary font-mono text-xs">
                 {new Date(run.started_at).toLocaleString()}
               </td>
             </tr>

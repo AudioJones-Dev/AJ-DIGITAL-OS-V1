@@ -55,14 +55,14 @@ export default async function RunDetailPage({ params }: Props) {
 
   if (error) {
     return (
-      <div className="text-red-400 text-sm bg-red-950/50 border border-red-900 rounded-md p-3">
+      <div className="text-aj-critical text-sm bg-aj-critical/15 border border-aj-critical/40 rounded-md p-3">
         {error}
       </div>
     );
   }
 
   if (!data) {
-    return <p className="text-zinc-500 text-sm">Run not found.</p>;
+    return <p className="text-aj-text-muted text-sm">Run not found.</p>;
   }
 
   const { run, steps, observations, failures } = data;
@@ -75,10 +75,10 @@ export default async function RunDetailPage({ params }: Props) {
           <h1 className="text-xl font-semibold">Run Detail</h1>
           <StatusBadge status={run.status} />
           {run.ok === false && (
-            <span className="text-xs text-red-400 font-medium">✕ failed</span>
+            <span className="text-xs text-aj-critical font-medium">✕ failed</span>
           )}
         </div>
-        <p className="text-xs font-mono text-zinc-500">{run.run_ref}</p>
+        <p className="text-xs font-mono text-aj-text-muted">{run.run_ref}</p>
       </div>
 
       {/* Meta grid */}
@@ -97,75 +97,75 @@ export default async function RunDetailPage({ params }: Props) {
           { label: "Escalations", value: String(run.escalation_count) },
           { label: "Roles Used", value: run.roles_used?.join(", ") || "—" },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-zinc-900 border border-zinc-800 rounded p-3">
-            <p className="text-zinc-500 text-xs mb-1">{label}</p>
-            <p className="font-mono text-xs text-zinc-200 truncate">{value}</p>
+          <div key={label} className="bg-aj-surface-1 border border-aj-border rounded p-3">
+            <p className="text-aj-text-muted text-xs mb-1">{label}</p>
+            <p className="font-mono text-xs text-aj-text truncate">{value}</p>
           </div>
         ))}
       </div>
 
       {run.objective && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded p-3">
-          <p className="text-zinc-500 text-xs mb-1">Objective</p>
-          <p className="text-sm text-zinc-200">{run.objective}</p>
+        <div className="bg-aj-surface-1 border border-aj-border rounded p-3">
+          <p className="text-aj-text-muted text-xs mb-1">Objective</p>
+          <p className="text-sm text-aj-text">{run.objective}</p>
         </div>
       )}
 
       {run.summary && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded p-3">
-          <p className="text-zinc-500 text-xs mb-1">Summary</p>
-          <p className="text-sm text-zinc-200">{run.summary}</p>
+        <div className="bg-aj-surface-1 border border-aj-border rounded p-3">
+          <p className="text-aj-text-muted text-xs mb-1">Summary</p>
+          <p className="text-sm text-aj-text">{run.summary}</p>
         </div>
       )}
 
       {run.error && (
-        <div className="bg-red-950/30 border border-red-900 rounded p-3">
-          <p className="text-zinc-500 text-xs mb-1">Error</p>
-          <p className="text-sm text-red-300 font-mono">{run.error}</p>
+        <div className="bg-aj-critical/15 border border-aj-critical/40 rounded p-3">
+          <p className="text-aj-text-muted text-xs mb-1">Error</p>
+          <p className="text-sm text-aj-critical font-mono">{run.error}</p>
         </div>
       )}
 
       {/* Steps */}
       <div>
-        <h2 className="text-sm font-semibold mb-3 text-zinc-300">
-          Steps <span className="text-zinc-600 font-normal">({steps.length})</span>
+        <h2 className="text-sm font-semibold mb-3 text-aj-text-secondary">
+          Steps <span className="text-aj-text-muted font-normal">({steps.length})</span>
         </h2>
         {steps.length === 0 ? (
-          <p className="text-zinc-600 text-sm">No steps recorded.</p>
+          <p className="text-aj-text-muted text-sm">No steps recorded.</p>
         ) : (
           <div className="space-y-2">
             {steps.map((step) => (
               <div
                 key={step.id}
-                className="bg-zinc-900 border border-zinc-800 rounded p-3 flex items-start justify-between gap-4"
+                className="bg-aj-surface-1 border border-aj-border rounded p-3 flex items-start justify-between gap-4"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-zinc-500 text-xs font-mono">#{step.step_index}</span>
-                    <span className="text-sm font-medium text-zinc-100">{step.role}</span>
+                    <span className="text-aj-text-muted text-xs font-mono">#{step.step_index}</span>
+                    <span className="text-sm font-medium text-aj-text">{step.role}</span>
                     {step.pipeline_id && (
-                      <span className="text-xs text-zinc-600 font-mono truncate max-w-[160px]">
+                      <span className="text-xs text-aj-text-muted font-mono truncate max-w-[160px]">
                         {step.pipeline_id}
                       </span>
                     )}
                   </div>
                   {step.error && (
-                    <p className="text-xs text-red-400 font-mono mt-1 truncate">{step.error}</p>
+                    <p className="text-xs text-aj-critical font-mono mt-1 truncate">{step.error}</p>
                   )}
                   {step.retries > 0 && (
-                    <p className="text-xs text-yellow-600 mt-0.5">{step.retries} retr{step.retries === 1 ? "y" : "ies"}</p>
+                    <p className="text-xs text-aj-warning mt-0.5">{step.retries} retr{step.retries === 1 ? "y" : "ies"}</p>
                   )}
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-1">
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      step.ok ? "bg-green-900 text-green-300" : "bg-red-900 text-red-300"
+                      step.ok ? "bg-aj-success/15 text-aj-success" : "bg-aj-critical/15 text-aj-critical"
                     }`}
                   >
                     {step.ok ? "ok" : "failed"}
                   </span>
                   {step.duration_ms > 0 && (
-                    <span className="text-xs text-zinc-600 font-mono">
+                    <span className="text-xs text-aj-text-muted font-mono">
                       {(step.duration_ms / 1000).toFixed(1)}s
                     </span>
                   )}
@@ -179,22 +179,22 @@ export default async function RunDetailPage({ params }: Props) {
       {/* Observations */}
       {observations.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold mb-3 text-zinc-300">
-            Observations <span className="text-zinc-600 font-normal">({observations.length})</span>
+          <h2 className="text-sm font-semibold mb-3 text-aj-text-secondary">
+            Observations <span className="text-aj-text-muted font-normal">({observations.length})</span>
           </h2>
           <div className="space-y-2">
             {observations.map((obs) => (
               <div
                 key={obs.id}
-                className="bg-zinc-900 border border-zinc-800 rounded p-3 flex items-start justify-between gap-4"
+                className="bg-aj-surface-1 border border-aj-border rounded p-3 flex items-start justify-between gap-4"
               >
                 <div className="min-w-0">
-                  <p className="text-xs text-zinc-400 mb-1">{obs.summary}</p>
-                  <p className="text-xs text-zinc-600 font-mono">{obs.source}</p>
+                  <p className="text-xs text-aj-text-secondary mb-1">{obs.summary}</p>
+                  <p className="text-xs text-aj-text-muted font-mono">{obs.source}</p>
                 </div>
                 <span
                   className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${
-                    obs.healthy ? "bg-green-900 text-green-300" : "bg-red-900 text-red-300"
+                    obs.healthy ? "bg-aj-success/15 text-aj-success" : "bg-aj-critical/15 text-aj-critical"
                   }`}
                 >
                   {obs.healthy ? "healthy" : "unhealthy"}
@@ -208,29 +208,29 @@ export default async function RunDetailPage({ params }: Props) {
       {/* Failures */}
       {failures.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold mb-3 text-zinc-300">
-            Failures <span className="text-zinc-600 font-normal">({failures.length})</span>
+          <h2 className="text-sm font-semibold mb-3 text-aj-text-secondary">
+            Failures <span className="text-aj-text-muted font-normal">({failures.length})</span>
           </h2>
           <div className="space-y-2">
             {failures.map((f) => (
               <div
                 key={f.id}
-                className="bg-red-950/20 border border-red-900/50 rounded p-3"
+                className="bg-aj-critical/15 border border-aj-critical/40 rounded p-3"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-medium text-red-400">{f.role}</span>
+                  <span className="text-xs font-medium text-aj-critical">{f.role}</span>
                   {f.escalated && (
                     <span className="text-xs bg-orange-900 text-orange-300 px-1.5 py-0.5 rounded">
                       escalated
                     </span>
                   )}
                   {f.resolved && (
-                    <span className="text-xs bg-green-900 text-green-300 px-1.5 py-0.5 rounded">
+                    <span className="text-xs bg-aj-success/15 text-aj-success px-1.5 py-0.5 rounded">
                       resolved
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-red-300 font-mono">{f.error}</p>
+                <p className="text-xs text-aj-critical font-mono">{f.error}</p>
               </div>
             ))}
           </div>
@@ -238,7 +238,7 @@ export default async function RunDetailPage({ params }: Props) {
       )}
       {/* Enforcement: status + controls + audit, all driven by the control plane */}
       <div>
-        <h2 className="text-sm font-semibold mb-3 text-zinc-300">Enforcement</h2>
+        <h2 className="text-sm font-semibold mb-3 text-aj-text-secondary">Enforcement</h2>
         <RunDetailEnforcement
           runId={runId}
           initialState={initialControlState}
@@ -249,7 +249,7 @@ export default async function RunDetailPage({ params }: Props) {
 
       {/* MAP Attribution */}
       <div>
-        <h2 className="text-sm font-semibold mb-3 text-zinc-300">MAP Attribution</h2>
+        <h2 className="text-sm font-semibold mb-3 text-aj-text-secondary">MAP Attribution</h2>
         <MAPAttribution events={attributionEvents} />
       </div>
     </div>

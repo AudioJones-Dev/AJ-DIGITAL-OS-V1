@@ -1,0 +1,119 @@
+/* ============================================================
+ * AUDIO JONES — Editorial Intelligence Systems
+ * Canonical design tokens (source of truth for the AJ ecosystem)
+ * Dark-first. Signal-yellow is semantic, not decorative.
+ * Structure adapted from a Firecrawl design-system extraction;
+ * brand values are Audio Jones.
+ * ============================================================ */
+
+:root {
+  /* ---- Brand / semantic signal ---------------------------- */
+  --aj-signal: #E8FF5A;          /* primary signal CTA — one per major section */
+  --aj-signal-ink: #080808;      /* foreground ON signal (dark text on yellow) */
+  --aj-data: #4DACFF;            /* links, info, data-viz primary */
+  --aj-critical: #FF4545;        /* errors / critical state */
+  --aj-warning: #FFB340;         /* warnings */
+  --aj-success: #3DFFB0;         /* success */
+
+  /* RGB channels — enable alpha (e.g. rgb(var(--aj-critical-rgb) / 0.15)) */
+  --aj-signal-rgb: 232 255 90;
+  --aj-data-rgb: 77 172 255;
+  --aj-critical-rgb: 255 69 69;
+  --aj-warning-rgb: 255 179 64;
+  --aj-success-rgb: 61 255 176;
+
+  /* ---- Canvas (dark-first) -------------------------------- */
+  --aj-base: #080808;            /* page canvas */
+  --aj-surface-1: #0F0F0F;       /* primary surface / panel */
+  --aj-surface-2: #161616;       /* raised surface / card */
+  --aj-surface-3: #1E1E1E;       /* highest raise / menus, inputs */
+
+  /* ---- Text on dark --------------------------------------- */
+  --aj-text: #F2F2F2;            /* primary text */
+  --aj-text-secondary: #A8A8A8;  /* secondary text */
+  --aj-text-muted: #6E6E6E;      /* muted / captions / meta */
+
+  /* ---- Borders (carry hierarchy) -------------------------- */
+  --aj-border: #222222;          /* hairline */
+  --aj-border-strong: #333333;   /* emphasized / hover */
+  --aj-border-signal: #E8FF5A;   /* active/selected accent border */
+
+  /* ---- Light-split (editorial "paper") -------------------- */
+  /* Use sparingly: long-form editorial, case studies, printable reports. */
+  --aj-paper: #F4F1E9;           /* warm broadsheet paper */
+  --aj-ink: #080808;             /* ink on paper */
+  --aj-paper-rule: #D8D3C6;      /* rule/border on paper */
+
+  /* ---- Typography ----------------------------------------- */
+  --aj-font-display: "Syne", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --aj-font-body: "DM Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --aj-font-mono: "DM Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+
+  /* weights */
+  --aj-fw-regular: 400;
+  --aj-fw-medium: 500;
+  --aj-fw-semibold: 600;
+  --aj-fw-bold: 700;
+  --aj-fw-display: 800;          /* Syne display */
+
+  /* type scale (px) — editorial */
+  --aj-fs-label: 12px;           /* DM Mono labels / eyebrows */
+  --aj-fs-caption: 13px;
+  --aj-fs-small: 14px;
+  --aj-fs-body: 16px;            /* base */
+  --aj-fs-lead: 18px;
+  --aj-fs-subhead: 20px;
+  --aj-fs-h4: 24px;
+  --aj-fs-h3: 32px;
+  --aj-fs-h2: 40px;
+  --aj-fs-h1: 48px;
+  --aj-fs-display: 64px;
+  --aj-fs-hero: 84px;
+
+  /* line-heights */
+  --aj-lh-tight: 1.05;           /* display headlines */
+  --aj-lh-heading: 1.2;
+  --aj-lh-body: 1.6;
+
+  /* letter-spacing */
+  --aj-ls-label: 0.14em;         /* uppercase mono labels */
+  --aj-ls-display: -0.02em;      /* Syne tightening */
+
+  /* ---- Spacing (4 / 8 scale) ------------------------------ */
+  --aj-space-1: 4px;
+  --aj-space-2: 8px;
+  --aj-space-3: 12px;
+  --aj-space-4: 16px;
+  --aj-space-5: 20px;
+  --aj-space-6: 24px;
+  --aj-space-8: 32px;
+  --aj-space-10: 40px;
+  --aj-space-12: 48px;
+  --aj-space-16: 64px;
+  --aj-space-20: 80px;
+
+  /* ---- Radius (GOVERNED — sharper per brand kit) ---------- */
+  /* Resolves the 4px-vs-10/20px drift: brand kit wins. */
+  --aj-radius-none: 0;
+  --aj-radius-control: 4px;      /* controls: buttons, inputs, selects */
+  --aj-radius-card: 8px;         /* cards, panels */
+  --aj-radius-pill: 999px;       /* badges, toggles, avatars only */
+
+  /* ---- Elevation -----------------------------------------
+   * Dark-first: hierarchy comes from SURFACES + BORDERS.
+   * Shadows are reserved for true overlays (menus, modals, popovers).
+   * No glow, no AI gradient. */
+  --aj-elevation-flat: none;
+  --aj-elevation-overlay: 0 16px 40px rgba(0, 0, 0, 0.55);
+
+  /* ---- Layout containers ---------------------------------- */
+  --aj-container-prose: 680px;   /* editorial reading column */
+  --aj-container-app: 1280px;    /* operating shell */
+  --aj-container-wide: 1440px;   /* marketing / broadsheet */
+  --aj-container-gutter: 24px;
+
+  /* ---- Motion (restrained) -------------------------------- */
+  --aj-motion-fast: 120ms;
+  --aj-motion-base: 180ms;
+  --aj-ease: cubic-bezier(0.2, 0, 0, 1);
+}

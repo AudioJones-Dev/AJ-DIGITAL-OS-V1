@@ -20,6 +20,7 @@ export interface UiSemanticColorTokens {
 }
 
 export interface UiTypographyTokens {
+  fontDisplayFamily: string;
   fontFamily: string;
   fontMonoFamily: string;
 }

@@ -68,12 +68,12 @@ export default function RunDetailEnforcement({
       <EnforcementStatus snapshot={snapshot} />
 
       <div>
-        <h3 className="text-sm font-semibold text-zinc-400 mb-3">Run Controls</h3>
+        <h3 className="text-sm font-semibold text-aj-text-secondary mb-3">Run Controls</h3>
         <RunControls runId={runId} currentState={state} onResult={onActionResult} />
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-zinc-400 mb-3">Enforcement Audit Trail</h3>
+        <h3 className="text-sm font-semibold text-aj-text-secondary mb-3">Enforcement Audit Trail</h3>
         <AuditTrail runId={runId} refreshKey={refreshKey} initialEvents={audit} />
       </div>
     </div>

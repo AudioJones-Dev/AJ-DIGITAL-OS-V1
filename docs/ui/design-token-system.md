@@ -1,32 +1,42 @@
 # Design Token System
 
+> **Source of truth:** the canonical brand system now lives in
+> [`design-system/DESIGN.md`](../../design-system/DESIGN.md) and
+> `design-system/tokens/`. This page documents how those tokens map into the
+> local web shell's `--ui-*` variables (`src/ui/design-tokens.ts`). When the two
+> disagree, `design-system/` wins.
+
 ## Purpose
 
 This document defines the reusable semantic design tokens for the AJ Digital OS local UI shell.
 
-The intent is to support a dark, structured AI operating system aesthetic with consistent semantic roles instead of hardcoded one-off colors.
+The system is **Audio Jones — Editorial Intelligence Systems**: a dark-first,
+broadsheet-grade canvas where signal-yellow is semantic (not decorative),
+borders and spacing carry hierarchy, and generic AI gradients / glass / glow are
+explicitly avoided.
 
 ## Raw Palette
 
-Approved source colors:
+Approved source colors (mirror of `design-system/tokens/`):
 
-- AI identity gradient
-  - `#00A4FF`
-  - `#1C3F99`
-- State accents
-  - `#FF4500`
-  - `#FFC857`
+- Signal (semantic CTA)
+  - `#E8FF5A` signal · `#080808` on-signal ink
+- Data / state accents
+  - `#4DACFF` data/links
+  - `#FF4545` critical · `#FFB340` warning · `#3DFFB0` success
 - Dark surfaces
-  - `#0B1020`
-  - `#121A33`
-  - `#15213F`
-  - `#1E2A3A`
+  - `#080808` base
+  - `#0F0F0F` surface-1
+  - `#161616` surface-2
+  - `#1E1E1E` surface-3
 - Text
-  - `#E6EDF3`
-  - `#9FB3C8`
-  - `#6B7C93`
-- Success
-  - `#22C55E`
+  - `#F2F2F2`
+  - `#A8A8A8`
+  - `#6E6E6E`
+- Borders
+  - `#222222` · `#333333`
+- Light-split paper
+  - `#F4F1E9` paper · `#080808` ink
 
 ## Semantic Roles
 
