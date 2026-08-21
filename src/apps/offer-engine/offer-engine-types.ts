@@ -27,6 +27,8 @@ export interface CreateOfferInput {
   meaningfulScore?: number;
   actionableScore?: number;
   profitableScore?: number;
+  /** Discount % — drives the offer-governance discount-tier approval check. */
+  discountPercent?: number;
 }
 
 export interface OfferEngineResult {
@@ -40,5 +42,7 @@ export interface OfferEngineResult {
   governance?: GovernanceResult;
   blockedReasons?: string[];
   warnings?: string[];
+  /** Set when governance required approval and a real ApprovalRequest was created. */
+  approvalId?: string;
   error?: string;
 }

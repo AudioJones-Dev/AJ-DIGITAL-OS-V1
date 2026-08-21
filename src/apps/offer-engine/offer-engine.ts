@@ -15,6 +15,7 @@ import type {
 } from "../../governance/governance-types.js";
 import { normalizeOffer } from "../../normalization/normalizer.js";
 import { saveEntity } from "../../normalization/normalization-store.js";
+import { defaultApprovalService } from "../../security/approvals/approval-service.js";
 
 import type {
   CreateOfferInput,
@@ -60,6 +61,7 @@ function buildGovernanceOffer(input: CreateOfferInput): OfferInput {
   };
   if (input.guarantees !== undefined) offer.guarantees = input.guarantees;
   if (input.timeline !== undefined) offer.timeline = input.timeline;
+  if (input.discountPercent !== undefined) offer.discountPercent = input.discountPercent;
   return offer;
 }
 
@@ -145,6 +147,35 @@ export async function createOffer(
 
     const saved = saveEntity("offer", normalized);
 
+    // G4 money gate: a governance-required-approval offer creates a REAL approval
+    // request (not just a "pending" stamp). Best-effort — a store failure leaves
+    // the offer flagged pending (safe: it is never auto-approved). For an offer
+    // request only the discount tier sets requiresApproval today, so L3/high/WRITE
+    // and the "offer_approval" label are the correct fixed money-gate tier; the
+    // label is intentionally offer-scoped, not discount-specific.
+    let approvalId: string | undefined;
+    const approvalWarnings: string[] = [];
+    if (governance.requiresApproval) {
+      try {
+        const approval = await defaultApprovalService.createApprovalRequest({
+          approvalType: "offer_approval",
+          requestedByAgentId: OFFER_ENGINE_AGENT_ID,
+          permissionLevel: 3,
+          actionCategory: "WRITE",
+          risk: "high",
+          reason: `Offer "${input.title}" requires human approval (money/governance gate).`,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          target: saved.entityId,
+          ...(input.tenantId !== undefined ? { clientId: input.tenantId } : {}),
+        });
+        approvalId = approval.approvalId;
+      } catch (err) {
+        approvalWarnings.push(
+          `approval request creation failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
     fireAttribution(
       "offer_engine_created",
       saved.entityId,
@@ -153,6 +184,7 @@ export async function createOffer(
         mapScore: mapEvaluation.mapScore,
         decision: mapEvaluation.decision,
         governanceOutcome: governance.overall,
+        ...(approvalId !== undefined ? { approvalId } : {}),
       },
       input.tenantId,
     );
@@ -166,7 +198,8 @@ export async function createOffer(
       decision: mapEvaluation.decision,
       governanceStatus: governance.overall,
       governance,
-      warnings: governance.warnings,
+      ...(approvalId !== undefined ? { approvalId } : {}),
+      warnings: [...governance.warnings, ...approvalWarnings],
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "offer engine error";
