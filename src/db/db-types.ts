@@ -257,6 +257,62 @@ export type InsertSubscription = Omit<DbSubscription, "id" | "created_at" | "upd
 export type InsertClientAgent = Omit<DbClientAgent, "id" | "created_at" | "updated_at">;
 
 // ═══════════════════════════════════════════════════════════════════
+// Neon — Lead Pipeline (Florida Platform Lift Pros)
+// ═══════════════════════════════════════════════════════════════════
+
+export type LeadStatus =
+  | "new"
+  | "contacted"
+  | "qualified"
+  | "estimate_scheduled"
+  | "estimate_sent"
+  | "won"
+  | "lost"
+  | "spam";
+
+export type LeadPriority = "low" | "normal" | "high" | "urgent";
+
+export interface DbLead {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  first_name: string | null;
+  last_name: string | null;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  county: string | null;
+  city: string | null;
+  service_needed: string | null;
+  property_type: string | null;
+  timeline: string | null;
+  message: string | null;
+  lead_source_page: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  status: LeadStatus;
+  priority: LeadPriority;
+  assigned_to: string | null;
+  notes: string | null;
+}
+
+export type InsertLead = Omit<DbLead, "id" | "created_at" | "updated_at">;
+
+export interface LeadUpdateInput {
+  status?: LeadStatus;
+  priority?: LeadPriority;
+  notes?: string;
+  assigned_to?: string;
+}
+
+export interface LeadStats {
+  total: number;
+  new_leads: number;
+  urgent_leads: number;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Supabase — Distribution Layer
 // ═══════════════════════════════════════════════════════════════════
 
