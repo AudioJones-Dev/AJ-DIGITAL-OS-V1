@@ -166,7 +166,34 @@ export interface RetrievalSearchResponse {
   results: RetrievalResult[];
   retrievalTraceId?: string;
   policyMeta: RetrievalPolicyMeta;
+  conflicts?: ConflictFlag[];
   error?: string;
+}
+
+// ── Memory integrity (G3): freshness + conflict ──────────────────────────
+
+export interface FreshnessPolicy {
+  /** Days for a document's weight to halve (exponential decay). */
+  halfLifeDays: number;
+  /** Age (days) beyond which a document is flagged stale. */
+  staleAfterDays: number;
+  /** Minimum decay multiplier — old-but-relevant context never fully vanishes. */
+  decayFloor: number;
+}
+
+export interface FreshnessInfo {
+  ageDays: number;
+  decayFactor: number;
+  stale: boolean;
+}
+
+export type ConflictKind = "freshness_conflict" | "value_conflict";
+
+export interface ConflictFlag {
+  kind: ConflictKind;
+  documentIds: string[];
+  chunkIds: string[];
+  detail: string;
 }
 
 export interface RetrievalPolicyEvaluation {

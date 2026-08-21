@@ -11,16 +11,22 @@ import { randomUUID } from "node:crypto";
 
 import { emitRetrievalEvent } from "./retrieval-attribution.js";
 import {
+  DEFAULT_FRESHNESS_POLICY,
   DEFAULT_RETRIEVAL_POLICY,
   evaluateRetrievalPolicy,
   isChunkReadable,
 } from "./retrieval-policy.js";
+import { computeFreshness } from "./retrieval-freshness.js";
+import { detectConflicts } from "./retrieval-conflict.js";
 import {
   appendRetrievalTrace,
-  getDocument,
   listChunks,
+  listDocuments,
 } from "./retrieval-store.js";
 import type {
+  ConflictFlag,
+  FreshnessInfo,
+  FreshnessPolicy,
   RetrievalChunk,
   RetrievalPolicy,
   RetrievalResult,
@@ -49,6 +55,7 @@ function scoreChunk(chunkText: string, queryWords: string[]): number {
 
 export interface SearchOptions {
   policy?: RetrievalPolicy;
+  freshnessPolicy?: FreshnessPolicy;
   now?: () => string;
 }
 
@@ -99,15 +106,28 @@ export async function searchRetrieval(
     if (request.tenantId !== undefined) filterArg.tenantId = request.tenantId;
     const chunks: RetrievalChunk[] = listChunks(filterArg);
 
-    const candidates: { chunk: RetrievalChunk; score: number }[] = [];
+    // G3: load all matchable documents once (id -> document). Reused both to
+    // weight scoring by freshness AND to hydrate result titles/URIs — which
+    // eliminates the previous per-result getDocument() N+1.
+    const freshnessPolicy = options.freshnessPolicy ?? DEFAULT_FRESHNESS_POLICY;
+    const parsedNow = Date.parse(now());
+    const nowMs = Number.isNaN(parsedNow) ? Date.now() : parsedNow;
+    const docById = new Map(listDocuments().map((d) => [d.documentId, d] as const));
+    // Scoped to the SURFACED results (populated in the results loop) so it stays
+    // consistent with per-result metadata.freshness.
+    const staleDocumentIds = new Set<string>();
+
+    const candidates: { chunk: RetrievalChunk; score: number; freshness: FreshnessInfo }[] = [];
     for (const ch of chunks) {
       if (!isChunkReadable(ch.tenantId, ch.namespace, request.tenantId, policy)) {
         continue;
       }
-      const score = scoreChunk(ch.text, queryWords);
-      if (score <= 0) continue;
-      if (request.minScore !== undefined && score < request.minScore) continue;
-      candidates.push({ chunk: ch, score });
+      const relevance = scoreChunk(ch.text, queryWords);
+      // minScore gates RELEVANCE (pre-decay) so stale items are demoted, not dropped.
+      if (relevance <= 0) continue;
+      if (request.minScore !== undefined && relevance < request.minScore) continue;
+      const freshness = computeFreshness(docById.get(ch.documentId)?.updatedAt, nowMs, freshnessPolicy);
+      candidates.push({ chunk: ch, score: relevance * freshness.decayFactor, freshness });
     }
 
     candidates.sort((a, b) => b.score - a.score);
@@ -117,9 +137,10 @@ export async function searchRetrieval(
     );
 
     const results: RetrievalResult[] = [];
-    for (const { chunk, score } of top) {
-      const doc = getDocument(chunk.documentId);
+    for (const { chunk, score, freshness } of top) {
+      const doc = docById.get(chunk.documentId);
       const title = doc?.title ?? chunk.documentId;
+      if (freshness.stale) staleDocumentIds.add(chunk.documentId);
       results.push({
         chunkId: chunk.chunkId,
         documentId: chunk.documentId,
@@ -129,9 +150,13 @@ export async function searchRetrieval(
         text: chunk.text,
         ...(doc?.sourceUri !== undefined ? { sourceUri: doc.sourceUri } : {}),
         citation: doc?.sourceUri ? `${title} (${doc.sourceUri})` : title,
-        metadata: chunk.metadata,
+        metadata: { ...chunk.metadata, freshness },
       });
     }
+
+    // Both staleDocumentIds and conflicts scope to the surfaced `results` set.
+    const conflicts: ConflictFlag[] = detectConflicts(results);
+    policyMeta.staleDocumentIds = [...staleDocumentIds];
 
     const trace: RetrievalTrace = {
       traceId: `trace-${randomUUID()}`,
@@ -175,6 +200,7 @@ export async function searchRetrieval(
       results,
       retrievalTraceId: trace.traceId,
       policyMeta,
+      conflicts,
     };
   } catch (err) {
     const error = err instanceof Error ? err.message : "search failed";

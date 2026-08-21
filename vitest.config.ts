@@ -6,6 +6,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./tests/setup/test-env.ts"],
     include: ["tests/**/*.test.ts"],
+    // The runtime/ stores (e.g. runtime/retrieval/) are process-global, file-backed
+    // singletons keyed on cwd. Multiple test files that clear+seed the same store
+    // race under parallel workers — serialize file execution for deterministic runs.
+    fileParallelism: false,
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
