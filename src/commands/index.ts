@@ -457,3 +457,6 @@ export type {
 
 export { LeadToOfferCommand } from "./lead-to-offer.command.js";
 export type { LeadToOfferCommandInput, LeadToOfferCommandResult } from "./lead-to-offer.command.js";
+
+export { CrmCommand } from "./crm.command.js";
+export type { CrmCommandInput, CrmCommandResult, CrmCommandDeps } from "./crm.command.js";

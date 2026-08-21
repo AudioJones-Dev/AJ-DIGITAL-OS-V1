@@ -84,6 +84,7 @@ import {
   DagAuditCommand,
   DagOutputsCommand,
   LeadToOfferCommand,
+  CrmCommand,
   NormalizeEntityCommand,
   ListEntitiesCommand,
   GetEntityCommand,
@@ -1237,6 +1238,21 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
             ...(getStringFlag(parsed.flags, "offerTitle") !== undefined ? { offerTitle: getStringFlag(parsed.flags, "offerTitle")! } : {}),
             ...(getStringFlag(parsed.flags, "tenantId") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenantId")! } : {}),
             ...(getStringFlag(parsed.flags, "airtableRecordId") !== undefined ? { airtableRecordId: getStringFlag(parsed.flags, "airtableRecordId")! } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "crm":
+        {
+          const result = await new CrmCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(getStringFlag(parsed.flags, "object") !== undefined ? { object: getStringFlag(parsed.flags, "object")! } : {}),
+            ...(getStringFlag(parsed.flags, "action") !== undefined ? { action: getStringFlag(parsed.flags, "action")! } : {}),
+            ...(getStringFlag(parsed.flags, "tenant") !== undefined ? { tenantId: getStringFlag(parsed.flags, "tenant")! } : {}),
+            ...(getStringFlag(parsed.flags, "actor") !== undefined ? { actorId: getStringFlag(parsed.flags, "actor")! } : {}),
+            ...(getStringFlag(parsed.flags, "actorType") !== undefined ? { actorType: getStringFlag(parsed.flags, "actorType")! } : {}),
+            ...(getStringFlag(parsed.flags, "id") !== undefined ? { id: getStringFlag(parsed.flags, "id")! } : {}),
+            ...(getStringFlag(parsed.flags, "data") !== undefined ? { payload: getStringFlag(parsed.flags, "data")! } : {}),
+            ...(getStringFlag(parsed.flags, "approvalStatus") !== undefined ? { approvalStatus: getStringFlag(parsed.flags, "approvalStatus")! } : {}),
           });
           return result.ok ? 0 : 1;
         }
