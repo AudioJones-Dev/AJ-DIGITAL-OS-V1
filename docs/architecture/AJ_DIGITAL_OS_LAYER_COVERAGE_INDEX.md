@@ -185,14 +185,14 @@ Every new module added to the system must update this index.
 | Field | Value |
 |-------|-------|
 | **Status** | 🔶 Partial |
-| **Primary Modules** | `src/bel/` · `src/security/agents/` |
+| **Primary Modules** | `src/bel/` · `src/mcp/` · `src/security/agents/` |
 | **Runtime Responsibility** | Scoped AI workers, tool execution, agent registry, memory scoping |
 | **Tests** | `tests/security/agents/` |
 | **Notes / Gaps** | BEL runtime provides execution context. Agent registry (`src/security/agents/`) tracks registered agents. Missing: full `OSAgent` interface enforcement, individual agent role definitions, forbidden-action enforcement, memory-scope isolation per agent, browser/voice/research agent implementations. |
 
 **Key files:**
 - `src/bel/capabilities.ts` — capability definitions and checks
-- `src/bel/mcp-tool-registry.ts` — MCP tool registration
+- `src/mcp/mcp-tool-registry.ts` — MCP tool registration
 - `src/security/agents/agent-registry.ts` — agent registration and lookup
 
 ---
