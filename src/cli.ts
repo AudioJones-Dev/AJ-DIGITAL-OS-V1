@@ -101,6 +101,15 @@ import {
   CeraCycleCommand,
   RetrievalIngestCommand,
   RetrievalSearchCommand,
+  MapListCommand,
+  MapInspectCommand,
+  CeraListCommand,
+  CompoundScoreCommand,
+  DecisionAuditCommand,
+  RetrievalListDocsCommand,
+  RetrievalInspectDocCommand,
+  RetrievalTracesCommand,
+  RetrievalContextCommand,
   normalizeAssistantMode,
   type TrackRunViewMode,
 } from "./commands/index.js";
@@ -1463,6 +1472,151 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           const actor = getStringFlag(parsed.flags, "actor");
 
           const result = await new RetrievalSearchCommand().run({
+            query,
+            namespaces,
+            environment:
+              parseRetrievalEnvironment(getStringFlag(parsed.flags, "environment")) ??
+              DEFAULT_RETRIEVAL_ENVIRONMENT,
+            maxResults: getNumberFlag(parsed.flags, "maxResults") ?? DEFAULT_RETRIEVAL_MAX_RESULTS,
+            json: hasFlag(parsed.flags, "json"),
+            ...(minScore !== undefined ? { minScore } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(runId !== undefined ? { runId } : {}),
+            ...(actor !== undefined ? { actor } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "map-list":
+        {
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const limit = getNumberFlag(parsed.flags, "limit");
+          const result = await new MapListCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "map-inspect":
+        {
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId");
+          if (!evaluationId) {
+            console.error("map-inspect requires --evaluationId.");
+            return 1;
+          }
+          const result = await new MapInspectCommand().run({
+            evaluationId,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "cera-list":
+        {
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId");
+          const limit = getNumberFlag(parsed.flags, "limit");
+          const result = await new CeraListCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(evaluationId !== undefined ? { evaluationId } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "compound-score":
+        {
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId");
+          if (!evaluationId) {
+            console.error("compound-score requires --evaluationId.");
+            return 1;
+          }
+          const result = await new CompoundScoreCommand().run({
+            evaluationId,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "decision-audit":
+        {
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId");
+          const cycleId = getStringFlag(parsed.flags, "cycleId");
+          const event = getStringFlag(parsed.flags, "event");
+          const limit = getNumberFlag(parsed.flags, "limit");
+          const result = await new DecisionAuditCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(evaluationId !== undefined ? { evaluationId } : {}),
+            ...(cycleId !== undefined ? { cycleId } : {}),
+            ...(event !== undefined ? { event } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-list-docs":
+        {
+          const namespaceRaw = getStringFlag(parsed.flags, "namespace");
+          if (namespaceRaw !== undefined && parseRetrievalNamespace(namespaceRaw) === undefined) {
+            console.error(
+              "retrieval-list-docs --namespace must be one of: system_docs, client_docs, brand_voice, workflow_docs, content_assets, aeo_research, attribution_memory, audit_memory, tool_docs.",
+            );
+            return 1;
+          }
+
+          const namespace = parseRetrievalNamespace(namespaceRaw);
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const limit = getNumberFlag(parsed.flags, "limit");
+
+          const result = await new RetrievalListDocsCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(namespace !== undefined ? { namespace } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-inspect-doc":
+        {
+          const documentId = getStringFlag(parsed.flags, "documentId");
+          if (!documentId) {
+            console.error("retrieval-inspect-doc requires --documentId.");
+            return 1;
+          }
+          const result = await new RetrievalInspectDocCommand().run({
+            documentId,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-traces":
+        {
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const runId = getStringFlag(parsed.flags, "runId");
+          const limit = getNumberFlag(parsed.flags, "limit");
+          const result = await new RetrievalTracesCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(runId !== undefined ? { runId } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-context":
+        {
+          const query = getStringFlag(parsed.flags, "query");
+          const namespacesRaw = getStringFlag(parsed.flags, "namespaces");
+          const namespaces = namespacesRaw ? parseRetrievalNamespaces(namespacesRaw) : [];
+          if (!query || namespaces.length === 0) {
+            console.error(
+              "retrieval-context requires --query and --namespaces (comma-separated: system_docs, client_docs, brand_voice, workflow_docs, content_assets, aeo_research, attribution_memory, audit_memory, tool_docs).",
+            );
+            return 1;
+          }
+
+          const minScore = getNumberFlag(parsed.flags, "minScore");
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const runId = getStringFlag(parsed.flags, "runId");
+          const actor = getStringFlag(parsed.flags, "actor");
+
+          const result = await new RetrievalContextCommand().run({
             query,
             namespaces,
             environment:

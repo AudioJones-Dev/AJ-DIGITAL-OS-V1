@@ -410,6 +410,63 @@ export class HelpCommand {
           "retrieval-search --query 'onboarding steps' --namespaces 'system_docs,workflow_docs' --maxResults 10 --json",
         ],
       },
+      {
+        name: "map-list",
+        description: "List stored MAP evaluations, newest first.",
+        category: "inspection",
+        examples: ["map-list", "map-list --limit 20 --json"],
+      },
+      {
+        name: "map-inspect",
+        description: "Show one MAP evaluation with its decision audit trail.",
+        category: "inspection",
+        examples: ["map-inspect --evaluationId eval_123", "map-inspect --evaluationId eval_123 --json"],
+      },
+      {
+        name: "cera-list",
+        description: "List CERA cycles, optionally filtered to one evaluation.",
+        category: "inspection",
+        examples: ["cera-list", "cera-list --evaluationId eval_123 --limit 20 --json"],
+      },
+      {
+        name: "compound-score",
+        description: "Compute and record the compound score for an evaluation and its CERA cycles.",
+        category: "actions",
+        examples: ["compound-score --evaluationId eval_123", "compound-score --evaluationId eval_123 --json"],
+      },
+      {
+        name: "decision-audit",
+        description: "Read the decision audit event log, filtered by evaluation, cycle, or event type.",
+        category: "inspection",
+        examples: ["decision-audit --limit 50", "decision-audit --evaluationId eval_123 --json"],
+      },
+      {
+        name: "retrieval-list-docs",
+        description: "List ingested retrieval documents, optionally scoped to one namespace.",
+        category: "inspection",
+        examples: ["retrieval-list-docs", "retrieval-list-docs --namespace system_docs --limit 50 --json"],
+      },
+      {
+        name: "retrieval-inspect-doc",
+        description: "Show one retrieval document with its indexed chunks.",
+        category: "inspection",
+        examples: ["retrieval-inspect-doc --documentId doc_123", "retrieval-inspect-doc --documentId doc_123 --json"],
+      },
+      {
+        name: "retrieval-traces",
+        description: "List retrieval search traces for audit and debugging.",
+        category: "inspection",
+        examples: ["retrieval-traces --limit 30", "retrieval-traces --runId run_123 --json"],
+      },
+      {
+        name: "retrieval-context",
+        description: "Assemble a retrieval context pack for a query across one or more namespaces.",
+        category: "inspection",
+        examples: [
+          "retrieval-context --query 'onboarding steps' --namespaces system_docs",
+          "retrieval-context --query 'onboarding steps' --namespaces 'system_docs,workflow_docs' --maxResults 10 --json",
+        ],
+      },
     ];
   }
 
