@@ -14,7 +14,10 @@
     "test:p2": "node ../../tests/repo-pruner/p2.test.mjs",
     "test:p3": "node ../../tests/repo-pruner/p3.test.mjs",
     "test:p4": "node ../../tests/repo-pruner/p4.test.mjs",
-    "validate:syntax": "node --check scripts/run-pruner.mjs && node --check scripts/run-adapters.mjs && node --check scripts/reverify.mjs && node --check scripts/self-test.mjs && node --check scripts/lib/classifier.mjs && node --check scripts/lib/annotations.mjs && node --check scripts/lib/paths.mjs && node --check scripts/lib/emitters.mjs && node --check scripts/lib/detector-runtime.mjs && node --check scripts/lib/adapters/index.mjs && node --check scripts/lib/adapters/knip.mjs && node --check scripts/lib/adapters/tsc.mjs && node --check ../../scripts/sync-agent-skill.mjs && node --check ../../tests/repo-pruner/parity-harness.mjs"
+    "test:parity": "node ../../tests/repo-pruner/fixture-byte-parity.test.mjs",
+    "test:madge-source-roots": "node ../../tests/repo-pruner/madge-source-roots.test.mjs",
+    "test:live-reverify": "node ../../tests/repo-pruner/live-reverify.test.mjs",
+    "validate:syntax": "node --check scripts/run-pruner.mjs && node --check scripts/run-adapters.mjs && node --check scripts/reverify.mjs && node --check scripts/self-test.mjs && node --check scripts/lib/classifier.mjs && node --check scripts/lib/annotations.mjs && node --check scripts/lib/paths.mjs && node --check scripts/lib/emitters.mjs && node --check scripts/lib/detector-runtime.mjs && node --check scripts/lib/adapters/index.mjs && node --check scripts/lib/adapters/knip.mjs && node --check scripts/lib/adapters/tsc.mjs && node --check ../../scripts/sync-agent-skill.mjs && node --check ../../tests/repo-pruner/parity-harness.mjs && node --check ../../tests/repo-pruner/fixture-byte-parity.test.mjs && node --check ../../tests/repo-pruner/madge-source-roots.test.mjs && node --check ../../tests/repo-pruner/live-reverify.test.mjs"
   },
   "repoPruner": {
     "phase": "P4",

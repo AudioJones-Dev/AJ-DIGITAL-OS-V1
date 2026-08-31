@@ -7,7 +7,8 @@ import { resolvePrunerTarget } from "./lib/fixture.mjs";
 import { runClassificationPipeline } from "./lib/pipeline.mjs";
 import { compareSnapshots, snapshotSourceTree } from "./lib/snapshot.mjs";
 import { serializeFindings } from "./lib/stable.mjs";
-import { validateFinding } from "./lib/classifier.mjs";
+import { buildVerifyCmd, LIVE_REPO_PLACEHOLDER, validateFinding } from "./lib/classifier.mjs";
+import { SKILL_ROOT } from "./lib/detector-runtime.mjs";
 import { renderInventory, renderMeasure } from "./lib/emitters.mjs";
 import { git } from "./lib/git.mjs";
 
@@ -78,7 +79,7 @@ if (manifest.reason) {
 
 const before = await snapshotSourceTree(repoRoot);
 try {
-  const pipeline = await runClassificationPipeline(repoRoot, { scope });
+  const pipeline = await runClassificationPipeline(repoRoot, { scope, targetType: target.target_type });
   manifest.scope = pipeline.config.scope;
   manifest.detector_execution_started = pipeline.adapter_result !== null;
   manifest.outcome = pipeline.classification_result.outcome;
@@ -133,6 +134,17 @@ try {
     manifest.actionable_findings_emitted = pipeline.classification_result.findings.filter((finding) => finding.classification === "actionable").length;
     manifest.finding_count = pipeline.classification_result.findings.length;
     manifest.analysis_scope = pipeline.adapter_result?.analysis_scope ?? null;
+    if (target.target_type === "live") {
+      // findings.jsonl stays free of absolute paths, so the resolved
+      // substitution for the emitted placeholder is recorded here instead.
+      // run-manifest.json is outside the byte-parity assertion.
+      manifest.reverification = {
+        placeholder: LIVE_REPO_PLACEHOLDER,
+        working_directory: SKILL_ROOT,
+        repository_root: repoRoot,
+        command_template: buildVerifyCmd({ findingId: "<finding-id>", targetType: "live", scope: pipeline.config.scope }),
+      };
+    }
   }
 } catch (error) {
   manifest.outcome = "blocked";
