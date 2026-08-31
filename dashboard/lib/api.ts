@@ -22,6 +22,30 @@ export const PUBLIC_HERMES_API_URL =
   process.env.NEXT_PUBLIC_HERMES_API_URL ?? process.env.HERMES_API_URL ?? "http://localhost:3001";
 const NEON_DATABASE_URL = process.env.NEON_DATABASE_URL ?? "";
 
+/**
+ * Server-side fetch to the Hermes status API.
+ *
+ * Hermes requires a bearer token on every route outside its public allowlist
+ * (/status, /metrics, the Stripe webhook). Without it the API answers 401 and
+ * every caller below silently falls back to an empty result, which is why the
+ * dashboard rendered blank pages rather than surfacing an error.
+ *
+ * SERVER ONLY. HERMES_STATUS_API_KEY is deliberately not a NEXT_PUBLIC_ var, so
+ * this module must never be imported from a client component — doing so would
+ * ship the key to the browser. Client code uses `lib/control-client.ts` with
+ * PUBLIC_HERMES_API_URL instead, and the two connector helpers below keep using
+ * PUBLIC_HERMES_API_URL for that reason.
+ */
+async function hermesFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const key = process.env.HERMES_STATUS_API_KEY?.trim();
+  const headers = new Headers(init.headers);
+  if (key) {
+    headers.set("Authorization", `Bearer ${key}`);
+  }
+  return fetch(input, { ...init, headers });
+}
+
+
 // ── Neon HTTP API ─────────────────────────────────────────────────
 
 interface NeonQueryResponse {
@@ -128,19 +152,19 @@ export async function fetchFullRunData(runRef: string): Promise<FullRunData | nu
 // ── Hermes API ────────────────────────────────────────────────────
 
 export async function fetchHermesStatus(): Promise<HermesStatus> {
-  const res = await fetch(`${HERMES_API_URL}/status`, { cache: "no-store" });
+  const res = await hermesFetch(`${HERMES_API_URL}/status`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Hermes /status returned ${res.status}`);
   return res.json() as Promise<HermesStatus>;
 }
 
 export async function fetchBelCapabilities(): Promise<BelCapabilities> {
-  const res = await fetch(`${HERMES_API_URL}/bel/capabilities`, { cache: "no-store" });
+  const res = await hermesFetch(`${HERMES_API_URL}/bel/capabilities`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Hermes /bel/capabilities returned ${res.status}`);
   return res.json() as Promise<BelCapabilities>;
 }
 
 export async function fetchOpportunities(): Promise<unknown[]> {
-  const res = await fetch(`${HERMES_API_URL}/intelligence/opportunities`, { cache: "no-store" });
+  const res = await hermesFetch(`${HERMES_API_URL}/intelligence/opportunities`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Hermes /intelligence/opportunities returned ${res.status}`);
   const data = await res.json() as { opportunities?: unknown[] } | unknown[];
   return Array.isArray(data) ? data : ((data as { opportunities?: unknown[] }).opportunities ?? []);
@@ -149,14 +173,14 @@ export async function fetchOpportunities(): Promise<unknown[]> {
 // ── Control Plane (server-side: uses HERMES_API_URL) ─────────────
 
 export async function getControlRuns(): Promise<ControlRunRecord[]> {
-  const res = await fetch(`${HERMES_API_URL}/control/runs`, { cache: "no-store" });
+  const res = await hermesFetch(`${HERMES_API_URL}/control/runs`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Hermes /control/runs returned ${res.status}`);
   const json = (await res.json()) as { ok: boolean; data: ControlRunRecord[] };
   return json.data ?? [];
 }
 
 export async function getControlRun(runId: string): Promise<ControlRunRecord | null> {
-  const res = await fetch(`${HERMES_API_URL}/control/runs/${encodeURIComponent(runId)}`, {
+  const res = await hermesFetch(`${HERMES_API_URL}/control/runs/${encodeURIComponent(runId)}`, {
     cache: "no-store",
   });
   if (res.status === 404) return null;
@@ -168,7 +192,7 @@ export async function getControlRun(runId: string): Promise<ControlRunRecord | n
 export async function getControlRunAudit(runId: string, limit?: number): Promise<ControlAuditEvent[]> {
   const url = new URL(`${HERMES_API_URL}/control/runs/${encodeURIComponent(runId)}/audit`);
   if (limit !== undefined) url.searchParams.set("limit", String(limit));
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  const res = await hermesFetch(url.toString(), { cache: "no-store" });
   if (!res.ok) throw new Error(`Hermes /control/runs/${runId}/audit returned ${res.status}`);
   const json = (await res.json()) as { ok: boolean; events: ControlAuditEvent[] };
   return json.events ?? [];
@@ -183,7 +207,7 @@ export async function controlRunAction(
   runId: string,
   payload: ControlActionPayload,
 ): Promise<ControlActionResult> {
-  const res = await fetch(`${HERMES_API_URL}/control/runs/${encodeURIComponent(runId)}/action`, {
+  const res = await hermesFetch(`${HERMES_API_URL}/control/runs/${encodeURIComponent(runId)}/action`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -196,7 +220,7 @@ export async function controlRunAction(
 // ── Attribution ──────────────────────────────────────────────────
 
 export async function getAttributionEventsByRun(runId: string): Promise<AttributionEvent[]> {
-  const res = await fetch(
+  const res = await hermesFetch(
     `${HERMES_API_URL}/attribution/events/${encodeURIComponent(runId)}`,
     { cache: "no-store" },
   );
@@ -210,7 +234,7 @@ export async function getAttributionEventsByRun(runId: string): Promise<Attribut
 
 export async function getCoreHealth(): Promise<import("./types").CoreHealth | null> {
   try {
-    const res = await fetch(`${HERMES_API_URL}/core/health`, { cache: "no-store" });
+    const res = await hermesFetch(`${HERMES_API_URL}/core/health`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json() as Promise<import("./types").CoreHealth>;
   } catch { return null; }
@@ -218,7 +242,7 @@ export async function getCoreHealth(): Promise<import("./types").CoreHealth | nu
 
 export async function getMetrics(): Promise<import("./types").MetricsSnapshot | null> {
   try {
-    const res = await fetch(`${HERMES_API_URL}/core/metrics`, { cache: "no-store" });
+    const res = await hermesFetch(`${HERMES_API_URL}/core/metrics`, { cache: "no-store" });
     if (!res.ok) return null;
     const json = await res.json() as { ok: boolean; metrics: import("./types").MetricsSnapshot };
     return json.metrics ?? null;
@@ -239,7 +263,7 @@ export async function getSystemEvents(params?: {
     if (params?.runId) url.searchParams.set("runId", params.runId);
     if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await hermesFetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = await res.json() as { ok: boolean; events: import("./types").SystemEvent[] };
     return json.events ?? [];
@@ -255,7 +279,7 @@ export async function getCacheEntries(
   try {
     const url = new URL(`${HERMES_API_URL}/cache/${encodeURIComponent(namespace)}`);
     if (tenantId) url.searchParams.set("tenantId", tenantId);
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await hermesFetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = await res.json() as { ok: boolean; data: import("./types").CacheEntryMeta[] };
     return json.data ?? [];
@@ -270,7 +294,7 @@ export async function getCacheAuditLog(params?: {
     const url = new URL(`${HERMES_API_URL}/cache/audit`);
     if (params?.namespace) url.searchParams.set("namespace", params.namespace);
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await hermesFetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = await res.json() as { ok: boolean; events: import("./types").CacheAuditEvent[] };
     return json.events ?? [];
@@ -289,7 +313,7 @@ export async function getDagRuns(params?: {
     if (params?.status) url.searchParams.set("status", params.status);
     if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await hermesFetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = await res.json() as { ok: boolean; data: import("./types").BelDagRunState[] };
     return json.data ?? [];
@@ -298,7 +322,7 @@ export async function getDagRuns(params?: {
 
 export async function getDagRun(runId: string): Promise<import("./types").BelDagRunState | null> {
   try {
-    const res = await fetch(
+    const res = await hermesFetch(
       `${HERMES_API_URL}/dag/runs/${encodeURIComponent(runId)}`,
       { cache: "no-store" },
     );
@@ -312,7 +336,7 @@ export async function getDagAudit(runId: string, limit?: number): Promise<import
   try {
     const url = new URL(`${HERMES_API_URL}/dag/runs/${encodeURIComponent(runId)}/audit`);
     if (limit) url.searchParams.set("limit", String(limit));
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await hermesFetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = await res.json() as { ok: boolean; events: import("./types").BelDagAuditEvent[] };
     return json.events ?? [];
@@ -331,7 +355,7 @@ export async function getRetrievalDocs(params?: {
     if (params?.namespace) url.searchParams.set("namespace", params.namespace);
     if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await hermesFetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = await res.json() as { ok: boolean; data: import("./types").RetrievalDocument[] };
     return json.data ?? [];
@@ -348,7 +372,7 @@ export async function getRetrievalTraces(params?: {
     if (params?.tenantId) url.searchParams.set("tenantId", params.tenantId);
     if (params?.runId) url.searchParams.set("runId", params.runId);
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await hermesFetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = await res.json() as { ok: boolean; data: import("./types").RetrievalTrace[] };
     return json.data ?? [];
@@ -361,7 +385,7 @@ export async function getMapEvaluations(limit?: number): Promise<import("./types
   try {
     const url = new URL(`${HERMES_API_URL}/decision/map/evaluations`);
     if (limit) url.searchParams.set("limit", String(limit));
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await hermesFetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = await res.json() as { ok: boolean; data: import("./types").MapEvaluation[] };
     return json.data ?? [];
@@ -372,7 +396,7 @@ export async function getCeraCycles(limit?: number): Promise<import("./types").C
   try {
     const url = new URL(`${HERMES_API_URL}/decision/cera/cycles`);
     if (limit) url.searchParams.set("limit", String(limit));
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await hermesFetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return [];
     const json = await res.json() as { ok: boolean; data: import("./types").CeraCycle[] };
     return json.data ?? [];
@@ -383,7 +407,7 @@ export async function getCeraCycles(limit?: number): Promise<import("./types").C
 
 export async function getConnectors(): Promise<OSConnector[]> {
   try {
-    const res = await fetch(`${HERMES_API_URL}/connectors`, { cache: "no-store" });
+    const res = await hermesFetch(`${HERMES_API_URL}/connectors`, { cache: "no-store" });
     if (!res.ok) return [];
     const json = (await res.json()) as { ok: boolean; data: OSConnector[] };
     return json.data ?? [];
@@ -426,7 +450,7 @@ export async function getEntityList(
     const url = new URL(`${HERMES_API_URL}/normalization/${encodeURIComponent(entityType)}`);
     if (options?.tenantId) url.searchParams.set("tenantId", options.tenantId);
     if (options?.limit) url.searchParams.set("limit", String(options.limit));
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await hermesFetch(url.toString(), { cache: "no-store" });
     if (!res.ok) return { count: 0, data: [] };
     const json = (await res.json()) as {
       ok: boolean;
@@ -444,7 +468,7 @@ export async function getEntityList(
 
 export async function getGovernanceBrandVoicePolicy(): Promise<unknown> {
   try {
-    const res = await fetch(`${HERMES_API_URL}/governance/brand-voice/policy`, { cache: "no-store" });
+    const res = await hermesFetch(`${HERMES_API_URL}/governance/brand-voice/policy`, { cache: "no-store" });
     if (!res.ok) return null;
     const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
     return json.policy ?? json.data ?? json;
@@ -453,7 +477,7 @@ export async function getGovernanceBrandVoicePolicy(): Promise<unknown> {
 
 export async function getGovernanceLegalPolicy(): Promise<unknown> {
   try {
-    const res = await fetch(`${HERMES_API_URL}/governance/legal/policy`, { cache: "no-store" });
+    const res = await hermesFetch(`${HERMES_API_URL}/governance/legal/policy`, { cache: "no-store" });
     if (!res.ok) return null;
     const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
     return json.policy ?? json.data ?? json;
@@ -462,7 +486,7 @@ export async function getGovernanceLegalPolicy(): Promise<unknown> {
 
 export async function getGovernanceSopPolicy(workflowType: string): Promise<unknown> {
   try {
-    const res = await fetch(`${HERMES_API_URL}/governance/sop/${encodeURIComponent(workflowType)}`, { cache: "no-store" });
+    const res = await hermesFetch(`${HERMES_API_URL}/governance/sop/${encodeURIComponent(workflowType)}`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json() as Promise<unknown>;
   } catch { return null; }
@@ -470,7 +494,7 @@ export async function getGovernanceSopPolicy(workflowType: string): Promise<unkn
 
 export async function getGovernanceOfferPolicy(): Promise<unknown> {
   try {
-    const res = await fetch(`${HERMES_API_URL}/governance/offer/policy`, { cache: "no-store" });
+    const res = await hermesFetch(`${HERMES_API_URL}/governance/offer/policy`, { cache: "no-store" });
     if (!res.ok) return null;
     const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
     return json.policy ?? json.data ?? json;
