@@ -347,6 +347,126 @@ export class HelpCommand {
         category: "setup",
         examples: ["assistant-doctor", "assistant-doctor --json"],
       },
+      {
+        name: "offer-create",
+        description: "Create a service offer through the Offer Engine with MAP scoring and governance checks.",
+        category: "actions",
+        examples: [
+          "offer-create --title 'Strategy Audit' --type audit --price 1500 --currency USD --deliverables 'report,recs' --createdBy ops",
+          "offer-create --title 'Retainer' --type retainer --price 4000 --currency USD --deliverables 'strategy,reporting' --createdBy ops --json",
+        ],
+      },
+      {
+        name: "diagnose",
+        description: "Run a business diagnosis across the retrieval and decision layers to surface constraints and ranked recommendations.",
+        category: "actions",
+        examples: [
+          "diagnose --description 'Lead conversion is slow due to manual follow-up' --category lead_gen",
+          "diagnose --description 'Lead conversion is slow' --category lead_gen --proposedActions 'automate,shorten-form' --json",
+        ],
+      },
+      {
+        name: "content-brief",
+        description: "Create a content brief through the Content Engine and open its production DAG run.",
+        category: "actions",
+        examples: [
+          "content-brief --title 'Q1 Update' --description 'Quarterly update' --contentType blog_post --channel blog --createdBy writer",
+          "content-brief --title 'Q1 Update' --description 'Quarterly update' --contentType blog_post --channel blog --createdBy writer --json",
+        ],
+      },
+      {
+        name: "map-evaluate",
+        description: "Score a decision on the MAP model (meaningful, actionable, profitable) and persist the evaluation.",
+        category: "actions",
+        examples: [
+          "map-evaluate --title 'Spring campaign' --description 'Paid social push' --category campaign --meaningful 3 --actionable 3 --profitable 2",
+          "map-evaluate --title 'Spring campaign' --description 'Paid social push' --category campaign --meaningful 3 --actionable 3 --profitable 2 --json",
+        ],
+      },
+      {
+        name: "cera-cycle",
+        description: "Record a CERA cycle (capture, extract, refine, amplify) against an existing MAP evaluation.",
+        category: "actions",
+        examples: [
+          "cera-cycle --evaluationId eval_123 --capture 'signal1,signal2'",
+          "cera-cycle --evaluationId eval_123 --capture 'signal1' --extract 'insight1' --refine 'action1' --amplify 'channel1' --json",
+        ],
+      },
+      {
+        name: "retrieval-ingest",
+        description: "Ingest a document into a retrieval namespace from inline content or a file path.",
+        category: "actions",
+        examples: [
+          "retrieval-ingest --namespace system_docs --title 'Doc' --sourceType markdown --content '...'",
+          "retrieval-ingest --namespace system_docs --title 'Doc' --sourceType markdown --file ./doc.md --json",
+        ],
+      },
+      {
+        name: "retrieval-search",
+        description: "Search the retrieval layer across one or more namespaces and emit a scored, traced result set.",
+        category: "inspection",
+        examples: [
+          "retrieval-search --query 'onboarding steps' --namespaces system_docs",
+          "retrieval-search --query 'onboarding steps' --namespaces 'system_docs,workflow_docs' --maxResults 10 --json",
+        ],
+      },
+      {
+        name: "map-list",
+        description: "List stored MAP evaluations, newest first.",
+        category: "inspection",
+        examples: ["map-list", "map-list --limit 20 --json"],
+      },
+      {
+        name: "map-inspect",
+        description: "Show one MAP evaluation with its decision audit trail.",
+        category: "inspection",
+        examples: ["map-inspect --evaluationId eval_123", "map-inspect --evaluationId eval_123 --json"],
+      },
+      {
+        name: "cera-list",
+        description: "List CERA cycles, optionally filtered to one evaluation.",
+        category: "inspection",
+        examples: ["cera-list", "cera-list --evaluationId eval_123 --limit 20 --json"],
+      },
+      {
+        name: "compound-score",
+        description: "Compute and record the compound score for an evaluation and its CERA cycles.",
+        category: "actions",
+        examples: ["compound-score --evaluationId eval_123", "compound-score --evaluationId eval_123 --json"],
+      },
+      {
+        name: "decision-audit",
+        description: "Read the decision audit event log, filtered by evaluation, cycle, or event type.",
+        category: "inspection",
+        examples: ["decision-audit --limit 50", "decision-audit --evaluationId eval_123 --json"],
+      },
+      {
+        name: "retrieval-list-docs",
+        description: "List ingested retrieval documents, optionally scoped to one namespace.",
+        category: "inspection",
+        examples: ["retrieval-list-docs", "retrieval-list-docs --namespace system_docs --limit 50 --json"],
+      },
+      {
+        name: "retrieval-inspect-doc",
+        description: "Show one retrieval document with its indexed chunks.",
+        category: "inspection",
+        examples: ["retrieval-inspect-doc --documentId doc_123", "retrieval-inspect-doc --documentId doc_123 --json"],
+      },
+      {
+        name: "retrieval-traces",
+        description: "List retrieval search traces for audit and debugging.",
+        category: "inspection",
+        examples: ["retrieval-traces --limit 30", "retrieval-traces --runId run_123 --json"],
+      },
+      {
+        name: "retrieval-context",
+        description: "Assemble a retrieval context pack for a query across one or more namespaces.",
+        category: "inspection",
+        examples: [
+          "retrieval-context --query 'onboarding steps' --namespaces system_docs",
+          "retrieval-context --query 'onboarding steps' --namespaces 'system_docs,workflow_docs' --maxResults 10 --json",
+        ],
+      },
     ];
   }
 
