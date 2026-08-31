@@ -444,7 +444,7 @@ export async function getEntityList(
 
 export async function getGovernanceBrandVoicePolicy(): Promise<unknown> {
   try {
-    const res = await fetch(\/governance/brand-voice/policy, { cache: "no-store" });
+    const res = await fetch(`${HERMES_API_URL}/governance/brand-voice/policy`, { cache: "no-store" });
     if (!res.ok) return null;
     const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
     return json.policy ?? json.data ?? json;
@@ -453,7 +453,7 @@ export async function getGovernanceBrandVoicePolicy(): Promise<unknown> {
 
 export async function getGovernanceLegalPolicy(): Promise<unknown> {
   try {
-    const res = await fetch(\/governance/legal/policy, { cache: "no-store" });
+    const res = await fetch(`${HERMES_API_URL}/governance/legal/policy`, { cache: "no-store" });
     if (!res.ok) return null;
     const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
     return json.policy ?? json.data ?? json;
@@ -462,7 +462,7 @@ export async function getGovernanceLegalPolicy(): Promise<unknown> {
 
 export async function getGovernanceSopPolicy(workflowType: string): Promise<unknown> {
   try {
-    const res = await fetch(\/governance/sop/\, { cache: "no-store" });
+    const res = await fetch(`${HERMES_API_URL}/governance/sop/${encodeURIComponent(workflowType)}`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json() as Promise<unknown>;
   } catch { return null; }
@@ -470,7 +470,7 @@ export async function getGovernanceSopPolicy(workflowType: string): Promise<unkn
 
 export async function getGovernanceOfferPolicy(): Promise<unknown> {
   try {
-    const res = await fetch(\/governance/offer/policy, { cache: "no-store" });
+    const res = await fetch(`${HERMES_API_URL}/governance/offer/policy`, { cache: "no-store" });
     if (!res.ok) return null;
     const json = await res.json() as { ok: boolean; policy?: unknown; data?: unknown };
     return json.policy ?? json.data ?? json;
