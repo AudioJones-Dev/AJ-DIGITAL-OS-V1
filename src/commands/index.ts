@@ -477,3 +477,31 @@ export type { RetrievalIngestCommandInput, RetrievalIngestCommandResult } from "
 
 export { RetrievalSearchCommand } from "./retrieval-search.command.js";
 export type { RetrievalSearchCommandInput, RetrievalSearchCommandResult } from "./retrieval-search.command.js";
+
+
+export { MapListCommand } from "./map-list.command.js";
+export type { MapListCommandInput, MapListCommandResult } from "./map-list.command.js";
+
+export { MapInspectCommand } from "./map-inspect.command.js";
+export type { MapInspectCommandInput, MapInspectCommandResult } from "./map-inspect.command.js";
+
+export { CeraListCommand } from "./cera-list.command.js";
+export type { CeraListCommandInput, CeraListCommandResult } from "./cera-list.command.js";
+
+export { CompoundScoreCommand } from "./compound-score.command.js";
+export type { CompoundScoreCommandInput, CompoundScoreCommandResult } from "./compound-score.command.js";
+
+export { DecisionAuditCommand } from "./decision-audit.command.js";
+export type { DecisionAuditCommandInput, DecisionAuditCommandResult } from "./decision-audit.command.js";
+
+export { RetrievalListDocsCommand } from "./retrieval-list-docs.command.js";
+export type { RetrievalListDocsCommandInput, RetrievalListDocsCommandResult } from "./retrieval-list-docs.command.js";
+
+export { RetrievalInspectDocCommand } from "./retrieval-inspect-doc.command.js";
+export type { RetrievalInspectDocCommandInput, RetrievalInspectDocCommandResult } from "./retrieval-inspect-doc.command.js";
+
+export { RetrievalTracesCommand } from "./retrieval-traces.command.js";
+export type { RetrievalTracesCommandInput, RetrievalTracesCommandResult } from "./retrieval-traces.command.js";
+
+export { RetrievalContextCommand } from "./retrieval-context.command.js";
+export type { RetrievalContextCommandInput, RetrievalContextCommandResult } from "./retrieval-context.command.js";
