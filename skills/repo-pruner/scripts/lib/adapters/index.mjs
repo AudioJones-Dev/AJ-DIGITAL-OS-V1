@@ -72,7 +72,7 @@ export async function runDetectorAdapters(repoRoot, config, { changedPaths = nul
   const executions = await Promise.all([
     config.detectors.jscpd.enabled ? runJscpdAdapter(analysisRoot, config.detectors.jscpd) : null,
     initialKnip,
-    config.detectors.madge.enabled ? runMadgeAdapter(analysisRoot) : null,
+    config.detectors.madge.enabled ? runMadgeAdapter(analysisRoot, config.detectors.madge) : null,
     config.detectors.eslint.enabled ? runEslintAdapter(analysisRoot, config.detectors.eslint) : null,
     config.detectors.tsc.enabled ? runTscHealthAdapter(analysisRoot) : null,
   ]);
