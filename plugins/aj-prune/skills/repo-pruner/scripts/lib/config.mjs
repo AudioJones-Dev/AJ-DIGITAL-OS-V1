@@ -7,7 +7,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   detectors: {
     jscpd: { enabled: true, min_lines: 15, min_tokens: 70 },
     knip: { enabled: true },
-    madge: { enabled: true },
+    madge: { enabled: true, source_roots: ["src"] },
     eslint: { enabled: true, complexity: 15, max_lines: 400 },
     tsc: { enabled: true },
     tests: { enabled: false, command: null },
@@ -39,6 +39,27 @@ function detectorConfig(input, name, tuningKeys = []) {
     normalized[key] = value;
   }
   return normalized;
+}
+
+const ABSOLUTE_PATH = /^(?:[A-Za-z]:|\/)/u;
+const PARENT_SEGMENT = /(?:^|\/)\.\.(?:\/|$)/u;
+
+function madgeDetectorConfig(input) {
+  if (!plainObject(input)) throw new Error("invalid-detector-config:madge");
+  assertKeys(input, ["enabled", "source_roots"], "detectors.madge");
+  if (typeof input.enabled !== "boolean") throw new Error("invalid-detector-config:madge.enabled");
+  const roots = input.source_roots ?? DEFAULT_CONFIG.detectors.madge.source_roots;
+  if (!Array.isArray(roots) || roots.length === 0) throw new Error("invalid-detector-config:madge.source_roots");
+  const normalized = roots.map((root) => {
+    if (!nonEmptyString(root)) throw new Error("invalid-detector-config:madge.source_roots");
+    const trimmed = root.trim().replaceAll("\\", "/").replace(/^\.\//u, "").replace(/\/+$/u, "");
+    if (!trimmed || ABSOLUTE_PATH.test(trimmed) || PARENT_SEGMENT.test(trimmed)) {
+      throw new Error("invalid-detector-config:madge.source_roots");
+    }
+    return trimmed;
+  });
+  if (new Set(normalized).size !== normalized.length) throw new Error("invalid-detector-config:madge.source_roots");
+  return { enabled: input.enabled, source_roots: normalized };
 }
 
 function testAdapterConfig(input) {
@@ -90,7 +111,7 @@ export function resolveConfigObject(input) {
       detectors: {
         jscpd: detectorConfig(input.detectors.jscpd, "jscpd", ["min_lines", "min_tokens"]),
         knip: detectorConfig(input.detectors.knip, "knip"),
-        madge: detectorConfig(input.detectors.madge, "madge"),
+        madge: madgeDetectorConfig(input.detectors.madge),
         eslint: detectorConfig(input.detectors.eslint, "eslint", ["complexity", "max_lines"]),
         tsc: detectorConfig(input.detectors.tsc, "tsc"),
         tests: testAdapterConfig(input.detectors.tests),

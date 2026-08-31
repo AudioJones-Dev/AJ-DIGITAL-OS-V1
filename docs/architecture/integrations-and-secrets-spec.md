@@ -2,21 +2,44 @@
 
 ## Purpose
 
-This document defines the local-first scaffold for integrations, channels, connectors, and secret handling in AJ Digital OS before any live Discord, Telegram, WhatsApp, email, calendar, social, or file adapters are implemented.
+This document defines the integration, channel, connector, and secret-handling
+model for AJ Digital OS: what a channel adapter is, what a connector is, how the
+two differ, and how configuration stays separated from secret material.
 
-This patch is intentionally scaffold-only:
+The conceptual model below remains canonical. The original 2026-04 framing of
+this document as scaffold-only does not: parts of it shipped, and they shipped
+through modules other than the type scaffold this document was written
+alongside. See Implementation Status.
 
-- no live OAuth flow
-- no live bot runtime
-- no external webhook handling
-- no cloud secret manager
-- no GUI settings surface yet
+## Implementation Status
+
+Last reconciled against the codebase: 2026-08-31.
+
+| Area | Status | Where it lives |
+|---|---|---|
+| Connectors | **Implemented** | `src/connectors/` — registry, executor, attribution, adapters |
+| Channel adapters | **Partially implemented** | `src/telegram/`, `src/control-plane/`, and the `assistant-shell` CLI |
+| Config/secret separation | Canonical, implemented | `src/secrets/`, live schemas using `SecretReference` |
+| Raw secret persistence | **Not implemented, by design** | `FileSecretsProvider` throws on raw read/write |
+| OAuth and token flows | **Not implemented** | connectors declare `authType`; no flow exists |
+| Settings editor / UI surface | Not implemented | — |
+
+The type scaffold this document was originally written against
+(`src/integrations/integration-registry.ts`, `integration-types.ts`,
+`connector-types.ts`, `channel-adapter-types.ts`) was never imported by any
+module and was removed in PR #130. The concepts it described survive in the
+implementations named above; only the unused type declarations are gone.
 
 ## Core Terms
 
 ### Channel Adapter
 
 A channel adapter is the conversation surface where a user or operator sends and receives messages with AJ Digital OS.
+
+Implemented today in `src/telegram/` (bot, types, formatters) together with
+`src/control-plane/` (authorization allowlist, CLI and Ollama adapters), and in
+the `assistant-shell` CLI command. There is no shared channel-adapter
+interface; each surface is implemented directly.
 
 Examples:
 
@@ -37,6 +60,12 @@ Channel adapters are about conversation transport and interaction behavior:
 ### Connector
 
 A connector is a scoped integration for external account access or data operations.
+
+Implemented today in `src/connectors/`: `connector-registry.ts` owns
+registration and enable/disable state, `connector-executor.ts` runs capability
+calls, and `src/connectors/adapters/` holds the individual connectors. The
+registry is exposed over HTTP by `hermes-status-api` at `/connectors/audit`.
+Adapters vary in maturity — some perform real calls, others return stubs.
 
 Examples:
 
@@ -147,9 +176,18 @@ Recommended future local provider priority:
 
 ## Token And OAuth Handling
 
-OAuth and token handling are not implemented in this patch.
+OAuth and token handling are still not implemented. Connectors declare an
+`authType` (including `"oauth"`), but no OAuth flow, callback handler, or
+token refresh exists behind that declaration.
 
-The intended model is:
+### Known Divergence
+
+Live connectors that perform real calls read credentials directly from
+environment variables rather than through `SecretReference` — for example the
+resend connector reads `RESEND_API_KEY` from `process.env`. This bypasses the
+secret-reference model described above.
+
+Recorded here rather than left implicit. The intended model is still the target:
 
 - connector config stores the auth strategy and scope metadata
 - connector config references required secrets by `SecretReference`
@@ -201,15 +239,24 @@ The UI should never display raw secret values.
 
 ## Rollout Order
 
-Recommended rollout order:
+The original order recommended Discord first, then Telegram. That is not what
+happened: Telegram shipped and Discord was never started. Restated against
+current reality:
 
-1. Discord
-2. Telegram
-3. local web UI shell
-4. WhatsApp
+| Surface | Status |
+|---|---|
+| terminal shell (`assistant-shell`) | shipped |
+| Telegram | shipped |
+| Discord | not started |
+| local web UI shell | not started |
+| WhatsApp | not started |
 
-Reasoning:
+Reasoning that still holds:
 
-- Discord and Telegram provide the fastest validation path for channel adapter abstractions
-- the local web UI shell should reuse the same adapter/runtime boundaries once terminal behavior is proven
+- the local web UI shell should reuse the boundaries proven by terminal behavior
 - WhatsApp should wait until the connector, secret, and policy model are more mature
+
+Because Telegram and the terminal shell were each built directly, a shared
+channel-adapter abstraction has never been exercised against two surfaces at
+once. Any third surface should decide deliberately whether to introduce one,
+rather than inheriting the removed 2026-04 type scaffold.

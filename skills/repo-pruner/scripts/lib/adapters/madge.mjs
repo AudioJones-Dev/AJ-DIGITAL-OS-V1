@@ -1,6 +1,9 @@
+import { existsSync, statSync } from "node:fs";
+import { resolve } from "node:path";
 import { normalizeRepoPath } from "../normalize.mjs";
 import { writePrunerFile } from "../output.mjs";
 import { runPackageCli } from "../detector-runtime.mjs";
+import { DEFAULT_CONFIG } from "../config.mjs";
 
 const parseJson = (value, label) => {
   try {
@@ -10,13 +13,28 @@ const parseJson = (value, label) => {
   }
 };
 
-const sourcePath = (repoRoot, value) => normalizeRepoPath(repoRoot, `src/${value}`);
+// Madge reports every path relative to its base directory, which it otherwise
+// derives from the common ancestor of the scanned roots. Pinning the base to
+// the repository root keeps returned paths repository-relative for any root
+// layout and removes the `../` escapes a nested root would otherwise produce.
+const sourcePath = (repoRoot, value) => normalizeRepoPath(repoRoot, value);
 
-export async function runMadgeAdapter(repoRoot) {
-  const requiredArgs = ["--ts-config", "tsconfig.json", "--extensions", "ts,tsx"];
+function assertSourceRoots(repoRoot, sourceRoots) {
+  const missing = sourceRoots.filter((root) => {
+    const absolute = resolve(repoRoot, root);
+    return !existsSync(absolute) || !statSync(absolute).isDirectory();
+  });
+  if (missing.length) throw new Error(`madge-missing-source-root:${missing.join(",")}`);
+}
+
+export async function runMadgeAdapter(repoRoot, detectorConfig = DEFAULT_CONFIG.detectors.madge) {
+  const sourceRoots = detectorConfig?.source_roots ?? DEFAULT_CONFIG.detectors.madge.source_roots;
+  assertSourceRoots(repoRoot, sourceRoots);
+
+  const requiredArgs = ["--ts-config", "tsconfig.json", "--extensions", "ts,tsx", "--basedir", "."];
   const treeExecution = await runPackageCli({
     packageName: "madge",
-    args: [...requiredArgs, "--json", "src"],
+    args: [...requiredArgs, "--json", ...sourceRoots],
     cwd: repoRoot,
   });
   const tree = parseJson(treeExecution.stdout, "tree");
@@ -26,7 +44,7 @@ export async function runMadgeAdapter(repoRoot) {
 
   const cycleExecution = await runPackageCli({
     packageName: "madge",
-    args: [...requiredArgs, "--circular", "--json", "src"],
+    args: [...requiredArgs, "--circular", "--json", ...sourceRoots],
     cwd: repoRoot,
     acceptedExitCodes: [0, 1],
   });
@@ -35,7 +53,7 @@ export async function runMadgeAdapter(repoRoot) {
 
   const orphanExecution = await runPackageCli({
     packageName: "madge",
-    args: [...requiredArgs, "--orphans", "--json", "src"],
+    args: [...requiredArgs, "--orphans", "--json", ...sourceRoots],
     cwd: repoRoot,
   });
   const orphans = parseJson(orphanExecution.stdout, "orphans");
@@ -68,6 +86,7 @@ export async function runMadgeAdapter(repoRoot) {
     metadata: {
       detector: "madge",
       version: treeExecution.version,
+      source_roots: [...sourceRoots],
       commands: [treeExecution, cycleExecution, orphanExecution].map((execution) => ({
         command: execution.command,
         exit_code: execution.exit_code,
