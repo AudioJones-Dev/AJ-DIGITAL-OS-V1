@@ -61,6 +61,7 @@ import {
 import { ingestDocument } from "../retrieval/retrieval-ingestor.js";
 import { searchRetrieval } from "../retrieval/retrieval-search.js";
 import { createContextPack } from "../retrieval/retrieval-context.js";
+import { listCycles, listEvaluations } from "../decision/decision-store.js";
 import {
   getDocument,
   getRetrievalTrace,
@@ -456,6 +457,35 @@ function collectBody(req: import("node:http").IncomingMessage): Promise<string> 
     req.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
     req.on("error", reject);
   });
+}
+
+/**
+ * Clamps a `limit` query parameter to a sane range for list endpoints.
+ */
+function parseListLimit(raw: string | null, fallback = 100): number {
+  if (!raw) return fallback;
+  return Math.max(1, Math.min(1000, parseInt(raw, 10) || fallback));
+}
+
+/**
+ * Narrows a `namespace` query parameter to a RetrievalNamespace, or undefined
+ * when absent or unrecognised.
+ */
+function parseRetrievalNamespaceParam(raw: string | null): RetrievalNamespace | undefined {
+  switch (raw) {
+    case "system_docs":
+    case "client_docs":
+    case "brand_voice":
+    case "workflow_docs":
+    case "content_assets":
+    case "aeo_research":
+    case "attribution_memory":
+    case "audit_memory":
+    case "tool_docs":
+      return raw;
+    default:
+      return undefined;
+  }
 }
 
 // ── Edge security: bearer auth + origin-locked CORS ─────────────────────────
@@ -1128,6 +1158,109 @@ export function startHermesApi(port?: number): void {
       const limit = limitRaw ? Math.max(1, Math.min(1000, parseInt(limitRaw, 10) || 100)) : 100;
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, events: getRecentEvents(limit) }));
+      return;
+    }
+
+    // ── Decision: MAP evaluations ───────────────────────────────────────────
+    const mapEvaluationsMatch = req.url?.match(/^\/decision\/map\/evaluations(?:\?(.*))?$/);
+    if (mapEvaluationsMatch && req.method === "GET") {
+      try {
+        const params = new URLSearchParams(mapEvaluationsMatch[1] ?? "");
+        const tenantId = params.get("tenantId") ?? undefined;
+        const limit = parseListLimit(params.get("limit"));
+
+        const data = listEvaluations({
+          limit,
+          ...(tenantId !== undefined ? { tenantId } : {}),
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, data }));
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "failed to list MAP evaluations";
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: message }));
+      }
+      return;
+    }
+
+    // ── Decision: CERA cycles ───────────────────────────────────────────────
+    const ceraCyclesMatch = req.url?.match(/^\/decision\/cera\/cycles(?:\?(.*))?$/);
+    if (ceraCyclesMatch && req.method === "GET") {
+      try {
+        const params = new URLSearchParams(ceraCyclesMatch[1] ?? "");
+        const tenantId = params.get("tenantId") ?? undefined;
+        const evaluationId = params.get("evaluationId") ?? undefined;
+        const limit = parseListLimit(params.get("limit"));
+
+        const data = listCycles({
+          limit,
+          ...(tenantId !== undefined ? { tenantId } : {}),
+          ...(evaluationId !== undefined ? { evaluationId } : {}),
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, data }));
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "failed to list CERA cycles";
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: message }));
+      }
+      return;
+    }
+
+    // ── Retrieval: documents ────────────────────────────────────────────────
+    const retrievalDocsMatch = req.url?.match(/^\/retrieval\/documents(?:\?(.*))?$/);
+    if (retrievalDocsMatch && req.method === "GET") {
+      try {
+        const params = new URLSearchParams(retrievalDocsMatch[1] ?? "");
+        const namespaceRaw = params.get("namespace");
+        const namespace = parseRetrievalNamespaceParam(namespaceRaw);
+        if (namespaceRaw !== null && namespace === undefined) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({ ok: false, error: `unknown namespace: ${namespaceRaw}` }),
+          );
+          return;
+        }
+
+        const tenantId = params.get("tenantId") ?? undefined;
+        const limit = parseListLimit(params.get("limit"));
+
+        const data = listDocuments({
+          limit,
+          ...(namespace !== undefined ? { namespace } : {}),
+          ...(tenantId !== undefined ? { tenantId } : {}),
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, data }));
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "failed to list retrieval documents";
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: message }));
+      }
+      return;
+    }
+
+    // ── Retrieval: search traces ────────────────────────────────────────────
+    const retrievalTracesMatch = req.url?.match(/^\/retrieval\/traces(?:\?(.*))?$/);
+    if (retrievalTracesMatch && req.method === "GET") {
+      try {
+        const params = new URLSearchParams(retrievalTracesMatch[1] ?? "");
+        const tenantId = params.get("tenantId") ?? undefined;
+        const runId = params.get("runId") ?? undefined;
+        const limit = parseListLimit(params.get("limit"));
+
+        const data = listRetrievalTraces({
+          limit,
+          ...(tenantId !== undefined ? { tenantId } : {}),
+          ...(runId !== undefined ? { runId } : {}),
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, data }));
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "failed to list retrieval traces";
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: message }));
+      }
       return;
     }
 

@@ -93,7 +93,7 @@ export default async function DecisionPage() {
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 text-center">
             <p className="text-zinc-500 text-sm">No evaluations yet.</p>
             <p className="text-zinc-700 text-xs mt-2">
-              node dist/cli.js map-evaluate --title "..." --category campaign --meaningful 3 --actionable 3 --profitable 2
+              node dist/cli.js map-evaluate --title "..." --description "..." --category campaign --meaningful 3 --actionable 3 --profitable 2
             </p>
           </div>
         ) : (
