@@ -8,6 +8,7 @@ export async function runClassificationPipeline(repoRoot, {
   configPath = ".pruner.yml",
   scope = null,
   changedPaths = null,
+  targetType = "fixture",
 } = {}) {
   const loaded = await loadConfig(repoRoot, configPath);
   const config = scope ? { ...loaded.config, scope } : loaded.config;
@@ -39,6 +40,7 @@ export async function runClassificationPipeline(repoRoot, {
     registryResult,
     dependencyGraph: adapterResult.dependency_graph,
     changedPaths: effectiveChangedPaths,
+    targetType,
   });
   return {
     config,
