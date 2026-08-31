@@ -57,13 +57,22 @@ const runNode = (script, args, cwd) => spawnSync(process.execPath, [script, ...a
   cwd, encoding: "utf8", env: process.env, shell: false, windowsHide: true,
 });
 
+// Split a command line the way a shell does, honouring double quotes. Naive
+// splitting on spaces is exactly the assumption that hid the unquoted-path
+// defect, so the test must not repeat it.
+function tokenize(commandLine) {
+  return (commandLine.match(/"[^"]*"|\S+/gu) ?? []).map((token) =>
+    token.startsWith('"') && token.endsWith('"') ? token.slice(1, -1) : token);
+}
+
 try {
   // --- emitted command shape --------------------------------------------
   const fixtureCmd = buildVerifyCmd({ findingId: "abc123", targetType: "fixture", scope: "portfolio" });
   const liveCmd = buildVerifyCmd({ findingId: "abc123", targetType: "live", scope: "component" });
 
   assert.equal(fixtureCmd, "node skills/repo-pruner/scripts/reverify.mjs --id abc123 --config .pruner.yml", "the certified fixture command must not change");
-  assert.equal(liveCmd, `node scripts/reverify.mjs --id abc123 --config .pruner.yml --repo ${LIVE_REPO_PLACEHOLDER} --scope component --live-repository`);
+  assert.equal(liveCmd, `node scripts/reverify.mjs --id abc123 --config .pruner.yml --repo "${LIVE_REPO_PLACEHOLDER}" --scope component --live-repository`);
+  assert.ok(liveCmd.includes(`"${LIVE_REPO_PLACEHOLDER}"`), "the placeholder must be quoted so a path containing whitespace survives substitution");
   assert.deepEqual(validateFinding({ ...baseFinding, verify_cmd: fixtureCmd }), [], "the fixture command must stay valid");
   assert.deepEqual(validateFinding({ ...baseFinding, verify_cmd: liveCmd }), [], "the live command must be accepted by the finding validator");
   assert.ok(validateFinding({ ...baseFinding, verify_cmd: "node scripts/reverify.mjs --id abc123" }).includes("verify_cmd"), "a malformed command must still be rejected");
@@ -114,13 +123,37 @@ try {
   // placeholder, from the working directory the manifest names.
   const subject = findings[0];
   const emitted = subject.verify_cmd.replace(LIVE_REPO_PLACEHOLDER, live);
-  const parts = emitted.split(" ");
+  const parts = tokenize(emitted);
   assert.equal(parts[0], "node", "the emitted command must invoke node");
+  assert.equal(parts[parts.indexOf("--repo") + 1], live, "--repo must survive tokenization as a single argument");
   const reverified = runNode(resolve(manifest.reverification.working_directory, parts[1]), parts.slice(2), manifest.reverification.working_directory);
   assert.equal(reverified.status, 0, `emitted verify_cmd did not run: ${reverified.stderr}`);
   assert.equal(JSON.parse(reverified.stdout).id, subject.id, "the emitted verify_cmd must reproduce its own finding");
 
-  console.log(`repo-pruner live reverify test: ${findings.length} live findings, authorization gate and emitted verify_cmd round-trip passed`);
+  // --- a repository root containing whitespace ---------------------------
+  // Windows user profiles and many working directories contain spaces. An
+  // unquoted placeholder splits --repo across two argv entries, so the command
+  // silently stops addressing the repository it names.
+  const spaced = join(temporaryRoot, "live repo with spaces");
+  await createLiveRepo(spaced);
+  const spacedRun = runNode(resolve(skillRoot, "scripts/run-pruner.mjs"), ["--repo", spaced, "--scope", "portfolio", "--live-repository"], repositoryRoot);
+  assert.equal(spacedRun.status, 0, `live run on a whitespace path failed: ${spacedRun.stderr}`);
+  const spacedManifest = JSON.parse(spacedRun.stdout);
+  const spacedFindings = (await readFile(join(spaced, ".pruner/findings.jsonl"), "utf8")).trimEnd().split("\n").filter(Boolean).map((line) => JSON.parse(line));
+  assert.ok(spacedFindings.length > 0, "the whitespace-path run must emit findings");
+
+  const spacedSubject = spacedFindings[0];
+  const spacedTokens = tokenize(spacedSubject.verify_cmd.replace(LIVE_REPO_PLACEHOLDER, spaced));
+  assert.equal(spacedTokens[spacedTokens.indexOf("--repo") + 1], spaced, "a whitespace repository path must survive as one argument");
+  const spacedReverify = runNode(
+    resolve(spacedManifest.reverification.working_directory, spacedTokens[1]),
+    spacedTokens.slice(2),
+    spacedManifest.reverification.working_directory,
+  );
+  assert.equal(spacedReverify.status, 0, `emitted verify_cmd failed on a whitespace path: ${spacedReverify.stderr}`);
+  assert.equal(JSON.parse(spacedReverify.stdout).id, spacedSubject.id, "the emitted verify_cmd must reproduce its finding from a whitespace path");
+
+  console.log(`repo-pruner live reverify test: ${findings.length} live findings, authorization gate, verify_cmd round-trip, and whitespace-path round-trip passed`);
 } finally {
   const resolved = resolve(temporaryRoot);
   if (resolved.startsWith(resolve(tmpdir())) && basename(resolved).startsWith("repo-pruner-live-test-")) {

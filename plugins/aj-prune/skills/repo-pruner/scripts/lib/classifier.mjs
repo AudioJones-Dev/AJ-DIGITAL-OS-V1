@@ -12,13 +12,18 @@ import { filterComponentRecords } from "./records.mjs";
 // an explicit --repo. The repository root is left as a placeholder because
 // findings.jsonl must stay free of absolute paths, host names, and user names;
 // run-manifest.json records the resolved values instead.
+// The placeholder is quoted because a repository root routinely contains
+// whitespace ("C:/Users/First Last/...", "/tmp/repo pruner"). Substituting an
+// unquoted path splits --repo into several arguments and the command cannot
+// reproduce its finding.
 export const LIVE_REPO_PLACEHOLDER = "<repository-root>";
+const QUOTED_PLACEHOLDER = `"${LIVE_REPO_PLACEHOLDER}"`;
 const FIXTURE_VERIFY_CMD = /^node skills\/repo-pruner\/scripts\/reverify\.mjs --id \S+ --config \.pruner\.yml$/u;
-const LIVE_VERIFY_CMD = /^node scripts\/reverify\.mjs --id \S+ --config \.pruner\.yml --repo <repository-root> --scope (?:portfolio|component) --live-repository$/u;
+const LIVE_VERIFY_CMD = /^node scripts\/reverify\.mjs --id \S+ --config \.pruner\.yml --repo "<repository-root>" --scope (?:portfolio|component) --live-repository$/u;
 
 export function buildVerifyCmd({ findingId, targetType, scope }) {
   return targetType === "live"
-    ? `node scripts/reverify.mjs --id ${findingId} --config .pruner.yml --repo ${LIVE_REPO_PLACEHOLDER} --scope ${scope} --live-repository`
+    ? `node scripts/reverify.mjs --id ${findingId} --config .pruner.yml --repo ${QUOTED_PLACEHOLDER} --scope ${scope} --live-repository`
     : `node skills/repo-pruner/scripts/reverify.mjs --id ${findingId} --config .pruner.yml`;
 }
 

@@ -124,11 +124,14 @@ there. Live findings emit the package-relative form instead, run with the skill
 package as the working directory:
 
 ```text
-node scripts/reverify.mjs --id <finding-id> --config .pruner.yml --repo <repository-root> --scope <portfolio|component> --live-repository
+node scripts/reverify.mjs --id <finding-id> --config .pruner.yml --repo "<repository-root>" --scope <portfolio|component> --live-repository
 ```
 
 `<repository-root>` stays a literal placeholder in `findings.jsonl`, which must
-never carry absolute paths, host names, or user names. The runner records the
+never carry absolute paths, host names, or user names. Keep the surrounding
+double quotes when substituting: repository roots routinely contain whitespace
+(`C:/Users/First Last/...`), and an unquoted path splits `--repo` across two
+arguments so the command silently stops addressing the repository it names. The runner records the
 substitution — `working_directory`, `repository_root`, and `command_template` —
 under `reverification` in `.pruner/run-manifest.json`, which is outside the
 byte-parity assertion.
