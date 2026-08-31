@@ -6,6 +6,22 @@ import { classifyPath, normalizeFindingPath, protectionRuleForPath, resolveRegis
 import { stableCompare } from "./normalize.mjs";
 import { filterComponentRecords } from "./records.mjs";
 
+// A fixture verify_cmd is resolvable from the scanned repository itself, where
+// the skill is vendored at skills/repo-pruner/. A live repository does not
+// contain the skill, so its command is run from the skill package root against
+// an explicit --repo. The repository root is left as a placeholder because
+// findings.jsonl must stay free of absolute paths, host names, and user names;
+// run-manifest.json records the resolved values instead.
+export const LIVE_REPO_PLACEHOLDER = "<repository-root>";
+const FIXTURE_VERIFY_CMD = /^node skills\/repo-pruner\/scripts\/reverify\.mjs --id \S+ --config \.pruner\.yml$/u;
+const LIVE_VERIFY_CMD = /^node scripts\/reverify\.mjs --id \S+ --config \.pruner\.yml --repo <repository-root> --scope (?:portfolio|component) --live-repository$/u;
+
+export function buildVerifyCmd({ findingId, targetType, scope }) {
+  return targetType === "live"
+    ? `node scripts/reverify.mjs --id ${findingId} --config .pruner.yml --repo ${LIVE_REPO_PLACEHOLDER} --scope ${scope} --live-repository`
+    : `node skills/repo-pruner/scripts/reverify.mjs --id ${findingId} --config .pruner.yml`;
+}
+
 const TEXT_EXTENSIONS = new Set([".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts", ".json"]);
 const SKIP_DIRECTORIES = new Set([".git", ".pruner", "node_modules", "dist", ".next", "coverage"]);
 
@@ -122,7 +138,7 @@ function analysisQuestion(classification, kind, neverTouch) {
   return null;
 }
 
-export async function classifyNormalizedRecords({ repoRoot, records, config, registryResult, dependencyGraph = {}, changedPaths = null }) {
+export async function classifyNormalizedRecords({ repoRoot, records, config, registryResult, dependencyGraph = {}, changedPaths = null, targetType = "fixture" }) {
   const governanceValid = registryResult?.valid === true;
   if (!governanceValid && config.scope === "portfolio") {
     return {
@@ -259,7 +275,7 @@ export async function classifyNormalizedRecords({ repoRoot, records, config, reg
       current_component_status: currentStatus,
       recommended_status: recommendation(classification, record.kind, currentStatus),
       rules_applied: unique(rules),
-      verify_cmd: `node skills/repo-pruner/scripts/reverify.mjs --id ${record.id} --config .pruner.yml`,
+      verify_cmd: buildVerifyCmd({ findingId: record.id, targetType, scope: config.scope }),
     };
     const question = analysisQuestion(classification, record.kind, neverTouch);
     if (question) finding.analysis_question = question;
@@ -290,7 +306,7 @@ export function validateFinding(finding) {
   }
   if (!finding?.blast_radius || !Number.isInteger(finding.blast_radius.files) || !Number.isInteger(finding.blast_radius.dependents) || typeof finding.blast_radius.public_api_touched !== "boolean") problems.push("blast_radius");
   if (typeof finding?.confidence !== "number" || finding.confidence < 0 || finding.confidence > 1) problems.push("confidence");
-  if (!finding?.verify_cmd || !/^node skills\/repo-pruner\/scripts\/reverify\.mjs --id \S+ --config \.pruner\.yml$/u.test(finding.verify_cmd)) problems.push("verify_cmd");
+  if (!finding?.verify_cmd || !(FIXTURE_VERIFY_CMD.test(finding.verify_cmd) || LIVE_VERIFY_CMD.test(finding.verify_cmd))) problems.push("verify_cmd");
   if (!Array.isArray(finding?.rules_applied) || finding.rules_applied.length === 0) problems.push("rules_applied");
   return unique(problems);
 }

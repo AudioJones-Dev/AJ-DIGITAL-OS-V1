@@ -58,6 +58,35 @@ Treat `--orphans` output as candidates. Corroborate a candidate with Knip
 before attaching `madge-orphan` as a second evidence signal. Count unmatched
 candidates as dropped raw records, including the project entry point.
 
+#### Configurable source roots
+
+The scanned roots come from `detectors.madge.source_roots` in `.pruner.yml`.
+The key is optional and defaults to `["src"]`, which reproduces the certified
+fixture invocation byte for byte. Repositories without a `src/` directory — a
+Next.js App Router project using `app/`, `lib/`, and `components/`, for
+example — must list their own roots:
+
+```yaml
+detectors:
+  madge:
+    enabled: true
+    source_roots: [app, lib, components]
+```
+
+Each root must be repository-relative, non-empty, unique, and free of `..`
+segments; absolute roots are rejected as malformed config. A configured root
+that does not resolve to a directory fails closed as
+`madge-missing-source-root:<roots>` before any detector executes, instead of
+surfacing as the opaque `detector-exit:madge:1` that a missing `src/`
+previously produced.
+
+Always pass `--basedir .` with the repository root as the working directory.
+Madge otherwise reports every path relative to the common ancestor of the
+scanned roots, so the shape of returned paths changes as roots are added, and a
+scanned file that imports outside its own root comes back as a `../` escape.
+Pinning the base directory makes returned paths repository-relative for any
+root layout, so the adapter must not prefix them.
+
 ### ESLint TypeScript parsing
 
 Load the pinned TypeScript parser object directly from the skill-local package.
@@ -83,11 +112,31 @@ context location.
 
 ## Reverification
 
-Every finding uses the canonical wrapper:
+A fixture finding uses the canonical wrapper, run from the scanned repository,
+which vendors the skill at `skills/repo-pruner/`:
 
 ```text
 node skills/repo-pruner/scripts/reverify.mjs --id <finding-id> --config .pruner.yml
 ```
+
+A live repository does not contain the skill, so that path does not resolve
+there. Live findings emit the package-relative form instead, run with the skill
+package as the working directory:
+
+```text
+node scripts/reverify.mjs --id <finding-id> --config .pruner.yml --repo <repository-root> --scope <portfolio|component> --live-repository
+```
+
+`<repository-root>` stays a literal placeholder in `findings.jsonl`, which must
+never carry absolute paths, host names, or user names. The runner records the
+substitution — `working_directory`, `repository_root`, and `command_template` —
+under `reverification` in `.pruner/run-manifest.json`, which is outside the
+byte-parity assertion.
+
+Reverifying a live repository clears the same explicit
+`--repo` / `--scope` / `--live-repository` gate that `run-pruner.mjs` enforces;
+omitting any of the three stops the wrapper before detector execution. A
+pruner-lab fixture still reverifies with no authorization flags.
 
 The wrapper must load the recorded adapter, exact version, normalized inputs,
 and original configuration. If it cannot reproduce a raw record with one
