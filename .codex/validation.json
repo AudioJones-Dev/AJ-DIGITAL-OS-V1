@@ -155,13 +155,13 @@
       ]
     },
     "forbidden_without_approval": {
-      "description": "Commands and action classes agents must not run unless explicit approval is granted.",
+      "description": "Approval-gated actions, excluding merge execution, which is unconditionally forbidden to agents.",
       "commands": [
         {
-          "name": "merge_rebase_push_deploy_release",
+          "name": "rebase_push_deploy_release",
           "command": null,
           "required": false,
-          "note": "Includes git merge, git rebase, git push, deploy commands, release tags, and PR merge actions."
+          "note": "Includes git rebase, git push, deploy commands and release tags. Merge and PR merge actions are always human-executed; approval does not permit agent merge execution."
         },
         {
           "name": "destructive_git_or_filesystem",
