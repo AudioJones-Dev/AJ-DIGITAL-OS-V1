@@ -45,3 +45,59 @@ jobs:
 
       - name: Coverage
         run: npm run coverage
+
+  dashboard-build:
+    name: dashboard (Next.js) build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: dashboard
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # next build runs the full TypeScript check, including the route types
+      # Next generates under .next/types. A standalone tsc --noEmit would be
+      # strictly weaker here: those generated types do not exist before a build.
+      - name: Build (includes typecheck)
+        run: npm run build
+
+  ui-dashboard-build:
+    name: ui/dashboard (Vite) typecheck + build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: ui/dashboard
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ui/dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # npm run build is "tsc -b && vite build", so typecheck is included.
+      - name: Typecheck and build
+        run: npm run build
