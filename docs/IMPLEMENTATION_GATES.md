@@ -47,7 +47,7 @@ Output decision: `Proceed`, `Pause`, or `Blocked`.
 
 Stop for approval when the plan includes:
 
-- Merge.
+- Merge execution is reserved to the human; no agent merge permission is granted.
 - Rebase.
 - Push.
 - Deploy.
@@ -123,3 +123,12 @@ Output decision: `Merge`, `Do not merge`, `Proceed`, `Pause`, or `Blocked`.
 - `Requires real local execution`: Claims require local runtime, browser, service, or production-like execution.
 - `Merge`: Changes are ready for merge review, subject to branch policy.
 - `Do not merge`: Changes are incomplete, risky, unvalidated, or blocked.
+
+## Independent review and merge execution
+
+Follow the independent-review and human-only merge section of root `AGENTS.md`,
+which references the canonical vault policy. Agents may mark validated drafts
+ready after verifying current head and required checks without separate operator
+approval. The human performs merge or squash merge after eligible independent
+review and required validation. Handoff labels such as `Merge` are recommendations
+only. Deployment, credentials, provider activation and other gates remain separate.
