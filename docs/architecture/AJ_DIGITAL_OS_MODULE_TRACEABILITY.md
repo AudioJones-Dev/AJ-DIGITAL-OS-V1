@@ -53,7 +53,7 @@ This document maps every major source module to its owning OS layer. It is the a
 | `src/bel/dag/dag-runtime.ts` | L8, L9 | createDagRun, getReadyNodes, executeNode, retryNode, skipNode, runDagToCompletion | dag-types, dag-store, dag-attribution, dag-validator | ✅ audit JSONL | ✅ fire-and-forget | ✅ |
 | `src/bel/dag/dag-store.ts` | L8, L13 | File-backed DAG run, audit, node output persistence | node:fs | ✅ JSONL | ❌ | ✅ |
 | `src/bel/dag/dag-attribution.ts` | L14 | Fire-and-forget MAP attribution for DAG events | attribution-tracker | ❌ | ✅ | ✅ |
-| `src/bel/mcp-tool-registry.ts` | L9 | MCP tool registration and lookup | — | ❌ | ❌ | ✅ |
+| `src/mcp/mcp-tool-registry.ts` | L9 | MCP tool registration and lookup | — | ❌ | ❌ | ✅ |
 | `src/bel/capabilities.ts` | L9 | Agent capability definitions and validation | — | ❌ | ❌ | ✅ |
 | `src/attribution/attribution-tracker.ts` | L14 | emitEvent() — MAP scoring, JSONL write, complianceRate tracking | attribution-types, map-validator | ✅ JSONL | ✅ (is the attribution system) | ✅ |
 | `src/attribution/attribution-types.ts` | L14 | AttributionEvent, AttributionEventType | — | ❌ | ❌ | ❌ |

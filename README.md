@@ -401,7 +401,31 @@ npm run cli -- ollama-probe --json
 ```
 
 For a deterministic provider-level smoke that does not require a live Ollama
-process, use the existing Vitest coverage around `src/providers/ollama.provider.smoke.ts`.
+process, run the standalone harness at `src/providers/ollama.provider.smoke.ts`.
+It stubs the Ollama HTTP API on a local server, so no daemon or pulled model is
+needed.
+
+The harness asserts that the provider resolves the model tag advertised by
+`/api/tags`, and `OLLAMA_MODEL` short-circuits that resolution, so the command
+must run with that override cleared. If you set it above, clear it here —
+otherwise the run exits `1` with
+`Expected provider to resolve the installed Ollama model tag`:
+
+```bash
+npm run build
+OLLAMA_MODEL= node dist/providers/ollama.provider.smoke.js
+```
+
+On PowerShell:
+
+```powershell
+npm run build
+$env:OLLAMA_MODEL = ""; node dist/providers/ollama.provider.smoke.js
+```
+
+It prints `ollama-provider-smoke:pass` and exits `0` on success. This harness is
+not collected by `npm test` (Vitest includes only `tests/**/*.test.ts`) and is not
+what `npm run smoke` runs (that is the CLI smoke, `dist/scripts/smoke-cli.js`).
 
 ## Installable CLI
 
