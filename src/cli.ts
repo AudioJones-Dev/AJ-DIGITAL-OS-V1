@@ -94,6 +94,22 @@ import {
   ToolRegistryCommand,
   TrackRunCommand,
   UiStartCommand,
+  OfferCreateCommand,
+  DiagnoseCommand,
+  ContentBriefCommand,
+  MapEvaluateCommand,
+  CeraCycleCommand,
+  RetrievalIngestCommand,
+  RetrievalSearchCommand,
+  MapListCommand,
+  MapInspectCommand,
+  CeraListCommand,
+  CompoundScoreCommand,
+  DecisionAuditCommand,
+  RetrievalListDocsCommand,
+  RetrievalInspectDocCommand,
+  RetrievalTracesCommand,
+  RetrievalContextCommand,
   normalizeAssistantMode,
   type TrackRunViewMode,
 } from "./commands/index.js";
@@ -105,6 +121,13 @@ import type {
   RetrievalNamespace,
   RetrievalSourceType,
 } from "./retrieval/retrieval-types.js";
+import type { DecisionCategory, DecisionEnvironment } from "./decision/decision-types.js";
+import type { DiagnosticCategory } from "./apps/diagnostic-engine/index.js";
+import type { ContentBriefType } from "./apps/content-engine/index.js";
+import type { AssetFormat } from "./normalization/normalization-types.js";
+
+const DEFAULT_RETRIEVAL_ENVIRONMENT: RetrievalEnvironment = "development";
+const DEFAULT_RETRIEVAL_MAX_RESULTS = 5;
 
 interface ParsedArgs {
   command?: string;
@@ -1224,6 +1247,390 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           });
           return result.ok ? 0 : 1;
         }
+      case "offer-create":
+        {
+          const title = getStringFlag(parsed.flags, "title");
+          const type = getStringFlag(parsed.flags, "type");
+          const price = getNumberFlag(parsed.flags, "price");
+          const currency = getStringFlag(parsed.flags, "currency");
+          const createdBy = getStringFlag(parsed.flags, "createdBy");
+          if (!title || !type || price === undefined || !currency || !createdBy) {
+            console.error(
+              "offer-create requires --title, --type, --price, --currency, and --createdBy.",
+            );
+            return 1;
+          }
+
+          const deliverables = parseCsvFlag(getStringFlag(parsed.flags, "deliverables"));
+          const guarantees = parseCsvFlag(getStringFlag(parsed.flags, "guarantees"));
+          const timeline = getStringFlag(parsed.flags, "timeline");
+          const scope = getStringFlag(parsed.flags, "scope");
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const meaningfulScore = getNumberFlag(parsed.flags, "meaningful");
+          const actionableScore = getNumberFlag(parsed.flags, "actionable");
+          const profitableScore = getNumberFlag(parsed.flags, "profitable");
+
+          const result = await new OfferCreateCommand().run({
+            title,
+            type,
+            price,
+            currency,
+            deliverables,
+            createdBy,
+            json: hasFlag(parsed.flags, "json"),
+            ...(guarantees.length > 0 ? { guarantees } : {}),
+            ...(timeline !== undefined ? { timeline } : {}),
+            ...(scope !== undefined ? { scope } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(meaningfulScore !== undefined ? { meaningfulScore } : {}),
+            ...(actionableScore !== undefined ? { actionableScore } : {}),
+            ...(profitableScore !== undefined ? { profitableScore } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "diagnose":
+        {
+          const description = getStringFlag(parsed.flags, "description");
+          const category = parseDiagnosticCategory(getStringFlag(parsed.flags, "category"));
+          if (!description || !category) {
+            console.error(
+              "diagnose requires --description and --category (lead_gen, content, conversion, operations, offer, general).",
+            );
+            return 1;
+          }
+
+          const keywords = parseCsvFlag(getStringFlag(parsed.flags, "keywords"));
+          const proposedActions = parseCsvFlag(getStringFlag(parsed.flags, "proposedActions"));
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const createdBy = getStringFlag(parsed.flags, "createdBy");
+          const environment = parseRetrievalEnvironment(getStringFlag(parsed.flags, "environment"));
+
+          const result = await new DiagnoseCommand().run({
+            description,
+            category,
+            json: hasFlag(parsed.flags, "json"),
+            ...(keywords.length > 0 ? { keywords } : {}),
+            ...(proposedActions.length > 0 ? { proposedActions } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(createdBy !== undefined ? { createdBy } : {}),
+            ...(environment !== undefined ? { environment } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "content-brief":
+        {
+          const title = getStringFlag(parsed.flags, "title");
+          const description = getStringFlag(parsed.flags, "description");
+          const contentType = parseContentBriefType(getStringFlag(parsed.flags, "contentType"));
+          const channel = getStringFlag(parsed.flags, "channel");
+          const createdBy = getStringFlag(parsed.flags, "createdBy");
+          if (!title || !description || !contentType || !channel || !createdBy) {
+            console.error(
+              "content-brief requires --title, --description, --contentType (blog_post, social_post, email, landing_page, case_study, whitepaper), --channel, and --createdBy.",
+            );
+            return 1;
+          }
+
+          const tags = parseCsvFlag(getStringFlag(parsed.flags, "tags"));
+          const format = parseAssetFormat(getStringFlag(parsed.flags, "format"));
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+
+          const result = await new ContentBriefCommand().run({
+            title,
+            description,
+            contentType,
+            channel,
+            createdBy,
+            json: hasFlag(parsed.flags, "json"),
+            ...(tags.length > 0 ? { tags } : {}),
+            ...(format !== undefined ? { format } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "map-evaluate":
+        {
+          const title = getStringFlag(parsed.flags, "title");
+          const description = getStringFlag(parsed.flags, "description");
+          const category = parseDecisionCategory(getStringFlag(parsed.flags, "category"));
+          const meaningful = getNumberFlag(parsed.flags, "meaningful");
+          const actionable = getNumberFlag(parsed.flags, "actionable");
+          const profitable = getNumberFlag(parsed.flags, "profitable");
+          if (
+            !title ||
+            !description ||
+            !category ||
+            meaningful === undefined ||
+            actionable === undefined ||
+            profitable === undefined
+          ) {
+            console.error(
+              "map-evaluate requires --title, --description, --category (offer, campaign, workflow, content, automation, agent_action, operational_change, client_strategy), --meaningful, --actionable, and --profitable.",
+            );
+            return 1;
+          }
+
+          const aeoScore = getNumberFlag(parsed.flags, "aeoScore");
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const runId = getStringFlag(parsed.flags, "runId");
+          const createdBy = getStringFlag(parsed.flags, "createdBy");
+          const environment = parseDecisionEnvironment(getStringFlag(parsed.flags, "environment"));
+
+          const result = await new MapEvaluateCommand().run({
+            title,
+            description,
+            category,
+            meaningful,
+            actionable,
+            profitable,
+            json: hasFlag(parsed.flags, "json"),
+            ...(aeoScore !== undefined ? { aeoScore } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(runId !== undefined ? { runId } : {}),
+            ...(createdBy !== undefined ? { createdBy } : {}),
+            ...(environment !== undefined ? { environment } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "cera-cycle":
+        {
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId");
+          if (!evaluationId) {
+            console.error("cera-cycle requires --evaluationId.");
+            return 1;
+          }
+
+          const capture = parseCsvFlag(getStringFlag(parsed.flags, "capture"));
+          const extract = parseCsvFlag(getStringFlag(parsed.flags, "extract"));
+          const refine = parseCsvFlag(getStringFlag(parsed.flags, "refine"));
+          const amplify = parseCsvFlag(getStringFlag(parsed.flags, "amplify"));
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const runId = getStringFlag(parsed.flags, "runId");
+
+          const result = await new CeraCycleCommand().run({
+            evaluationId,
+            json: hasFlag(parsed.flags, "json"),
+            ...(capture.length > 0 ? { capture } : {}),
+            ...(extract.length > 0 ? { extract } : {}),
+            ...(refine.length > 0 ? { refine } : {}),
+            ...(amplify.length > 0 ? { amplify } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(runId !== undefined ? { runId } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-ingest":
+        {
+          const namespace = parseRetrievalNamespace(getStringFlag(parsed.flags, "namespace"));
+          const title = getStringFlag(parsed.flags, "title");
+          const sourceType = parseRetrievalSourceType(getStringFlag(parsed.flags, "sourceType"));
+          if (!namespace || !title || !sourceType) {
+            console.error(
+              "retrieval-ingest requires --namespace (system_docs, client_docs, brand_voice, workflow_docs, content_assets, aeo_research, attribution_memory, audit_memory, tool_docs), --title, and --sourceType (markdown, text, json, jsonl, pdf_stub, docx_stub).",
+            );
+            return 1;
+          }
+
+          const content = getStringFlag(parsed.flags, "content");
+          const filePath = getStringFlag(parsed.flags, "file");
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const sourceUri = getStringFlag(parsed.flags, "sourceUri");
+          const version = getStringFlag(parsed.flags, "version");
+          const actor = getStringFlag(parsed.flags, "actor");
+          const environment = parseRetrievalEnvironment(getStringFlag(parsed.flags, "environment"));
+
+          const result = await new RetrievalIngestCommand().run({
+            namespace,
+            title,
+            sourceType,
+            json: hasFlag(parsed.flags, "json"),
+            ...(content !== undefined ? { content } : {}),
+            ...(filePath !== undefined ? { filePath } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(sourceUri !== undefined ? { sourceUri } : {}),
+            ...(version !== undefined ? { version } : {}),
+            ...(actor !== undefined ? { actor } : {}),
+            ...(environment !== undefined ? { environment } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-search":
+        {
+          const query = getStringFlag(parsed.flags, "query");
+          const namespacesRaw = getStringFlag(parsed.flags, "namespaces");
+          const namespaces = namespacesRaw ? parseRetrievalNamespaces(namespacesRaw) : [];
+          if (!query || namespaces.length === 0) {
+            console.error(
+              "retrieval-search requires --query and --namespaces (comma-separated: system_docs, client_docs, brand_voice, workflow_docs, content_assets, aeo_research, attribution_memory, audit_memory, tool_docs).",
+            );
+            return 1;
+          }
+
+          const minScore = getNumberFlag(parsed.flags, "minScore");
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const runId = getStringFlag(parsed.flags, "runId");
+          const actor = getStringFlag(parsed.flags, "actor");
+
+          const result = await new RetrievalSearchCommand().run({
+            query,
+            namespaces,
+            environment:
+              parseRetrievalEnvironment(getStringFlag(parsed.flags, "environment")) ??
+              DEFAULT_RETRIEVAL_ENVIRONMENT,
+            maxResults: getNumberFlag(parsed.flags, "maxResults") ?? DEFAULT_RETRIEVAL_MAX_RESULTS,
+            json: hasFlag(parsed.flags, "json"),
+            ...(minScore !== undefined ? { minScore } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(runId !== undefined ? { runId } : {}),
+            ...(actor !== undefined ? { actor } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "map-list":
+        {
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const limit = getNumberFlag(parsed.flags, "limit");
+          const result = await new MapListCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "map-inspect":
+        {
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId");
+          if (!evaluationId) {
+            console.error("map-inspect requires --evaluationId.");
+            return 1;
+          }
+          const result = await new MapInspectCommand().run({
+            evaluationId,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "cera-list":
+        {
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId");
+          const limit = getNumberFlag(parsed.flags, "limit");
+          const result = await new CeraListCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(evaluationId !== undefined ? { evaluationId } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "compound-score":
+        {
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId");
+          if (!evaluationId) {
+            console.error("compound-score requires --evaluationId.");
+            return 1;
+          }
+          const result = await new CompoundScoreCommand().run({
+            evaluationId,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "decision-audit":
+        {
+          const evaluationId = getStringFlag(parsed.flags, "evaluationId");
+          const cycleId = getStringFlag(parsed.flags, "cycleId");
+          const event = getStringFlag(parsed.flags, "event");
+          const limit = getNumberFlag(parsed.flags, "limit");
+          const result = await new DecisionAuditCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(evaluationId !== undefined ? { evaluationId } : {}),
+            ...(cycleId !== undefined ? { cycleId } : {}),
+            ...(event !== undefined ? { event } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-list-docs":
+        {
+          const namespaceRaw = getStringFlag(parsed.flags, "namespace");
+          if (namespaceRaw !== undefined && parseRetrievalNamespace(namespaceRaw) === undefined) {
+            console.error(
+              "retrieval-list-docs --namespace must be one of: system_docs, client_docs, brand_voice, workflow_docs, content_assets, aeo_research, attribution_memory, audit_memory, tool_docs.",
+            );
+            return 1;
+          }
+
+          const namespace = parseRetrievalNamespace(namespaceRaw);
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const limit = getNumberFlag(parsed.flags, "limit");
+
+          const result = await new RetrievalListDocsCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(namespace !== undefined ? { namespace } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-inspect-doc":
+        {
+          const documentId = getStringFlag(parsed.flags, "documentId");
+          if (!documentId) {
+            console.error("retrieval-inspect-doc requires --documentId.");
+            return 1;
+          }
+          const result = await new RetrievalInspectDocCommand().run({
+            documentId,
+            json: hasFlag(parsed.flags, "json"),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-traces":
+        {
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const runId = getStringFlag(parsed.flags, "runId");
+          const limit = getNumberFlag(parsed.flags, "limit");
+          const result = await new RetrievalTracesCommand().run({
+            json: hasFlag(parsed.flags, "json"),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(runId !== undefined ? { runId } : {}),
+            ...(limit !== undefined ? { limit } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
+      case "retrieval-context":
+        {
+          const query = getStringFlag(parsed.flags, "query");
+          const namespacesRaw = getStringFlag(parsed.flags, "namespaces");
+          const namespaces = namespacesRaw ? parseRetrievalNamespaces(namespacesRaw) : [];
+          if (!query || namespaces.length === 0) {
+            console.error(
+              "retrieval-context requires --query and --namespaces (comma-separated: system_docs, client_docs, brand_voice, workflow_docs, content_assets, aeo_research, attribution_memory, audit_memory, tool_docs).",
+            );
+            return 1;
+          }
+
+          const minScore = getNumberFlag(parsed.flags, "minScore");
+          const tenantId = getStringFlag(parsed.flags, "tenantId");
+          const runId = getStringFlag(parsed.flags, "runId");
+          const actor = getStringFlag(parsed.flags, "actor");
+
+          const result = await new RetrievalContextCommand().run({
+            query,
+            namespaces,
+            environment:
+              parseRetrievalEnvironment(getStringFlag(parsed.flags, "environment")) ??
+              DEFAULT_RETRIEVAL_ENVIRONMENT,
+            maxResults: getNumberFlag(parsed.flags, "maxResults") ?? DEFAULT_RETRIEVAL_MAX_RESULTS,
+            json: hasFlag(parsed.flags, "json"),
+            ...(minScore !== undefined ? { minScore } : {}),
+            ...(tenantId !== undefined ? { tenantId } : {}),
+            ...(runId !== undefined ? { runId } : {}),
+            ...(actor !== undefined ? { actor } : {}),
+          });
+          return result.ok ? 0 : 1;
+        }
       case "lead-to-offer":
         {
           const result = await new LeadToOfferCommand().run({
@@ -1450,6 +1857,111 @@ function isDeliverableStatus(value: string | undefined): value is "draft" | "pen
       return true;
     default:
       return false;
+  }
+}
+
+function getNumberFlag(
+  flags: Record<string, string | boolean | undefined>,
+  key: string,
+): number | undefined {
+  const raw = flags[key];
+  if (raw === undefined) {
+    return undefined;
+  }
+
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    throw new Error(`--${key} requires a numeric value.`);
+  }
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Invalid --${key} value: ${raw}`);
+  }
+
+  return parsed;
+}
+
+function parseCsvFlag(value: string | undefined): string[] {
+  if (value === undefined) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function parseDecisionCategory(value: string | undefined): DecisionCategory | undefined {
+  switch (value) {
+    case "offer":
+    case "campaign":
+    case "workflow":
+    case "content":
+    case "automation":
+    case "agent_action":
+    case "operational_change":
+    case "client_strategy":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function parseDecisionEnvironment(value: string | undefined): DecisionEnvironment | undefined {
+  switch (value) {
+    case "local":
+    case "dev":
+    case "staging":
+    case "production":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function parseDiagnosticCategory(value: string | undefined): DiagnosticCategory | undefined {
+  switch (value) {
+    case "lead_gen":
+    case "content":
+    case "conversion":
+    case "operations":
+    case "offer":
+    case "general":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function parseContentBriefType(value: string | undefined): ContentBriefType | undefined {
+  switch (value) {
+    case "blog_post":
+    case "social_post":
+    case "email":
+    case "landing_page":
+    case "case_study":
+    case "whitepaper":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function parseAssetFormat(value: string | undefined): AssetFormat | undefined {
+  switch (value) {
+    case "markdown":
+    case "html":
+    case "pdf":
+    case "docx":
+    case "json":
+    case "image":
+    case "video":
+    case "audio":
+    case "other":
+      return value;
+    default:
+      return undefined;
   }
 }
 

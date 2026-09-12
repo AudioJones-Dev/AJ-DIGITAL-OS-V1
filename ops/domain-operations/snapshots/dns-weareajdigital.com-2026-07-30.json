@@ -1,0 +1,155 @@
+[
+  {
+    "id": "760c3465fa14bcc7c7f9e4ef36ed23f5",
+    "type": "A",
+    "name": "weareajdigital.com",
+    "content": "76.76.21.21",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "e835fd8e017eb0e100daca51c59a3bda",
+    "type": "CNAME",
+    "name": "admin.weareajdigital.com",
+    "content": "aj-digital-portal-audio9.replit.app",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "3d39f9e6cca858b0783b2650f32f5d9e",
+    "type": "CNAME",
+    "name": "_domainconnect.weareajdigital.com",
+    "content": "_domainconnect.gd.domaincontrol.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "8d45934714e8c385b053f57195d0410a",
+    "type": "CNAME",
+    "name": "email.mg.weareajdigital.com",
+    "content": "mailgun.org",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "eb5b7dda93ea3346f4f4b564dc3fd1c3",
+    "type": "CNAME",
+    "name": "pay.weareajdigital.com",
+    "content": "paylinks.commerce.godaddy.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "fa792ec7617dfac1bcfadbf2b4907409",
+    "type": "CNAME",
+    "name": "www.weareajdigital.com",
+    "content": "cname.vercel-dns.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": true
+  },
+  {
+    "id": "54dcb0ea2d1d0a2ef4ad18af487eab8e",
+    "type": "MX",
+    "name": "weareajdigital.com",
+    "content": "alt4.aspmx.l.google.com",
+    "ttl": 1,
+    "priority": 10,
+    "proxied": false
+  },
+  {
+    "id": "a5fa4ef05e300c250c92324f8f72fcbc",
+    "type": "MX",
+    "name": "weareajdigital.com",
+    "content": "alt3.aspmx.l.google.com",
+    "ttl": 1,
+    "priority": 10,
+    "proxied": false
+  },
+  {
+    "id": "ccbdf394ffcdb03366f06c9aba009de7",
+    "type": "MX",
+    "name": "weareajdigital.com",
+    "content": "alt2.aspmx.l.google.com",
+    "ttl": 1,
+    "priority": 5,
+    "proxied": false
+  },
+  {
+    "id": "114d9affeac9e41f5728be6130070b3e",
+    "type": "MX",
+    "name": "weareajdigital.com",
+    "content": "alt1.aspmx.l.google.com",
+    "ttl": 1,
+    "priority": 5,
+    "proxied": false
+  },
+  {
+    "id": "0fffc1ca8fb498b93b3257c680164bbc",
+    "type": "MX",
+    "name": "weareajdigital.com",
+    "content": "aspmx.l.google.com",
+    "ttl": 1,
+    "priority": 1,
+    "proxied": false
+  },
+  {
+    "id": "2e3e3e96cdbc398022c377550d9c4bd7",
+    "type": "NS",
+    "name": "weareajdigital.com",
+    "content": "ns68.domaincontrol.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "4565b7808274fee5a571de3f6300f312",
+    "type": "NS",
+    "name": "weareajdigital.com",
+    "content": "ns67.domaincontrol.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "4f4018044dc06dbc8bf44c4abc20aa1c",
+    "type": "TXT",
+    "name": "google._domainkey.weareajdigital.com",
+    "content": "\"v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAte6c8iDhogSLyJ6n0MAd3+f1wsatFwg03X59/20yHnv6VX1b8cgyevwiD66pDXhNwCGIMT8bzU3TdtZq2LAXvWO4gf80NFbLcM4fhJ7pA5FDDIXPBo5NuD7kSq3zuXN9rxFaE71j1d9geXjtWSxAun8wDG+V+yqD2h7BYTSup+mhv40PsaBNsR+wK9uzuJzi31a\" \"mNuWs//wMvlHRvjpVYwYPEZ01j6kWIWqqPTRlj1A3I4qw1m/gTjfMy1GslyNbh+O1FpusXHlEiDnHgNZcJA2lYAxL1xT0Yf51+MelUe2F/bFeiS8nngZflQH1bFVHyf7y18+Gi6Q1U297yhCCFQIDAQAB\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "559b743276d47d2f08a9286a1dad30c1",
+    "type": "TXT",
+    "name": "weareajdigital.com",
+    "content": "\"google-site-verification=HLGDNXw9SAROEpjPd0_TcAF2nPE0jY3YkhOaPcbF9vE\"",
+    "ttl": 3600,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "8199c87d6f2135dda9245c1133a6aa56",
+    "type": "TXT",
+    "name": "weareajdigital.com",
+    "content": "\"google-site-verification=gAOgDI3cBLQRGHKuahEQMKEbs5EMza4Tq1JFYUATjeg\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "0493deb54c943b9c383515c414b8afcc",
+    "type": "TXT",
+    "name": "weareajdigital.com",
+    "content": "\"v=spf1 include:_spf.google.com ~all\"",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  }
+]

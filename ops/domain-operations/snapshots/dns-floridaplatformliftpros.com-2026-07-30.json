@@ -1,0 +1,56 @@
+[
+  {
+    "id": "e88c6b0a76c6443e9e6d83ed8e463a3f",
+    "type": "MX",
+    "name": "floridaplatformliftpros.com",
+    "content": "mx3.zoho.com",
+    "ttl": 600,
+    "priority": 50,
+    "proxied": false
+  },
+  {
+    "id": "8f1a009777e10a288ad8efcd1d9cd061",
+    "type": "MX",
+    "name": "floridaplatformliftpros.com",
+    "content": "mx.zoho.com",
+    "ttl": 600,
+    "priority": 10,
+    "proxied": false
+  },
+  {
+    "id": "b39b9af62b9f783dbf56228168dd72ab",
+    "type": "MX",
+    "name": "floridaplatformliftpros.com",
+    "content": "mx2.zoho.com",
+    "ttl": 600,
+    "priority": 20,
+    "proxied": false
+  },
+  {
+    "id": "3dfc5b7e117efa8e473f3d2880abc4f5",
+    "type": "TXT",
+    "name": "floridaplatformliftpros.com",
+    "content": "\"v=spf1 include:zohomail.com ~all\"",
+    "ttl": 3600,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "1cfbb9f286799d1790f6a5c69b8d8f8d",
+    "type": "TXT",
+    "name": "floridaplatformliftpros.com",
+    "content": "\"zoho-verification=zb89673368.zmverify.zoho.com\"",
+    "ttl": 600,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "1bfeb6b0a0b3038702fc29162f7d06de",
+    "type": "TXT",
+    "name": "zmail._domainkey.floridaplatformliftpros.com",
+    "content": "\"v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCMl1lqrlHtUnQm9RoEE4GSfIL0MQ4eZkEIHy5UlYgLlQHiHf02oS9AdYBdgQEEJGhRg570oRAaYk01sDPON5Hge5xAfK584Te6TtSzsYDrjj4vty9ysefGDWvNPyishX6fnq1uUdcfa4uRtfAvTWY6CNsueMOaPAKMv+0D87UpdwIDAQAB\"",
+    "ttl": 600,
+    "priority": null,
+    "proxied": false
+  }
+]

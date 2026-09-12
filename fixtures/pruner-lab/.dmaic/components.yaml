@@ -1,0 +1,24 @@
+version: 1
+components:
+  - id: pricing-normalization
+    paths:
+      - "src/lib/**"
+    test_paths: []
+    status: Needs Refactor
+    owner: fixture@local.invalid
+
+  - id: authentication
+    paths:
+      - "src/auth/**"
+    test_paths: []
+    status: Canonical
+    owner: fixture@local.invalid
+
+  - id: fixture-protected-config
+    paths:
+      - "config/**"
+    test_paths: []
+    status: Canonical
+    owner: fixture@local.invalid
+    protected: true
+    protection_reason: Fixture control proving the additive registry extension

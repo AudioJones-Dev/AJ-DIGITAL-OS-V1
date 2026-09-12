@@ -1,0 +1,18 @@
+{
+  "name": "aj-prune",
+  "description": "Evidence-driven code pruning pipeline: inventory, reachability, coverage, planning, gated application, and verification",
+  "version": "0.1.1",
+  "author": {
+    "name": "Audio Jones"
+  },
+  "homepage": "https://github.com/AudioJones-Dev/AJ-DIGITAL-OS-V1",
+  "repository": "https://github.com/AudioJones-Dev/AJ-DIGITAL-OS-V1",
+  "license": "UNLICENSED",
+  "keywords": [
+    "dead-code",
+    "pruning",
+    "refactoring",
+    "code-health",
+    "dmaic"
+  ]
+}

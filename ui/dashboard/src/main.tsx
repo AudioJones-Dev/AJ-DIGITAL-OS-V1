@@ -8,7 +8,7 @@ const globalCSS = `
     margin: 0;
     padding: 0;
     -webkit-font-smoothing: antialiased;
-    background-color: #0f172a;
+    background-color: #090b0c;
     color: #e2e8f0;
   }
   code {
@@ -16,9 +16,9 @@ const globalCSS = `
     font-size: 12px;
     color: #94a3b8;
   }
-  a { color: #60a5fa; }
-  a:hover { color: #93bbfd; }
-  ::selection { background: #2563eb33; }
+  a { color: #e8ff5a; }
+  a:hover { color: #f3ff9d; }
+  ::selection { background: #e8ff5a33; }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
@@ -26,7 +26,7 @@ const globalCSS = `
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-  :focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; border-radius: 2px; }
+  :focus-visible { outline: 2px solid #e8ff5a; outline-offset: 2px; border-radius: 2px; }
   .skip-link {
     position: absolute; left: 8px; top: -48px; z-index: 1000;
     padding: 8px 16px; border-radius: 8px;
