@@ -1,0 +1,182 @@
+{
+  "domains": [
+    {
+      "kind": "admin#directory#domain",
+      "etag": "\"kHShXnbuOxz8-8FCmMNpqIRFoE7anxV5XHMSnThPHE8/sOOd02bK-CL-ziBMwHweicVqfl4\"",
+      "domainName": "ajdigital.app",
+      "domainAliases": [
+        {
+          "kind": "admin#directory#domainAlias",
+          "etag": "\"kHShXnbuOxz8-8FCmMNpqIRFoE7anxV5XHMSnThPHE8/FJ5JEpETXtmV9l3Kr6GugHOHOx8\"",
+          "domainAliasName": "ajdigital.app.test-google-a.com",
+          "parentDomainName": "ajdigital.app",
+          "verified": true,
+          "creationTime": "1769526502265"
+        },
+        {
+          "kind": "admin#directory#domainAlias",
+          "etag": "\"kHShXnbuOxz8-8FCmMNpqIRFoE7anxV5XHMSnThPHE8/LlXd9A9Y5sEPzEvuAKFbINq_WNI\"",
+          "domainAliasName": "audiojones.com",
+          "parentDomainName": "ajdigital.app",
+          "verified": true,
+          "creationTime": "1770713315266"
+        },
+        {
+          "kind": "admin#directory#domainAlias",
+          "etag": "\"kHShXnbuOxz8-8FCmMNpqIRFoE7anxV5XHMSnThPHE8/Uxb1sIhIf3Adyd86yrTsaR8Qutc\"",
+          "domainAliasName": "weareajdigital.com",
+          "parentDomainName": "ajdigital.app",
+          "verified": true,
+          "creationTime": "1770740146833"
+        }
+      ],
+      "isPrimary": true,
+      "verified": true,
+      "creationTime": "1769526502265"
+    }
+  ],
+  "users": [
+    {
+      "primaryEmail": "agent@ajdigital.app",
+      "isAdmin": false,
+      "suspended": false,
+      "isMailboxSetup": true,
+      "orgUnitPath": "/",
+      "aliases": null,
+      "nonEditableAliases": [
+        "agent@ajdigital.app.test-google-a.com",
+        "agent@audiojones.com",
+        "agent@weareajdigital.com"
+      ]
+    },
+    {
+      "primaryEmail": "audiojones@ajdigital.app",
+      "isAdmin": true,
+      "suspended": false,
+      "isMailboxSetup": true,
+      "orgUnitPath": "/",
+      "aliases": [
+        "contact@ajdigital.app",
+        "sales@ajdigital.app",
+        "info@ajdigital.app",
+        "bookings@ajdigital.app",
+        "support@ajdigital.app",
+        "billing@ajdigital.app",
+        "accounts@ajdigital.app",
+        "finance@ajdigital.app",
+        "sweatequityacademy@ajdigital.app",
+        "audio@ajdigital.app",
+        "subscriptions@ajdigital.app",
+        "dev@ajdigital.app",
+        "signaldiagnostic@ajdigital.app",
+        "javi@ajdigital.app",
+        "Home@ajdigital.app",
+        "Codex@ajdigital.app",
+        "Claude@ajdigital.app",
+        "frlwalkthroughcontractortest1@ajdigital.app",
+        "frlwalkthroughadmintest1@ajdigital.app",
+        "frlwalkthroughclienttest1@ajdigital.app",
+        "frlwalkthroughplatformtest1@ajdigital.app",
+        "Mikefrlwalkthroughadmintest1@ajdigital.app"
+      ],
+      "nonEditableAliases": [
+        "audiojones@ajdigital.app.test-google-a.com",
+        "contact@ajdigital.app.test-google-a.com",
+        "sales@ajdigital.app.test-google-a.com",
+        "bookings@ajdigital.app.test-google-a.com",
+        "info@ajdigital.app.test-google-a.com",
+        "support@ajdigital.app.test-google-a.com",
+        "accounts@ajdigital.app.test-google-a.com",
+        "billing@ajdigital.app.test-google-a.com",
+        "finance@ajdigital.app.test-google-a.com",
+        "sweatequityacademy@ajdigital.app.test-google-a.com",
+        "accounts@weareajdigital.com",
+        "audiojones@weareajdigital.com",
+        "billing@weareajdigital.com",
+        "bookings@weareajdigital.com",
+        "contact@weareajdigital.com",
+        "finance@weareajdigital.com",
+        "info@weareajdigital.com",
+        "sales@weareajdigital.com",
+        "support@weareajdigital.com",
+        "sweatequityacademy@weareajdigital.com",
+        "accounts@audiojones.com",
+        "audiojones@audiojones.com",
+        "billing@audiojones.com",
+        "bookings@audiojones.com",
+        "contact@audiojones.com",
+        "finance@audiojones.com",
+        "info@audiojones.com",
+        "sales@audiojones.com",
+        "support@audiojones.com",
+        "sweatequityacademy@audiojones.com",
+        "audio@ajdigital.app.test-google-a.com",
+        "audio@audiojones.com",
+        "audio@weareajdigital.com",
+        "subscriptions@ajdigital.app.test-google-a.com",
+        "subscriptions@audiojones.com",
+        "subscriptions@weareajdigital.com",
+        "dev@ajdigital.app.test-google-a.com",
+        "dev@audiojones.com",
+        "dev@weareajdigital.com",
+        "signaldiagnostic@ajdigital.app.test-google-a.com",
+        "signaldiagnostic@audiojones.com",
+        "signaldiagnostic@weareajdigital.com",
+        "javi@ajdigital.app.test-google-a.com",
+        "javi@audiojones.com",
+        "javi@weareajdigital.com",
+        "Home@ajdigital.app.test-google-a.com",
+        "Home@audiojones.com",
+        "Home@weareajdigital.com",
+        "Claude@ajdigital.app.test-google-a.com",
+        "Claude@audiojones.com",
+        "Claude@weareajdigital.com",
+        "Codex@ajdigital.app.test-google-a.com",
+        "Codex@audiojones.com",
+        "Codex@weareajdigital.com",
+        "frlwalkthroughadmintest1@ajdigital.app.test-google-a.com",
+        "frlwalkthroughadmintest1@audiojones.com",
+        "frlwalkthroughadmintest1@weareajdigital.com",
+        "frlwalkthroughclienttest1@ajdigital.app.test-google-a.com",
+        "frlwalkthroughclienttest1@audiojones.com",
+        "frlwalkthroughclienttest1@weareajdigital.com",
+        "frlwalkthroughcontractortest1@ajdigital.app.test-google-a.com",
+        "frlwalkthroughcontractortest1@audiojones.com",
+        "frlwalkthroughcontractortest1@weareajdigital.com",
+        "frlwalkthroughplatformtest1@ajdigital.app.test-google-a.com",
+        "frlwalkthroughplatformtest1@audiojones.com",
+        "frlwalkthroughplatformtest1@weareajdigital.com",
+        "Mikefrlwalkthroughadmintest1@ajdigital.app.test-google-a.com",
+        "Mikefrlwalkthroughadmintest1@audiojones.com",
+        "Mikefrlwalkthroughadmintest1@weareajdigital.com"
+      ]
+    }
+  ],
+  "domainAliases": [
+    {
+      "kind": "admin#directory#domainAlias",
+      "etag": "\"kHShXnbuOxz8-8FCmMNpqIRFoE7anxV5XHMSnThPHE8/FJ5JEpETXtmV9l3Kr6GugHOHOx8\"",
+      "domainAliasName": "ajdigital.app.test-google-a.com",
+      "parentDomainName": "ajdigital.app",
+      "verified": true,
+      "creationTime": "1769526502265"
+    },
+    {
+      "kind": "admin#directory#domainAlias",
+      "etag": "\"kHShXnbuOxz8-8FCmMNpqIRFoE7anxV5XHMSnThPHE8/Uxb1sIhIf3Adyd86yrTsaR8Qutc\"",
+      "domainAliasName": "weareajdigital.com",
+      "parentDomainName": "ajdigital.app",
+      "verified": true,
+      "creationTime": "1770740146833"
+    },
+    {
+      "kind": "admin#directory#domainAlias",
+      "etag": "\"kHShXnbuOxz8-8FCmMNpqIRFoE7anxV5XHMSnThPHE8/LlXd9A9Y5sEPzEvuAKFbINq_WNI\"",
+      "domainAliasName": "audiojones.com",
+      "parentDomainName": "ajdigital.app",
+      "verified": true,
+      "creationTime": "1770713315266"
+    }
+  ],
+  "captured": "2026-07-30"
+}

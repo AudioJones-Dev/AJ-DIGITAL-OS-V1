@@ -1,0 +1,15 @@
+{
+  "name": "aj-digital-os",
+  "metadata": {
+    "description": "Internal AJ Digital OS plugins"
+  },
+  "owner": {
+    "name": "Audio Jones"
+  },
+  "plugins": [
+    {
+      "name": "aj-prune",
+      "source": "./plugins/aj-prune"
+    }
+  ]
+}

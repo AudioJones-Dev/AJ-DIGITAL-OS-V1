@@ -6,6 +6,12 @@ import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import { Client } from "pg";
 
 import {
+  dropIsolatedDatabase,
+  endQuietly,
+  guardConnectionErrors,
+} from "./helpers/pg-teardown.js";
+
+import {
   CrmTenantContextBindingError,
   bindCrmTenantContext,
   withTenantContext,
@@ -130,17 +136,21 @@ async function createIsolatedDatabase(adminUrl: string): Promise<IsolatedDatabas
       databaseName,
       roleName,
       async cleanup(): Promise<void> {
-        await admin.query("select pg_terminate_backend(pid) from pg_stat_activity where datname = $1", [databaseName]);
-        await admin.query(`drop database if exists ${quoteIdentifier(databaseName)} with (force)`);
-        await admin.query(`drop role if exists ${quoteIdentifier(roleName)}`);
-        await admin.end();
+        try {
+          await dropIsolatedDatabase(admin, databaseName, roleName, quoteIdentifier);
+        } finally {
+          await endQuietly(admin);
+        }
       },
     };
   } catch (error) {
-    await admin.query("select pg_terminate_backend(pid) from pg_stat_activity where datname = $1", [databaseName]);
-    await admin.query(`drop database if exists ${quoteIdentifier(databaseName)} with (force)`);
-    await admin.query(`drop role if exists ${quoteIdentifier(roleName)}`);
-    await admin.end();
+    // Best-effort cleanup on the setup-failure path: never mask the original error.
+    try {
+      await dropIsolatedDatabase(admin, databaseName, roleName, quoteIdentifier);
+    } catch {
+      // ignored - the rethrown error below is the meaningful one
+    }
+    await endQuietly(admin);
     throw error;
   }
 }
@@ -167,21 +177,34 @@ async function visibleTenants(client: CrmTenantDbClient, tableName: string): Pro
   return result.rows.map((row) => row.tenant_id);
 }
 
-runIfDatabase("CRM live RLS isolation", () => {
+// These suites run migrations, seeds and RLS round-trips against a real
+// Postgres, and the crm-rls-isolation job runs both files in parallel against
+// a single server. Vitest's default 5s per-test timeout is far too tight for
+// that under contention: the hooks already carry explicit 60s/30s timeouts,
+// but the tests were left at the default and timed out intermittently.
+const DB_TEST_TIMEOUT_MS = 30_000;
+
+runIfDatabase("CRM live RLS isolation", { timeout: DB_TEST_TIMEOUT_MS }, () => {
   let isolated: IsolatedDatabase;
   let appClient: Client;
   let tenantDb: PgTenantClient;
+  let readAppClientErrors: (() => Error[]) | undefined;
 
   beforeAll(async () => {
     isolated = await createIsolatedDatabase(ADMIN_DATABASE_URL as string);
     appClient = new Client({ connectionString: isolated.appUrl });
+    readAppClientErrors = guardConnectionErrors(appClient);
     await appClient.connect();
     tenantDb = new PgTenantClient(appClient);
   }, 60_000);
 
   afterAll(async () => {
-    await appClient?.end();
+    await endQuietly(appClient);
     await isolated?.cleanup();
+    // A connection error that is not shutdown-class is a real defect, so it
+    // still fails the suite - but it fails here, with a readable message,
+    // instead of as an unhandled 'error' event that Vitest cannot attribute.
+    expect((readAppClientErrors?.() ?? []).map((error) => error.message)).toEqual([]);
   }, 30_000);
 
   it("fails closed before binding an empty tenant context", async () => {

@@ -1,0 +1,29 @@
+{
+  "captured_at_utc": "2026-07-30T18:48:54.9677280Z",
+  "captured_by": "read-only validation session",
+  "registrar": "Cloudflare, Inc.",
+  "registered": "2026-07-19T14:27:33Z",
+  "expires": "2027-07-19T14:27:33Z",
+  "zone_name": "tyronenelms.com",
+  "zone_id": "119fbdb4d2a04cbaeaa149596dadefdf",
+  "cf_account": "Bookaudiojones@gmail.com's Account",
+  "nameservers": [
+    "desiree.ns.cloudflare.com",
+    "kolton.ns.cloudflare.com"
+  ],
+  "zone_status": "active",
+  "email_routing": {
+    "status": "unconfigured",
+    "enabled": false
+  },
+  "dns_records": [],
+  "record_count": 0,
+  "public_dns_probe": {
+    "MX": "none",
+    "AAAA": "none",
+    "NS": "cloudflare",
+    "_dmarc": "none",
+    "A": "none",
+    "TXT": "none"
+  }
+}

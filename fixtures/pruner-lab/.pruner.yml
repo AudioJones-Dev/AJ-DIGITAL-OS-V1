@@ -1,0 +1,17 @@
+version: 1
+scope: portfolio
+base_ref: origin/main
+registry: .dmaic/components.yaml
+output_dir: .pruner
+detectors:
+  jscpd:  { enabled: true, min_lines: 15, min_tokens: 70 }
+  knip:   { enabled: true }
+  madge:  { enabled: true }
+  eslint: { enabled: true, complexity: 15, max_lines: 400 }
+  tsc:    { enabled: true }
+  tests:  { enabled: false, command: null }
+thresholds:
+  min_confidence_to_emit: 0.60
+  blast_radius_decision_threshold: 5
+path_classes:
+  excluded_globs: []

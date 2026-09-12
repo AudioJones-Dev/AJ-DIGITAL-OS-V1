@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "phase": "P0",
+  "spec_sha256": "F8F54810E561B09C3251FEFB77A62D679D93B633090969D18D7100A88D4BF09B",
+  "live_repository_run_authorized": false,
+  "critical_order": ["D1", "D2", "D3"],
+  "cases": [
+    {"id":"D1","path_contains":"prompts/reviewer","kind":"duplication","classification":"excluded"},
+    {"id":"D2","path_contains":"docs/architecture","kind":"duplication","classification":"excluded"},
+    {"id":"D3","path_contains":"src/auth/session","kind":"dead-code","classification":"needs-decision","public_api_touched":true},
+    {"id":"D4","path_contains":"skills/obsolete-exporter","kind":"dead-code","classification":"excluded"},
+    {"id":"D5","path_contains":".dmaic/dead-hook","kind":"dead-code","classification":"excluded"},
+    {"id":"D6","path_contains":"graphify-out/cache-","kind":"duplication","classification":"excluded"},
+    {"id":"D7","path_contains":".augment/code-like","kind":"dead-code","classification":"excluded"},
+    {"id":"D8","path_contains":"config/mixed-copy","kind":"duplication","classification":"excluded","requires_path_contains":"src/lib/mixed-copy"},
+    {"id":"C1","path_contains":"src/lib/invoice","kind":"duplication","classification":"needs-decision","recommended_status":"Needs Refactor"},
+    {"id":"C2","path_contains":"src/lib/finance-round","kind":"duplication","classification":"intentional"},
+    {"id":"C3","path_contains":"src/lib/orphan-report","kind":"dead-code","classification":"actionable","recommended_status":"Delete Candidate"},
+    {"id":"C4","path_contains":"package.json","kind":"unused-dep","classification":"actionable","recommended_status":"Delete Candidate"},
+    {"id":"C5","path_contains":"src/plugins/csv-export","kind":"dead-code","classification":"probable-false-positive"},
+    {"id":"C6","path_contains":"src/cycle/a","kind":"cycle","classification":"needs-decision","recommended_status":"Needs Refactor","requires_path_contains":"src/cycle/b"},
+    {"id":"C7","path_contains":"src/components/MegaDashboard","kind":"oversized","classification":"needs-decision","recommended_status":"Needs Refactor"},
+    {"id":"C8","path_contains":"src/lib/invalid-ignore","kind":"invalid-annotation","classification":"needs-decision","recommended_status":"Needs Refactor"}
+  ]
+}

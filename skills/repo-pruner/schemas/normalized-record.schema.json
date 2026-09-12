@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ajdigital.local/schemas/repo-pruner-normalized-record.v1.json",
+  "title": "repo-pruner P2 normalized detector record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "detector",
+    "kind",
+    "primary_path",
+    "locations",
+    "evidence",
+    "verify_cmd"
+  ],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "detector": {"enum": ["jscpd", "knip", "madge", "eslint"]},
+    "kind": {
+      "enum": [
+        "duplication",
+        "dead-code",
+        "unused-dep",
+        "cycle",
+        "complexity",
+        "oversized"
+      ]
+    },
+    "primary_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:|/|.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "locations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "line_start", "line_end"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?![A-Za-z]:|/|.*(?:^|/)\\.\\.(?:/|$)).+$"
+          },
+          "line_start": {"type": ["integer", "null"], "minimum": 1},
+          "line_end": {"type": ["integer", "null"], "minimum": 1}
+        }
+      }
+    },
+    "evidence": {"type": "object"},
+    "verify_cmd": {"type": "string", "minLength": 1}
+  }
+}

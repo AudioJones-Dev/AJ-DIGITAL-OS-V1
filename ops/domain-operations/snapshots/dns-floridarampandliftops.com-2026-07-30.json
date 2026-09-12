@@ -1,0 +1,101 @@
+[
+  {
+    "id": "ada28785d719040c73dd57a9d9ad9c2d",
+    "type": "CNAME",
+    "name": "accounts.floridarampandliftops.com",
+    "content": "accounts.clerk.services",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "ab92a538e84ba1c29c8aa0b6460077fe",
+    "type": "CNAME",
+    "name": "admin.floridarampandliftops.com",
+    "content": "frl-ops-portal.onrender.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "d7b2fbf0c344effa7cf25bcc0f72214e",
+    "type": "CNAME",
+    "name": "clerk.floridarampandliftops.com",
+    "content": "frontend-api.clerk.services",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "59b3417c6db879874cf5e16bd57f3aad",
+    "type": "CNAME",
+    "name": "client.floridarampandliftops.com",
+    "content": "frl-ops-portal.onrender.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "e981c63b04224fca8670885b853b6f5f",
+    "type": "CNAME",
+    "name": "clk2._domainkey.floridarampandliftops.com",
+    "content": "dkim2.u2xs1p5jpkiv.clerk.services",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "8cbdde2575b30898795a59240565b054",
+    "type": "CNAME",
+    "name": "clk._domainkey.floridarampandliftops.com",
+    "content": "dkim1.u2xs1p5jpkiv.clerk.services",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "ec06454c19622845ee0aaa5736ce7987",
+    "type": "CNAME",
+    "name": "clkmail.floridarampandliftops.com",
+    "content": "mail.u2xs1p5jpkiv.clerk.services",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "46f73a646025b7de4cc8b1c5aa7e642f",
+    "type": "CNAME",
+    "name": "contractor.floridarampandliftops.com",
+    "content": "frl-ops-portal.onrender.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "9a00d9bfd7817a213dbc29f71173550a",
+    "type": "CNAME",
+    "name": "floridarampandliftops.com",
+    "content": "frl-ops-portal.onrender.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "e9be44a468dbf15e38f3dd7f7cbcb488",
+    "type": "CNAME",
+    "name": "platform.floridarampandliftops.com",
+    "content": "frl-ops-portal.onrender.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  },
+  {
+    "id": "25f1fe449a00c938ab4b88fd59b03b80",
+    "type": "CNAME",
+    "name": "www.floridarampandliftops.com",
+    "content": "frl-ops-portal.onrender.com",
+    "ttl": 1,
+    "priority": null,
+    "proxied": false
+  }
+]
