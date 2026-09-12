@@ -5,7 +5,7 @@
   "purpose": "Repo-local validation command registry for Codex and agent handoffs. Commands are declared here for review and optional execution; this file does not run anything by itself.",
   "notes": [
     "Use the smallest validation set that matches the changed files.",
-    "Do not run deploy, push, merge, rebase, install, or destructive commands from this config without explicit approval.",
+    "Agents must not run merge commands. Do not run deploy, push, rebase, install, or destructive commands from this config without explicit approval.",
     "Root TypeScript can be run through npm scripts, but if tsc hangs in this environment use the repo-approved local workaround before reporting failure."
   ],
   "sets": {

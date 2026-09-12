@@ -75,7 +75,7 @@ Never silently modify:
 
 Require explicit human approval before:
 
-- Merge, rebase, push, deploy, or release.
+- Rebase, push, deploy, or release. Merge execution is human-only under the policy below.
 - Destructive filesystem or Git operations.
 - Secret, credential, token, or client-data work.
 - Production, financial, or external communication actions.
@@ -161,3 +161,57 @@ Do not claim production readiness from local checks alone.
 ## Completion Standard
 
 Work is not done until the repo state, changed files, validation outcome, and next operator decision are clear enough for another agent or human to continue safely.
+
+## Independent review and human-only merge
+
+Authority: the owner-approved AJ Digital policy (2026-09-12), maintained in
+`G:/AJ-INTERNAL/AJ-DIGITAL-VAULT/00-CONTROL/GOVERNANCE/GLOBAL_MERGE_CRITERIA.md`
+under `HUMAN_APPROVAL_MATRIX.md`. This entry point implements that policy; it
+does not establish a competing authority. Preserve stricter local controls.
+
+- Codex-authored changes require independent review by Claude or CodeRabbit.
+- Claude-authored changes require independent review by Codex or CodeRabbit.
+- If both Codex and Claude authored a PR, CodeRabbit must independently review it.
+- Authors may test and self-check, but cannot satisfy their own independent-review requirement.
+- Review must cover the current changes. Changes after review require independent review of those changes.
+- Pending, skipped, failed, or rate-limited reviews do not count as completed review.
+- Address blocking findings and resolve their conversations before merge.
+- Agents may mark validated draft PRs ready for review without separate operator approval after verifying the current head and required checks. Readiness is not merge approval.
+- The human performs merge or squash merge after independent review and all required validation pass. Agents must not execute merges, enable auto-merge, enqueue a merge, or use another tool/agent to perform a merge.
+- These permissions do not authorize deployment, provider activation, credential changes, client-data mutations, or other separately gated actions.
+
+Record authoring agents separately from GitHub account names, the reviewed head
+SHA, reviewer system, review outcome and evidence link. A green bot check or an
+account name alone proves neither authorship nor independent review. Unknown
+authorship or ambiguous review evidence blocks a merge recommendation. For other
+authoring harnesses, obtain owner clarification of reviewer eligibility; do not
+invent a self-review exemption. This is an instruction contract, not verified
+technical enforcement. If canonical context is unavailable, retain these
+restrictions and report the verification gap.
+
+
+### Authorship declaration and review routing
+
+Record one explicit PR-body declaration: `authoring-agent:codex`,
+`authoring-agent:claude`, `authoring-agent:codex+claude`,
+`authoring-agent:human`, or `authoring-agent:unknown`, with provenance linking
+the authoring session and contributed changes. These declarations are claims
+to verify, not authenticated attestations. Preserve earlier agent contributions
+when humans edit; another contributing agent must update the declaration to the
+union of contributors. Conflicting or missing provenance blocks completion.
+
+CodeRabbit is the default reviewer. For Codex-only authorship Claude is a
+permitted fallback; for Claude-only authorship Codex is permitted. Mixed
+Codex/Claude authorship requires CodeRabbit. Human-only and other harness
+authorship retain applicable local review rules; do not invent an exemption.
+Unknown authorship blocks review completion until established.
+
+After current-head validation, request review by marking the draft ready.
+New commits invalidate recorded review coverage; confirm renewed coverage of
+the current SHA. A dispatch is only `review_requested`, never completion.
+Record `review_running`, `review_completed`, `review_valid_for_head`,
+`review_blocked`, or `review_unavailable` from actual evidence. Cancelled,
+timed-out, skipped, unavailable, pending, failed and rate-limited runs cannot
+satisfy review. Record reviewer system, exact SHA, event URL/time, findings and
+thread resolution. Generic green checks and editable PR metadata cannot prove
+reviewer independence. No agent may merge or enable automatic merge.

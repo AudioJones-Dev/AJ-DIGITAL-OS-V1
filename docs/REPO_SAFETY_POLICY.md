@@ -78,10 +78,10 @@ Check branch state before implementation. If local and remote have diverged, do 
 Require explicit approval before:
 
 - Creating release branches.
-- Merging.
+- Merge execution is reserved to the human; agents must not merge.
 - Rebasing.
 - Pushing.
-- Opening or merging pull requests.
+- Opening pull requests. Merging remains human-executed only.
 - Deploying.
 - Tagging releases.
 
@@ -121,7 +121,16 @@ Require `proceed` before:
 - Runtime/core logic changes.
 - Global hook installation.
 - Package installation or lockfile updates.
-- Merge, rebase, push, deploy, release, or public communication.
+- Rebase, push, deploy, release, or public communication. Agents must not execute merges.
 - Anything that could reintroduce Firebase.
 
 No `proceed` means pause or continue read-only.
+
+## Independent review and merge execution
+
+Follow the independent-review and human-only merge section of root `AGENTS.md`,
+which references the canonical vault policy. Agents may mark validated drafts
+ready after verifying current head and required checks without separate operator
+approval. The human performs merge or squash merge after eligible independent
+review and required validation. Handoff labels such as `Merge` are recommendations
+only. Deployment, credentials, provider activation and other gates remain separate.

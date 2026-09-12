@@ -104,3 +104,12 @@ When useful, include a next prompt that can be pasted into Codex, ChatGPT, Copil
 - Do not claim merge or deploy readiness without the required checks.
 - Do not include secrets or hidden values.
 - Include branch and validation state for repo work.
+
+## Independent review and merge execution
+
+Follow the independent-review and human-only merge section of root `AGENTS.md`,
+which references the canonical vault policy. Agents may mark validated drafts
+ready after verifying current head and required checks without separate operator
+approval. The human performs merge or squash merge after eligible independent
+review and required validation. Handoff labels such as `Merge` are recommendations
+only. Deployment, credentials, provider activation and other gates remain separate.
