@@ -174,7 +174,7 @@ does not establish a competing authority. Preserve stricter local controls.
 - If both Codex and Claude authored a PR, CodeRabbit must independently review it.
 - Authors may test and self-check, but cannot satisfy their own independent-review requirement.
 - Review must cover the current changes. Changes after review require independent review of those changes.
-- Pending, skipped, failed, or rate-limited reviews do not count as completed review.
+- Pending, skipped, failed, rate-limited, summary-only or walkthrough-only reviews do not count as completed review.
 - Address blocking findings and resolve their conversations before merge.
 - Agents may mark validated draft PRs ready for review without separate operator approval after verifying the current head and required checks. Readiness is not merge approval.
 - The human performs merge or squash merge after independent review and all required validation pass. Agents must not execute merges, enable auto-merge, enqueue a merge, or use another tool/agent to perform a merge.
@@ -211,7 +211,8 @@ New commits invalidate recorded review coverage; confirm renewed coverage of
 the current SHA. A dispatch is only `review_requested`, never completion.
 Record `review_running`, `review_completed`, `review_valid_for_head`,
 `review_blocked`, or `review_unavailable` from actual evidence. Cancelled,
-timed-out, skipped, unavailable, pending, failed and rate-limited runs cannot
+timed-out, skipped, unavailable, pending, failed, rate-limited, summary-only and
+walkthrough-only runs cannot
 satisfy review. Record reviewer system, exact SHA, event URL/time, findings and
 thread resolution. Generic green checks and editable PR metadata cannot prove
 reviewer independence. No agent may merge or enable automatic merge.
